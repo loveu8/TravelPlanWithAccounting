@@ -47,10 +47,13 @@ public class ServiceApplication {
 						// 設定至系統屬性，使 Spring 可以取得
 						System.setProperty(key, value);
 						// 印出解析出的 key 與 value
+						if ("DB_PASSWORD".equals(key)) {
+							value = "**********";
+						}
 						System.out.println("讀取到的設定 - Key: " + key + ", Value: " + value);
 					}
 				}
-				System.out.println(".env 檔案載入完成。");
+				System.out.println(".backendEnv 檔案載入完成。");
 			} catch (IOException e) {
 				System.err.println("讀取 .env 檔案錯誤：" + e.getMessage());
 			}
