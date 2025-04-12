@@ -26,11 +26,11 @@ public class ServiceApplication {
 		if (Files.exists(envPath)) {
 			try (BufferedReader reader = Files.newBufferedReader(envPath)) {
 				String line;
-				System.out.println("開始載入 .env 檔案內容：");
+				System.out.println("開始載入 .backendEnv 檔案內容：");
 				while ((line = reader.readLine()) != null) {
 					line = line.trim();
 					// 印出每一行的內容
-					System.out.println("原始內容: " + line);
+					// System.out.println("原始內容: " + line);
 					// 如果是空行或註解，略過
 					if (line.isEmpty() || line.startsWith("#")) {
 						continue;
