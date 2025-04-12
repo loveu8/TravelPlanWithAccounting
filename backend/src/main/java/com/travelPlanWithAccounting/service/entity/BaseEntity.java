@@ -1,7 +1,7 @@
 package com.travelPlanWithAccounting.service.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.travelPlanWithAccounting.service.uitl.UuidGeneratorUtils;
+import com.travelPlanWithAccounting.service.util.UuidGeneratorUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
