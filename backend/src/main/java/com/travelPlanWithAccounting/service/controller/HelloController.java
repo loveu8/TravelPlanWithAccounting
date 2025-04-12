@@ -10,4 +10,9 @@ public class HelloController {
     public String hello() {
         return "Hello World";
     }
+
+    @GetMapping("/haaaa")
+    public String haaaa(){
+        return "test git commit";
+    }
 }
