@@ -1,0 +1,17 @@
+services:
+  app-backend:
+    image: service:0.0.1-SNAPSHOT
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.backendEnv # 與 build.sh 一致
+    networks:
+      - app-network
+    volumes:
+      # Log
+      - ./logs:/application/logs
+      # Config
+      - ./configs:/application/config
+networks:
+  app-network:
+    driver: bridge
