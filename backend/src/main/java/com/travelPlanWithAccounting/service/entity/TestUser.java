@@ -12,10 +12,10 @@ import lombok.Data;
 @Table(name = "TestUser")
 public class TestUser {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String created_at;
-    // Add other fields as needed
+  private String created_at;
+  // Add other fields as needed
 }
