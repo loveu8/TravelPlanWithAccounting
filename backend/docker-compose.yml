@@ -1,8 +1,8 @@
 services:
   app-backend:
-    image: service:0.0.1-SNAPSHOT
+    image: ${APP_NAME}:${VERSION}
     ports:
-      - "8080:8080"
+      - "9000:9000"
     env_file:
       - ../.backendEnv # 與 build.sh 一致
     networks:

@@ -1,1 +1,1 @@
-docker compose up -d --remove-orphans --force-recreate
+docker compose --env-file ../.backendEnv up -d --remove-orphans --force-recreate
