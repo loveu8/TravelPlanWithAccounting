@@ -10,9 +10,9 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.travelPlanWithAccounting</groupId>
-	<artifactId>service</artifactId>
+	<artifactId>backend-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>service</name>
+	<name>backend-service</name>
 	<description>Travel Play With Accounting Backend API</description>
 	<url />
 	<licenses>

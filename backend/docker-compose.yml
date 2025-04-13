@@ -1,0 +1,17 @@
+services:
+  app-backend:
+    image: ${APP_NAME}:${VERSION}
+    ports:
+      - "9000:9000"
+    env_file:
+      - ../.backendEnv # 與 build.sh 一致
+    networks:
+      - app-network
+    volumes:
+      # Log
+      - ./logs:/application/logs
+      # Config
+      - ./configs:/application/config
+networks:
+  app-network:
+    driver: bridge
