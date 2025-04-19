@@ -135,7 +135,7 @@ verify_image() {
         exit 1
     fi
     echo_info "Starting test container..."
-    CONTAINER_ID=$(docker run -d -p 8080:8080 --env-file "$ENV_FILE" "$IMAGE_NAME")
+    CONTAINER_ID=$(docker run -d -p 9000:9000 --env-file "$ENV_FILE" "$IMAGE_NAME")
     sleep 15
     if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_ID")" != "true" ]; then
         echo_error "Container failed to start. Check logs:"
@@ -144,10 +144,10 @@ verify_image() {
         docker rm "$CONTAINER_ID" &> /dev/null
         exit 1
     fi
-    if curl -s -f http://localhost:8080 &> /dev/null; then
+    if curl -s -f http://localhost:9000 &> /dev/null; then
         echo_success "Application is running successfully"
     else
-        echo_info "Warning: Failed to access http://localhost:8080. Check if port, endpoint, or PostgreSQL connection is correct."
+        echo_info "Warning: Failed to access http://localhost:9000. Check if port, endpoint, or PostgreSQL connection is correct."
         docker logs "$CONTAINER_ID"
     fi
     docker stop "$CONTAINER_ID" &> /dev/null
@@ -177,7 +177,7 @@ main() {
     verify_image
     echo_success "Build and packaging completed successfully!"
     echo_info "Image ready: $IMAGE_NAME"
-    echo_info "Run with: docker run -d -p 8080:8080 --env-file \"$ENV_FILE\" $IMAGE_NAME"
+    echo_info "Run with: docker run -d -p 9000:9000 --env-file \"$ENV_FILE\" $IMAGE_NAME"
     COMPOSE_DIR="."
     if [ "$POM_PATH" = "backend/pom.xml" ]; then
         COMPOSE_DIR="backend"

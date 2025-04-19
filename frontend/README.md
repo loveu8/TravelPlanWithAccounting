@@ -34,3 +34,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Dokcer 啟動
+### Windwos 10/11 使用者 要開啟
+
+1. Docker Desktop Settings -> Resources- >WSL integration
+   Enable integration with additional distros
+
+2. 先到frontend的專案目錄下
+
+3. 透過前端的Dockerfile構建image，
+$ docker build -t travelplan-frontend .
+
+4. 用image起container
+$ docker run -p 3000:3000 travelplan-frontend

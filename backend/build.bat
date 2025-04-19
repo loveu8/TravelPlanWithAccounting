@@ -99,7 +99,7 @@ if "%POM_PATH%" == "backend\pom.xml" (
 
 echo [INFO] Environment file location: %ENV_FILE%
 echo [SUCCESS] Build process completed!
-echo [INFO] Run command: docker run -d -p 8080:8080 --env-file "%ENV_FILE%" %IMAGE_NAME%
+echo [INFO] Run command: docker run -d -p 9000:9000 --env-file "%ENV_FILE%" %IMAGE_NAME%
 
 if "%POM_PATH%" == "backend\pom.xml" (
     echo [INFO] Or use: cd backend ^&^& docker-compose up -d
