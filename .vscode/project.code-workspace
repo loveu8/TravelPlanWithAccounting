@@ -1,0 +1,29 @@
+{
+  "folders": [
+    {
+      "name": "ROOT",
+      "path": "../"
+    },
+    {
+      "name": "backend",
+      "path": "../backend"
+    },
+    {
+      "name": "frontend",
+      "path": "../frontend"
+    },
+  ],
+  "settings": {
+    "files.exclude": {
+      "node_modules/": true,
+    },
+    "jest.autoEnable": false,
+    "jest.disabledWorkspaceFolders": ["ROOT", "backend"]
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "orta.vscode-jest",
+    ],
+  }
+}
