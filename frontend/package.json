@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prepare": "cd .. && husky frontend/.husky",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
@@ -22,6 +23,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.1",
+    "prettier": "3.5.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

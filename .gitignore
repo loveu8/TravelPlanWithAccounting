@@ -1,6 +1,3 @@
 backend/.gitattributes
 backend/.mvn/wrapper/maven-wrapper.properties
 .backendEnv
-
-### VS Code ###
-**.*vscode/
