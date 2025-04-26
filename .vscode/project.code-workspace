@@ -17,13 +17,6 @@
     "files.exclude": {
       "node_modules/": true,
     },
-    "jest.autoEnable": false,
     "jest.disabledWorkspaceFolders": ["ROOT", "backend"]
-  },
-  "extensions": {
-    "recommendations": [
-      "dbaeumer.vscode-eslint",
-      "orta.vscode-jest",
-    ],
   }
 }
