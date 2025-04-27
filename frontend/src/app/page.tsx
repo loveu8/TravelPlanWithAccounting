@@ -1,11 +1,15 @@
-import { Button } from "@radix-ui/themes";
+import Button from "@/app/components/button";
 
 import Image from "next/image";
 
 export default function Home() {
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <Button>Bookmark</Button>
+      <div className="space-x-4">
+        <Button text="主按鈕" />
+        <Button text="disable按鈕" isDisabled={true} />
+        <Button text="次按鈕" isMain={false} />
+      </div>
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <Image
           className="dark:invert"
