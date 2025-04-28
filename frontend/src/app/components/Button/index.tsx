@@ -1,18 +1,8 @@
 "use client";
 
 import React from "react";
-import {
-  Button as RadixButton,
-  ButtonProps,
-} from "@radix-ui/themes/components/button";
-
-interface IButtonProps extends ButtonProps {
-  text: string; //按鈕文字
-  isMain?: boolean; //是否為主要按鈕
-  icon?: React.ReactNode; //按鈕圖示
-  isDisabled?: boolean; //是否禁用按鈕
-  handleClick?: () => void; //按鈕點擊事件
-}
+import { Button as RadixButton } from "@radix-ui/themes/components/button";
+import IButtonProps from "./button.types";
 
 export default function Button({
   text,
