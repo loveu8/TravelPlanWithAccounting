@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Theme } from "@radix-ui/themes";
 
 // 樣式引入
-import "@radix-ui/themes/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
