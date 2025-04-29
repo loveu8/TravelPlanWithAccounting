@@ -111,4 +111,23 @@ public class RestResponseUtils {
       MessageCode messageCode, Serializable[] args) {
     return new RestResponse<>(new ApiException(messageCode, args));
   }
+
+  /**
+   * 由 {@link MessageCode} 及原始例外建立錯誤回應。<br>
+   * Builds an error response from {@link MessageCode} with original exception.
+   *
+   * @param messageCode 錯誤代碼 / Error message code
+   * @param args 替換訊息模板的參數 / Arguments for message formatting
+   * @param originalException 原始例外 / Original exception
+   * @return 標準化錯誤回應 / Standard error response
+   */
+  public static RestResponse<Serializable, Serializable> error(
+      MessageCode messageCode, Serializable[] args, Exception originalException) {
+    return new RestResponse<>(
+        ApiException.builder()
+            .messageCode(messageCode)
+            .args(args)
+            .originalException(originalException)
+            .build());
+  }
 }

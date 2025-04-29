@@ -47,6 +47,7 @@ public class RestResponse<D extends Serializable, M extends Serializable> implem
             .code(exception.getMessageCode().getCode())
             .message(exception.getMessageCode().getMessage(exception.getArgs()))
             .timestamp(Instant.now())
+            .originalException(exception)
             .build();
   }
 
@@ -61,5 +62,6 @@ public class RestResponse<D extends Serializable, M extends Serializable> implem
     private String code;
     private String message;
     private Instant timestamp;
+    private Exception originalException;
   }
 }
