@@ -24,7 +24,7 @@ import org.hibernate.annotations.DynamicUpdate;
 public class Member extends BaseEntity {
 
   @Column(name = "status")
-  private Integer status;
+  private Short status;
 
   @Column(name = "given_name")
   private String givenName;

@@ -16,7 +16,6 @@ import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -26,7 +25,6 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-@Slf4j
 @Data
 @Valid
 @SuperBuilder
@@ -44,10 +42,11 @@ public abstract class BaseEntity {
 
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   @CreatedBy
+  @JdbcTypeCode(SqlTypes.UUID)
   @Schema(description = "輸入者", example = "a01")
   @Size(min = 1, max = 10)
   @Column(name = "created_by", updatable = false)
-  private String createdBy;
+  private UUID createdBy;
 
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   @CreatedDate
@@ -60,10 +59,11 @@ public abstract class BaseEntity {
 
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   @LastModifiedBy
+  @JdbcTypeCode(SqlTypes.UUID)
   @Schema(description = "修改者", example = "a01")
   @Size(min = 1, max = 10)
   @Column(name = "updated_by")
-  private String updatedBy;
+  private UUID updatedBy;
 
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   @LastModifiedDate
