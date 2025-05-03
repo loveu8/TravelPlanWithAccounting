@@ -1,0 +1,5 @@
+# Default owner
+# / is the root of the repository
+
+# Code owner for the applications
+/frontend/   @lanamaysu @shuyi041 @hangineer
