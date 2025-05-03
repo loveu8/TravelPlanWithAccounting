@@ -1,15 +1,63 @@
+"use client";
+import { useState } from "react";
 import Button from "@/app/components/Button";
-
+import Badge from "@/app/components/Badge";
+import Dialog from "@/app/components/Dialog";
+import { AvatarIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 
 export default function Home() {
+  const handleRemoveClick = (id: string) => {
+    console.log("Remove badge with id:", id);
+  };
+
+  const [open, setOpen] = useState(false);
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <div className="space-x-4">
-        <Button text="主按鈕" />
-        <Button text="disable按鈕" isDisabled={true} />
-        <Button text="次按鈕" isMain={false} />
+    <div className="grid grid-rows-[auto_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <div className="space-y-4 w-full">
+        <div className="space-x-4">
+          <Button text="主按鈕" />
+          <Button text="disable按鈕" isDisabled={true} />
+          <Button text="次按鈕" isMain={false} />
+        </div>
+        <div className="space-x-4">
+          <Badge text="文化活動" />
+          <Badge text="badge" bgColor="blue" />
+          <Badge
+            text="badgeWithCloseIcon"
+            handleRemoveClick={() => handleRemoveClick("1")}
+          />
+          <Badge
+            text="User"
+            icon={<AvatarIcon width="20px" height="20px" />}
+            bgColor="transparent"
+          />
+        </div>
+        <Button text="Open Dialog" handleClick={() => setOpen(true)} />
+
+        <Dialog
+          title="Dialog Title"
+          isOpen={open}
+          handleToggleClick={(next) => setOpen(next)}
+          footerBtnText="確認"
+          closeButtons={{ header: true, footer: true }}
+          footerBtnJustify="between"
+          customBtn={(size) => (
+            <Button
+              text="自定義按鈕"
+              size={size}
+              isMain={false}
+              handleClick={() => {
+                console.log("自定義按鈕被點擊了");
+              }}
+            />
+          )}
+        >
+          <p>請客製化內容</p>
+          <p>請客製化內容</p>
+        </Dialog>
       </div>
+
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <Image
           className="dark:invert"
