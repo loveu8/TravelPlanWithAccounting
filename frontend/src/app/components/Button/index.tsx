@@ -10,7 +10,8 @@ export default function Button({
   isMain = true,
   icon,
   isDisabled = false,
-  handleClick = () => {},
+  handleClick,
+  ...props
 }: IButtonProps) {
   const btnColor = isMain ? "blue" : "gray";
   const btnVariant = isMain ? "solid" : "surface";
@@ -22,9 +23,9 @@ export default function Button({
       variant={btnVariant}
       className={isDisabled ? "" : "cursor-pointer"}
       disabled={isDisabled}
-      onClick={() => {
-        if (isDisabled) return;
-        handleClick();
+      onClick={(e) => {
+        if (props.onClick) props.onClick(e); // 保留 Radix 的內部邏輯
+        if (handleClick) handleClick(e); // 執行自訂邏輯
       }}
     >
       {icon && icon}
