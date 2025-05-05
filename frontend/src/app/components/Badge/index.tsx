@@ -11,10 +11,8 @@ export default function Badge({
   icon,
   handleRemoveClick,
 }: IBadgeProps) {
-  const isTransparent = bgColor === "transparent" ? true : false;
-  const badgeColor = (isTransparent ? "gray" : bgColor) as React.ComponentProps<
-    typeof RadixBadge
-  >["color"];
+  const isTransparent = bgColor === "transparent";
+  const badgeColor = isTransparent ? "gray" : bgColor;
   const badgeSize = !handleRemoveClick && !icon ? "2" : "3";
 
   return (
