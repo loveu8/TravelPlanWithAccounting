@@ -1,13 +1,8 @@
-/* @layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "@radix-ui/themes/styles.css" layer(components);
-@import "tailwindcss/utilities.css" layer(utilities); */
-
 @layer theme, base, radix-themes, components, utilities;
-@import "tailwindcss"; /* <-- import the tailwind styles (they have theme, base, components, utilities layers already assigned) */
-@import "@radix-ui/themes/styles.css" layer(radix-themes); /* <-- import the radix-themes styles */
+@import "tailwindcss";
+@import "@radix-ui/themes/styles.css" layer(radix-themes);
 
+/*改寫radix color*/
 :root,
 .light,
 .light-theme {
@@ -74,74 +69,33 @@
   --gray-track: #898e98;
 }
 
-@supports (color: color(display-p3 1 1 1)) {
-  @media (color-gamut: p3) {
-    :root,
-    .light,
-    .light-theme {
-      --blue-1: oklch(99.4% 0.0015 266.8);
-      --blue-2: oklch(98.3% 0.008 266.8);
-      --blue-3: oklch(96.1% 0.0172 266.8);
-      --blue-4: oklch(93.5% 0.0338 266.8);
-      --blue-5: oklch(90.3% 0.0512 266.8);
-      --blue-6: oklch(86.3% 0.0714 266.8);
-      --blue-7: oklch(80.7% 0.0869 266.8);
-      --blue-8: oklch(73% 0.1134 266.8);
-      --blue-9: oklch(54.3% 0.1913 266.8);
-      --blue-10: oklch(49.7% 0.1729 266.8);
-      --blue-11: oklch(51% 0.1729 266.8);
-      --blue-12: oklch(31.3% 0.0856 266.8);
+/* 將radix的顏色套用到tailwind中 */
+@theme {
+  --color-blue-1: var(--blue-1);
+  --color-blue-2: var(--blue-2);
+  --color-blue-3: var(--blue-3);
+  --color-blue-4: var(--blue-4);
+  --color-blue-5: var(--blue-5);
+  --color-blue-6: var(--blue-6);
+  --color-blue-7: var(--blue-7);
+  --color-blue-8: var(--blue-8);
+  --color-blue-9: var(--blue-9);
+  --color-blue-10: var(--blue-10);
+  --color-blue-11: var(--blue-11);
+  --color-blue-12: var(--blue-12);
 
-      --blue-a1: color(display-p3 0.0196 0.0196 0.5098 / 0.008);
-      --blue-a2: color(display-p3 0.0196 0.2667 0.8784 / 0.032);
-      --blue-a3: color(display-p3 0.0078 0.2392 0.8863 / 0.067);
-      --blue-a4: color(display-p3 0.0039 0.3059 0.9373 / 0.118);
-      --blue-a5: color(display-p3 0.0039 0.2784 0.9333 / 0.173);
-      --blue-a6: color(display-p3 0.0039 0.2471 0.9373 / 0.244);
-      --blue-a7: color(display-p3 0.0039 0.2314 0.8706 / 0.33);
-      --blue-a8: color(display-p3 0.0039 0.2039 0.8078 / 0.448);
-      --blue-a9: color(display-p3 0 0.1529 0.7725 / 0.726);
-      --blue-a10: color(display-p3 0 0.1294 0.6549 / 0.761);
-      --blue-a11: color(display-p3 0 0.1333 0.6667 / 0.746);
-      --blue-a12: color(display-p3 0 0.0588 0.251 / 0.871);
-
-      --blue-contrast: #fff;
-      --blue-surface: color(display-p3 0.9608 0.9725 1 / 0.8);
-      --blue-indicator: oklch(54.3% 0.1913 266.8);
-      --blue-track: oklch(54.3% 0.1913 266.8);
-
-      --gray-1: oklch(99.1% 0.0015 264.4);
-      --gray-2: oklch(98.2% 0.0029 264.4);
-      --gray-3: oklch(95.6% 0.0044 264.4);
-      --gray-4: oklch(93.1% 0.006 264.4);
-      --gray-5: oklch(91% 0.0075 264.4);
-      --gray-6: oklch(88.8% 0.0091 264.4);
-      --gray-7: oklch(85.3% 0.0115 264.4);
-      --gray-8: oklch(79.4% 0.0157 264.4);
-      --gray-9: oklch(64.6% 0.0161 264.4);
-      --gray-10: oklch(61% 0.0157 264.4);
-      --gray-11: oklch(50.3% 0.0136 264.4);
-      --gray-12: oklch(24.1% 0.0097 264.4);
-
-      --gray-a1: color(display-p3 0.0235 0.0235 0.349 / 0.012);
-      --gray-a2: color(display-p3 0.0235 0.1608 0.4431 / 0.028);
-      --gray-a3: color(display-p3 0.0078 0.0667 0.2549 / 0.063);
-      --gray-a4: color(display-p3 0.0118 0.0902 0.251 / 0.099);
-      --gray-a5: color(display-p3 0.0078 0.0667 0.2235 / 0.126);
-      --gray-a6: color(display-p3 0.0039 0.0549 0.1804 / 0.153);
-      --gray-a7: color(display-p3 0 0.0588 0.1961 / 0.2);
-      --gray-a8: color(display-p3 0.0039 0.0588 0.1882 / 0.279);
-      --gray-a9: color(display-p3 0.0039 0.0353 0.1137 / 0.459);
-      --gray-a10: color(display-p3 0 0.0314 0.102 / 0.502);
-      --gray-a11: color(display-p3 0 0.0196 0.0627 / 0.62);
-      --gray-a12: color(display-p3 0 0.0078 0.0275 / 0.883);
-
-      --gray-contrast: #ffffff;
-      --gray-surface: color(display-p3 1 1 1 / 80%);
-      --gray-indicator: oklch(64.6% 0.0161 264.4);
-      --gray-track: oklch(64.6% 0.0161 264.4);
-    }
-  }
+  --color-gray-1: var(--gray-1);
+  --color-gray-2: var(--gray-2);
+  --color-gray-3: var(--gray-3);
+  --color-gray-4: var(--gray-4);
+  --color-gray-5: var(--gray-5);
+  --color-gray-6: var(--gray-6);
+  --color-gray-7: var(--gray-7);
+  --color-gray-8: var(--gray-8);
+  --color-gray-9: var(--gray-9);
+  --color-gray-10: var(--gray-10);
+  --color-gray-11: var(--gray-11);
+  --color-gray-12: var(--gray-12);
 }
 
 :root {
