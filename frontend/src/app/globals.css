@@ -1,8 +1,102 @@
-@layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "@radix-ui/themes/styles.css" layer(components);
-@import "tailwindcss/utilities.css" layer(utilities);
+@layer theme, base, radix-themes, components, utilities;
+@import "tailwindcss";
+@import "@radix-ui/themes/styles.css" layer(radix-themes);
+
+/*改寫radix color*/
+:root,
+.light,
+.light-theme {
+  --blue-1: #fdfdfe;
+  --blue-2: #f7f9ff;
+  --blue-3: #edf2fe;
+  --blue-4: #dfeaff;
+  --blue-5: #d0dfff;
+  --blue-6: #bdd1ff;
+  --blue-7: #a6bff9;
+  --blue-8: #87a5ef;
+  --blue-9: #3d63dd;
+  --blue-10: #3657c3;
+  --blue-11: #395bc7;
+  --blue-12: #1d2e5c;
+
+  --blue-a1: #00008002;
+  --blue-a2: #0040ff08;
+  --blue-a3: #0047f112;
+  --blue-a4: #0058ff20;
+  --blue-a5: #0052ff2f;
+  --blue-a6: #004eff42;
+  --blue-a7: #0048ee59;
+  --blue-a8: #0040dd78;
+  --blue-a9: #0032d2c2;
+  --blue-a10: #002ab3c9;
+  --blue-a11: #002cb7c6;
+  --blue-a12: #001347e2;
+
+  --blue-contrast: #fff;
+  --blue-surface: #f5f8ffcc;
+  --blue-indicator: #3d63dd;
+  --blue-track: #3d63dd;
+
+  --gray-1: #fcfcfd;
+  --gray-2: #f8f9fb;
+  --gray-3: #eff0f3;
+  --gray-4: #e6e8ec;
+  --gray-5: #dfe1e6;
+  --gray-6: #d7dae0;
+  --gray-7: #cbcfd7;
+  --gray-8: #b7bcc6;
+  --gray-9: #898e98;
+  --gray-10: #7e838d;
+  --gray-11: #60646c;
+  --gray-12: #1d2024;
+
+  --gray-a1: #00005503;
+  --gray-a2: #00256e07;
+  --gray-a3: #00104010;
+  --gray-a4: #00153e19;
+  --gray-a5: #00103820;
+  --gray-a6: #00143a28;
+  --gray-a7: #00143b34;
+  --gray-a8: #00123648;
+  --gray-a9: #000b2176;
+  --gray-a10: #000a1e81;
+  --gray-a11: #0007149f;
+  --gray-a12: #000308e2;
+
+  --gray-contrast: #ffffff;
+  --gray-surface: #ffffffcc;
+  --gray-indicator: #898e98;
+  --gray-track: #898e98;
+}
+
+/* 將radix的顏色套用到tailwind中 */
+@theme {
+  --color-blue-1: var(--blue-1);
+  --color-blue-2: var(--blue-2);
+  --color-blue-3: var(--blue-3);
+  --color-blue-4: var(--blue-4);
+  --color-blue-5: var(--blue-5);
+  --color-blue-6: var(--blue-6);
+  --color-blue-7: var(--blue-7);
+  --color-blue-8: var(--blue-8);
+  --color-blue-9: var(--blue-9);
+  --color-blue-10: var(--blue-10);
+  --color-blue-11: var(--blue-11);
+  --color-blue-12: var(--blue-12);
+
+  --color-gray-1: var(--gray-1);
+  --color-gray-2: var(--gray-2);
+  --color-gray-3: var(--gray-3);
+  --color-gray-4: var(--gray-4);
+  --color-gray-5: var(--gray-5);
+  --color-gray-6: var(--gray-6);
+  --color-gray-7: var(--gray-7);
+  --color-gray-8: var(--gray-8);
+  --color-gray-9: var(--gray-9);
+  --color-gray-10: var(--gray-10);
+  --color-gray-11: var(--gray-11);
+  --color-gray-12: var(--gray-12);
+}
 
 :root {
   --background: #ffffff;

@@ -1,15 +1,73 @@
+"use client";
 import Button from "@/app/components/Button";
+import Badge from "@/app/components/Badge";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTrigger,
+} from "@/app/components/Dialog";
 
+import { AvatarIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 
 export default function Home() {
+  const handleRemoveClick = (id: string, num: number) => {
+    console.log("Remove badge with id:", id, num);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <div className="space-x-4">
-        <Button text="主按鈕" />
-        <Button text="disable按鈕" isDisabled={true} />
-        <Button text="次按鈕" isMain={false} />
+    <div className="grid grid-rows-[auto_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+      <div className="space-y-4 w-full">
+        <div className="space-x-4">
+          <Button text="主按鈕" />
+          <Button text="disable按鈕" isDisabled={true} />
+          <Button text="次按鈕" isMain={false} />
+        </div>
+        <div className="space-x-4">
+          <Badge text="文化活動" />
+          <Badge text="badge" bgColor="blue" />
+          <Badge
+            text="badgeWithCloseIcon"
+            handleRemoveClick={() => handleRemoveClick("1", 2)}
+          />
+          <Badge
+            text="User"
+            icon={<AvatarIcon width="20px" height="20px" />}
+            bgColor="transparent"
+          />
+        </div>
+
+        <DialogRoot>
+          <DialogTrigger>
+            <Button
+              text="test"
+              size="3"
+              onClick={(e) => {
+                console.log(e.target);
+              }}
+            />
+          </DialogTrigger>
+          <DialogContent headerWithClose={true}>
+            <DialogHeader title="Title" />
+            <DialogBody className="max-h-[100px] overflow-y-auto">
+              <div className="flex flex-col gap-4">
+                <p>這是一個對話框的內容。</p>
+                <p>這是一個對話框的內容。</p>
+                <p>這是一個對話框的內容。</p>
+                <p>這是一個對話框的內容。</p>
+                <p>這是一個對話框的內容。</p>
+              </div>
+            </DialogBody>
+            <DialogFooter withCloseBtn={true} justify="end">
+              <Button text="確認" size="2" />
+            </DialogFooter>
+          </DialogContent>
+        </DialogRoot>
       </div>
+
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <Image
           className="dark:invert"
