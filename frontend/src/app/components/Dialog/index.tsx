@@ -124,8 +124,8 @@ function DialogFooter({ withCloseBtn, justify, children }: IDialogFooterProps) {
   );
 }
 export {
-  Root as DialogRoot, //若子元件無使用Trigger，請傳遞open和onOpenChange
-  Trigger as DialogTrigger, //選用
+  Root as DialogRoot, // 若子元件無使用Trigger，請傳遞open和onOpenChange
+  Trigger as DialogTrigger, // 選用
   DialogContent,
   DialogHeader,
   DialogBody,

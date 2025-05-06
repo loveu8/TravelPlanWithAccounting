@@ -28,7 +28,7 @@ export default function Button({
         if (handleClick) handleClick(e); // 執行自訂邏輯
       }}
     >
-      {icon && icon}
+      {icon}
       {text}
     </RadixButton>
   );
