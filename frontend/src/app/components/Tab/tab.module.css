@@ -1,0 +1,7 @@
+.tabRoot {
+  --indicator-height: 2px;
+}
+
+.tabRoot [data-state="active"]::before {
+  height: var(--indicator-height);
+}
