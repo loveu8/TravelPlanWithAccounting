@@ -4,7 +4,7 @@ import type { Responsive } from "@radix-ui/themes/src/props/prop-def.js";
 export interface ITabItem {
   value: string;
   label: string;
-  content?: React.ReactNode;
+  content?: React.ReactNode | string;
 }
 
 type TabSize = "1" | "2" | "3";
