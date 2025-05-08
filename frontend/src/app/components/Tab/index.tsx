@@ -15,7 +15,6 @@ export default function Tab({
   ...props
 }: ITabProps) {
   const [activeTab, setActiveTab] = useState(defaultValue || items[0]?.value);
-
   const handleValueChange = useCallback(
     (value: string) => {
       setActiveTab(value);
@@ -30,7 +29,11 @@ export default function Tab({
       className={styles.tabRoot}
       onValueChange={handleValueChange}
       style={
-        indicatorHeight && { "--indicator-height": `${indicatorHeight}px` }
+        indicatorHeight
+          ? ({
+              "--indicator-height": `${indicatorHeight}px`,
+            } as React.CSSProperties)
+          : undefined
       }
       {...props}
     >
