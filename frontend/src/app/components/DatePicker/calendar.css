@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+.rdp-day {
+  @apply rounded-sm;
+}
+.rdp-day:hover {
+  @apply bg-blue-500 text-white;
+}
+.rdp-day_button {
+  @apply text-center rounded-md;
+}
