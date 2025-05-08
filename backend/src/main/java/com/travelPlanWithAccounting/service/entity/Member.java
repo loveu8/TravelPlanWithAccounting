@@ -1,16 +1,22 @@
 package com.travelPlanWithAccounting.service.entity;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import org.hibernate.annotations.DynamicUpdate;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.DynamicUpdate;
+import lombok.ToString;
 
 @Entity
 @Valid
@@ -49,4 +55,32 @@ public class Member extends BaseEntity {
 
   @Column(name = "lang_tag")
   private String langTag;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ToString.Exclude
+  private List<MemberLog> logs;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ToString.Exclude
+  private List<MemberSubscribe> memberSubscribes;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ToString.Exclude
+  private List<AuthInfo> authInfos;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ToString.Exclude
+  private List<TravelMain> travelMains;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ToString.Exclude
+  private List<TravelPermissions> travelPermissions;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ToString.Exclude
+  private List<FavoriteInfo> favoriteInfos;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  @ToString.Exclude
+  private List<TravelFav> travelFavs;
 }
