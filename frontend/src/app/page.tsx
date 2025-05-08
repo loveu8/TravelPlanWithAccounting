@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/app/components/Dialog";
+import TextField, { TextFieldSlot } from "@/app/components/TextField";
 
 import { AvatarIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
@@ -88,6 +89,26 @@ export default function Home() {
           color="yellow"
           indicatorHeight={3}
         />
+
+        <div className="space-x-4">
+          <TextField size="3" placeholder="請輸入..." label="輸入欄位" disabled>
+            <TextFieldSlot side="right">
+              <AvatarIcon />
+            </TextFieldSlot>
+          </TextField>
+        </div>
+        <div className="space-x-4">
+          <form onSubmit={(e) => e.preventDefault()}>
+            <TextField
+              size="2"
+              placeholder="電話號碼"
+              defaultValue="0900000000"
+              pattern="[0-9]{10}"
+            >
+              <TextFieldSlot side="left">輸入</TextFieldSlot>
+            </TextField>
+          </form>
+        </div>
       </div>
 
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
