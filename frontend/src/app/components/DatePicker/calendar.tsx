@@ -6,7 +6,7 @@ import { cn } from "@/app/lib/utils";
 import { LOCALE_MAP } from "./consts";
 import type { CalendarProps } from "./date-picker.types";
 import "react-day-picker/style.css";
-import "./calendar.css";
+import style from "./calendar.module.css";
 
 function Calendar({
   className,
@@ -21,9 +21,9 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{
-        root: "rdp-root size-fit",
-        selected: "bg-blue-100 text-blue-900 rounded-sm",
-        // day: "hover:bg-blue-500 hover:text-white rounded-sm",
+        day: cn("rdp-day", style.day),
+        day_button: cn("rdp-day_button", style.button),
+        selected: style.selected,
         ...classNames,
       }}
       components={{
