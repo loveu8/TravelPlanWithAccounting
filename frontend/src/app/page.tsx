@@ -12,6 +12,20 @@ import {
 
 import { AvatarIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
+import Tab from "@/app/components/Tab";
+
+const items = [
+  {
+    value: "tab1",
+    label: "標籤 1",
+    content: <div>標籤 1 的内容</div>,
+  },
+  {
+    value: "tab2",
+    label: "標籤 2",
+    content: <div>標籤 2 的内容</div>,
+  },
+];
 
 export default function Home() {
   const handleRemoveClick = (id: string, num: number) => {
@@ -66,6 +80,14 @@ export default function Home() {
             </DialogFooter>
           </DialogContent>
         </DialogRoot>
+
+        <Tab
+          items={items}
+          defaultValue="tab1"
+          onValueChange={(value) => console.log("tab onValueChange", value)}
+          color="yellow"
+          indicatorHeight={3}
+        />
       </div>
 
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
