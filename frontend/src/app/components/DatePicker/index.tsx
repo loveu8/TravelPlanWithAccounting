@@ -8,44 +8,78 @@ import { FORMAT_TOKEN_MAP } from "./consts";
 
 import type { IDatePickerProps } from "./date-picker.types";
 
-function DatePicker({ localeType = "en-US", label, id }: IDatePickerProps) {
+function DatePicker({
+  localeType = "en-US",
+  label,
+  id,
+  name,
+  value,
+  onChange,
+  calendarOptions = {},
+}: IDatePickerProps) {
   const inputId = useId();
 
   // Hold the month in state to control the calendar when the input changes
-  const [month, setMonth] = useState(new Date());
+  const [month, setMonth] = useState(value || new Date());
 
-  // Hold the selected date in state
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  // Hold the selected date in state (uncontrolled mode)
+  const [internalSelectedDate, setInternalSelectedDate] = useState<
+    Date | undefined
+  >(undefined);
 
-  // Hold the input value in state
-  const [inputValue, setInputValue] = useState("");
+  // Hold the input value in state (uncontrolled mode)
+  const [internalInputValue, setInternalInputValue] = useState("");
 
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   const formatToken = FORMAT_TOKEN_MAP[localeType];
 
+  // Determine if the component is controlled
+  const isControlled = value !== undefined;
+
+  const selectedDate = isControlled ? value : internalSelectedDate;
+  let inputValue = internalInputValue;
+  if (isControlled) {
+    inputValue = value ? format(value, formatToken) : "";
+  }
+
   const handleDayPickerSelect = (date: Date | undefined) => {
     if (!date) {
-      setInputValue("");
-      setSelectedDate(undefined);
+      if (!isControlled) {
+        setInternalInputValue("");
+        setInternalSelectedDate(undefined);
+      }
+      onChange?.(undefined);
     } else {
-      setSelectedDate(date);
-      setMonth(date);
-      setInputValue(format(date, formatToken));
+      if (!isControlled) {
+        setInternalSelectedDate(date);
+        setMonth(date);
+        setInternalInputValue(format(date, formatToken));
+      }
+      onChange?.(date);
       setPopoverOpen(false);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value); // keep the input value in sync
+    const newValue = e.target.value;
+    if (!isControlled) {
+      setInternalInputValue(newValue); // keep the input value in sync
+    }
 
-    const parsedDate = parse(e.target.value, formatToken, new Date());
+    const parsedDate = parse(newValue, formatToken, new Date());
 
     if (isValid(parsedDate)) {
-      setSelectedDate(parsedDate);
-      setMonth(parsedDate);
+      if (!isControlled) {
+        setInternalSelectedDate(parsedDate);
+        setMonth(parsedDate);
+      }
+      onChange?.(parsedDate);
     } else {
-      setSelectedDate(undefined);
+      if (!isControlled) {
+        setInternalSelectedDate(undefined);
+      }
+      onChange?.(undefined);
     }
   };
 
@@ -56,6 +90,7 @@ function DatePicker({ localeType = "en-US", label, id }: IDatePickerProps) {
           label={label}
           id={id || inputId}
           type="text"
+          name={name}
           value={inputValue}
           placeholder={formatToken}
           onChange={handleInputChange}
@@ -75,6 +110,7 @@ function DatePicker({ localeType = "en-US", label, id }: IDatePickerProps) {
           selected={selectedDate}
           onSelect={handleDayPickerSelect}
           localeType={localeType}
+          {...calendarOptions}
         />
       </Popover.Content>
     </Popover.Root>
