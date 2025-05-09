@@ -20,6 +20,8 @@ function DatePicker({ localeType = "en-US", label, id }: IDatePickerProps) {
   // Hold the input value in state
   const [inputValue, setInputValue] = useState("");
 
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
   const formatToken = FORMAT_TOKEN_MAP[localeType];
 
   const handleDayPickerSelect = (date: Date | undefined) => {
@@ -30,6 +32,7 @@ function DatePicker({ localeType = "en-US", label, id }: IDatePickerProps) {
       setSelectedDate(date);
       setMonth(date);
       setInputValue(format(date, formatToken));
+      setPopoverOpen(false);
     }
   };
 
@@ -47,7 +50,7 @@ function DatePicker({ localeType = "en-US", label, id }: IDatePickerProps) {
   };
 
   return (
-    <Popover.Root>
+    <Popover.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
       <Popover.Trigger>
         <TextField
           label={label}
@@ -58,7 +61,7 @@ function DatePicker({ localeType = "en-US", label, id }: IDatePickerProps) {
           onChange={handleInputChange}
           className="relative"
         >
-          <Popover.Anchor className="absolute left-0 bottom-0" />
+          <Popover.Anchor className="absolute left-0 bottom-0 h-[100%]" />
           <TextFieldSlot side="left">
             <CalendarIcon />
           </TextFieldSlot>
