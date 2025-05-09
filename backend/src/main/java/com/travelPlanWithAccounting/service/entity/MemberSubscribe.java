@@ -34,11 +34,11 @@ public class MemberSubscribe extends BaseEntity {
     private Member member;
 
     @Schema(description = "開始日期")
-    @Column(name = "start_dt", columnDefinition = "timestamp with time zone not null")
-    private Instant startDt;
+    @Column(name = "start_date", columnDefinition = "timestamp with time zone not null")
+    private Instant startDate;
 
     @Schema(description = "結束日期")
-    @Column(name = "end_dt", columnDefinition = "timestamp with time zone not null")
-    private Instant endDt;
+    @Column(name = "end_date", columnDefinition = "timestamp with time zone not null")
+    private Instant endDate;
 
 }
