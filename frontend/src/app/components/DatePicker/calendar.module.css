@@ -1,0 +1,17 @@
+@reference "tailwindcss";
+
+.day {
+  @apply rounded-sm;
+}
+
+.day:hover {
+  @apply bg-blue-500 text-white;
+}
+
+.button {
+  @apply text-center rounded-md;
+}
+
+.selected {
+  @apply bg-blue-100 text-blue-900 rounded-sm;
+}
