@@ -52,8 +52,8 @@ public class LocationGroupMetadata {
   private String description;
 
   /* Audit */
-  private String createdBy;
+  private UUID createdBy;
   @CreationTimestamp private Date createdAt;
-  private String updatedBy;
+  private UUID updatedBy;
   @UpdateTimestamp private Date updatedAt;
 }
