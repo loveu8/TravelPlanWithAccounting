@@ -4,29 +4,21 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.NaturalId;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.geo.Point;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
     name = "location",
-    uniqueConstraints = @UniqueConstraint(name = "uq_location_code", columnNames = "code"))
-public class Location {
-
-  /* ---------- 基本欄位 ---------- */
-  @Id
-  @GeneratedValue(generator = "UUID")
-  @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-  @EqualsAndHashCode.Include
-  @Column(updatable = false, nullable = false)
-  private UUID id;
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "un_location",
+            columnNames = {"parent_id", "code", "level"}))
+public class Location extends BaseEntity {
 
   @NaturalId
   @Column(nullable = false, length = 32)
@@ -50,21 +42,15 @@ public class Location {
   private String isoType;
 
   /* ---------- 地理資訊 ---------- */
-  @Column(name = "lat", precision = 10, scale = 6)
+  @Column(name = "lat", precision = 10, scale = 7)
   private BigDecimal lat;
 
-  @Column(name = "lon", precision = 10, scale = 6)
+  @Column(name = "lon", precision = 10, scale = 7)
   private BigDecimal lon;
 
   // 若使用 PostGIS，可保留下列欄位
   @Column(columnDefinition = "GEOGRAPHY(Point,4326)")
   private Point geom;
-
-  /* ---------- Audit ---------- */
-  private UUID createdBy;
-  @CreationTimestamp private Date createdAt;
-  private UUID updatedBy;
-  @UpdateTimestamp private Date updatedAt;
 
   /* ---------- 關聯集合 ---------- */
   @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)

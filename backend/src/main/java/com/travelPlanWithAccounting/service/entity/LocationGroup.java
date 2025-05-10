@@ -4,41 +4,30 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.UpdateTimestamp;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
     name = "location_groups",
-    uniqueConstraints = @UniqueConstraint(name = "uq_group_code", columnNames = "code"))
-public class LocationGroup {
-
-  @Id
-  @GeneratedValue(generator = "UUID")
-  @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-  @EqualsAndHashCode.Include
-  @Column(updatable = false, nullable = false)
-  private UUID id;
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "un_location_groups",
+            columnNames = {"parent_id", "code"}))
+public class LocationGroup extends BaseEntity {
 
   @Column(nullable = false, length = 32)
   private String code;
@@ -53,12 +42,6 @@ public class LocationGroup {
 
   @Column(name = "order_index")
   private Short orderIndex;
-
-  /* Audit */
-  private UUID createdBy;
-  @CreationTimestamp private Date createdAt;
-  private UUID updatedBy;
-  @UpdateTimestamp private Date updatedAt;
 
   /* 關聯 */
   @OneToMany(mappedBy = "locationGroup", orphanRemoval = true)
