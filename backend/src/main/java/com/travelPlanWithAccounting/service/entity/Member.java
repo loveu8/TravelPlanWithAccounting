@@ -53,8 +53,8 @@ public class Member extends BaseEntity {
   @Column(name = "mobile")
   private String mobile;
 
-  @Column(name = "lang_tag")
-  private String langTag;
+  @Column(name = "lang_type")
+  private String langType;
 
   @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
   @ToString.Exclude

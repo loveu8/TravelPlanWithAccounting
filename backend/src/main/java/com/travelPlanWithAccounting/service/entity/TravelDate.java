@@ -39,7 +39,7 @@ public class TravelDate extends BaseEntity {
     @Column(name = "travel_date")
     private LocalDate travelDate;
 
-    @OneToMany(mappedBy = "travel_date", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "travelDate", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<TravelDetail> travelDetails;
 

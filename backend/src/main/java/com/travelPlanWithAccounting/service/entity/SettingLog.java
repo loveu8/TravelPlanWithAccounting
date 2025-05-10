@@ -4,6 +4,9 @@ import org.hibernate.annotations.DynamicUpdate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -40,4 +43,8 @@ public class SettingLog extends BaseEntity {
 
     @Column(name = "func", length = 1)
     private String func;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "setting_id", nullable = false)
+    private Setting setting;
 }

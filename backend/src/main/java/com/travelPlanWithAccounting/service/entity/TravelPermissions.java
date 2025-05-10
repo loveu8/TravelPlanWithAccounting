@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
 public class TravelPermissions extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "travel_main_id", nullable = false)
+    @JoinColumn(name = "travel_id", nullable = false)
     private TravelMain travelMain;
 
     @ManyToOne(fetch = FetchType.LAZY)

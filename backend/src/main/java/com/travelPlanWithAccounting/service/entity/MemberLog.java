@@ -59,8 +59,8 @@ public class MemberLog extends BaseEntity {
     @Column(name = "mobile")
     private String mobile;
 
-    @Column(name = "lang_tag")
-    private String langTag;
+    @Column(name = "lang_type")
+    private String langType;
 
     @Column(name = "func", length = 1)
     private String func;
