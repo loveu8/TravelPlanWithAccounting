@@ -21,13 +21,13 @@ public class SearchController {
 
   @Autowired private SearchService searchService;
 
-  @PostMapping("/regions")
-  public List<Region> searchRegions(@RequestBody SearchRequest request) {
-    return searchService.searchRegions(request.getCountryCode(), request.getLangType());
-  }
-
   @GetMapping("/countries/{langType}")
   public List<Country> searchCountries(@PathVariable String langType) {
     return searchService.searchCountries(langType);
+  }
+
+  @PostMapping("/regions")
+  public List<Region> searchRegions(@RequestBody SearchRequest request) {
+    return searchService.searchRegions(request.getCountryCode(), request.getLangType());
   }
 }
