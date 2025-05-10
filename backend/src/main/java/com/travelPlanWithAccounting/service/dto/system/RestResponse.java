@@ -1,5 +1,6 @@
 package com.travelPlanWithAccounting.service.dto.system;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
 import java.time.Instant;
@@ -62,6 +63,7 @@ public class RestResponse<D extends Serializable, M extends Serializable> implem
     private String code;
     private String message;
     private Instant timestamp;
-    private Exception originalException;
+
+    @JsonIgnore private Exception originalException;
   }
 }
