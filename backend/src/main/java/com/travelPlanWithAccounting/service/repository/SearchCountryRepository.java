@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SearchRepository extends JpaRepository<LocationGroup, UUID> {
+public interface SearchCountryRepository extends JpaRepository<LocationGroup, UUID> {
 
   @Query(
       "SELECT g, m.textContent AS regionName, lgm, loc, lm.textContent AS cityName FROM"
