@@ -10,12 +10,37 @@ export interface ITabItem {
 
 type TabSize = "1" | "2";
 
-export default interface ITabProps
+/*
+  tabs have two different UI:
+  underline: https://www.radix-ui.com/themes/docs/components/tabs
+  pill: https://ui.shadcn.com/docs/components/tabs
+*/
+
+/**
+ * 共用 props
+ * @property {ITabItem[]} items         - 標籤列表
+ * @property {Responsive<TabSize>} size - 標籤大小
+ * @property {string} defaultValue      - 預設 active 選項
+ * @property {string} backgroundColor   - 標籤背景顏色
+ * @property {Function} onValueChange   - active 項目變更事件
+ */
+interface ICommonProps
   extends Omit<React.ComponentProps<typeof Tabs.Root>, "children"> {
-  items: ITabItem[]; // 標籤列表
-  defaultValue?: string; // 預設選項
-  onValueChange?: (value: string) => void; // 項目變更事件
-  color?: keyof typeof RadixColorName; // active 底線顏色
-  indicatorHeight?: number; // active 底線高度
-  size?: Responsive<TabSize>; // 標籤大小
+  items: ITabItem[];
+  size?: Responsive<TabSize>;
+  defaultValue?: string;
+  backgroundColor?: string;
+  onValueChange?: (value: string) => void;
 }
+
+/**
+ * 底線樣式 props
+ * @property {keyof typeof RadixColorName} underlineColor - active 底線顏色
+ * @property {number} underlineHeight                     - active 底線高度
+ */
+export interface IUnderlineTabProps extends ICommonProps {
+  underlineColor?: keyof typeof RadixColorName;
+  underlineHeight?: number;
+}
+
+export type IPillTabProps = Omit<ICommonProps, "size">;
