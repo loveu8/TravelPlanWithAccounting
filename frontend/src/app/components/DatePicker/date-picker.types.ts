@@ -24,7 +24,8 @@ interface IDatePickerBaseProps {
    */
   localeType?: SupportLocaleType;
   /**
-   * 覆寫日曆元件屬性 (不包含 mode 因為還沒想好 type 怎麼支援)
+   * 覆寫日曆元件屬性
+   * @todo 這裡 exclude mode 因為目前沒有支援多型
    */
   calendarOptions?: Omit<DayPickerProps, "mode">;
 }
