@@ -2,36 +2,29 @@
 
 import i18next from "./i18next";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-const runsOnServerSide = typeof window === "undefined";
-
+/**
+ * React hook for client-side i18n translation.
+ * - 自動根據 /[lng] 路徑切換語言
+ * - 回傳 useTranslation 的 t function
+ * @param ns - namespace 名稱或陣列（如 "common"）
+ * @param options - 可選，keyPrefix 可指定 key 前綴
+ * @returns useTranslation 回傳值
+ */
 export function useT(ns: string | string[], options?: { keyPrefix?: string }) {
-  const lng = useParams()?.lng;
+  const params = useParams();
+  const lng = typeof params?.lng === "string" ? params.lng : undefined;
 
-  if (typeof lng !== "string") {
+  if (!lng) {
     throw new Error("useT is only available inside /app/[lng]");
   }
 
-  const [activeLng, setActiveLng] = useState(() => i18next.resolvedLanguage);
-
+  // 切換語言（只在 client 執行）
   useEffect(() => {
-    if (runsOnServerSide) {
-      // 在伺服器端執行語言切換
-      if (i18next.resolvedLanguage !== lng) {
-        i18next.changeLanguage(lng);
-      }
-    } else {
-      // 在客戶端執行語言切換
-      if (activeLng !== i18next.resolvedLanguage) {
-        setActiveLng(i18next.resolvedLanguage);
-      }
-    }
-  }, [lng, activeLng]);
-
-  useEffect(() => {
-    if (!runsOnServerSide && lng && i18next.resolvedLanguage !== lng) {
+    console.log("client i18next changeLanguage", lng);
+    if (i18next.resolvedLanguage !== lng) {
       i18next.changeLanguage(lng);
     }
   }, [lng]);
