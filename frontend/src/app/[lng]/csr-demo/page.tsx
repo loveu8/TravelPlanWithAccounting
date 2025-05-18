@@ -31,7 +31,6 @@ export default function Page() {
           <Button text={t("csr-demo.to-ssr-page")} variant="soft" />
         </Link>
       </main>
-      {/* <Footer path="/client-page" /> */}
     </>
   );
 }
