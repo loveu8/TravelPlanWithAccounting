@@ -17,6 +17,12 @@ const eslintConfig = [
   sonarjs.configs.recommended,
   eslintConfigPrettier,
   eslintPluginPrettierRecommended,
+  {
+    // 覆寫過於嚴格的 sonarjs 規則
+    rules: {
+      "sonarjs/todo-tag": "warn",
+    },
+  },
 ];
 
 export default eslintConfig;
