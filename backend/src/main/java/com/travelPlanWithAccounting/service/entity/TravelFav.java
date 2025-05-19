@@ -30,6 +30,6 @@ public class TravelFav extends BaseEntity {
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "travel_main_id", nullable = false)
+    @JoinColumn(name = "travel_id", nullable = false)
     private TravelMain travelMain;
 }

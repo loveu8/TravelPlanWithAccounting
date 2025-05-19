@@ -59,15 +59,15 @@ public class TravelMain extends BaseEntity {
     @Column(name = "visit_place", columnDefinition = "jsonb")
     private JsonNode visitPlace;
 
-    @OneToMany(mappedBy = "travel_main", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "travelMain", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<TravelPermissions> travelPermissions;
 
-    @OneToMany(mappedBy = "travel_main", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "travelMain", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<TravelDate> travelDates;
 
-    @OneToMany(mappedBy = "travel_main", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "travelMain", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<TravelDetail> travelDetails;
 

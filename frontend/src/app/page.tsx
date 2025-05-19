@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/app/components/Dialog";
 import TextField, { TextFieldSlot } from "@/app/components/TextField";
+import DatePicker from "@/app/components/DatePicker";
 
 import { AvatarIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
@@ -118,6 +119,7 @@ export default function Home() {
           </TextField>
         </div>
         <div className="space-x-4">
+          <DatePicker localeType="zh-TW" />
           <form onSubmit={(e) => e.preventDefault()}>
             <TextField
               size="2"
