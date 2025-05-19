@@ -1,8 +1,10 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { IPillTabProps } from "../tab.types";
-import { useCallback, useState } from "react";
+import { cn } from "@/app/lib/utils";
+import styles from "../tab.module.css";
 
 export default function PillTab({
   items,
@@ -32,11 +34,17 @@ export default function PillTab({
           <Tabs.Trigger
             key={item.value}
             value={item.value}
-            className={`
-              cursor-pointer p-[6px]
-              ${activeTab === item.value ? "bg-white shadow" : "bg-transparent"}
-              ${idx !== items.length - 1 ? "border-r border-gray-100" : ""}
-            `}
+            className={cn(
+              "cursor-pointer p-[6px]",
+              activeTab === item.value
+                ? styles["active-pill"]
+                : cn(
+                    "bg-transparent",
+                    idx < items.length - 1 &&
+                      activeTab !== items[idx + 1].value &&
+                      "border-r border-gray-100",
+                  ),
+            )}
           >
             {item.label}
           </Tabs.Trigger>

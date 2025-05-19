@@ -1,8 +1,8 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { Tabs } from "@radix-ui/themes";
 import { IUnderlineTabProps } from "../tab.types";
-import { useCallback, useState } from "react";
 import styles from "../tab.module.css";
 
 export default function UnderlineTab({
@@ -15,6 +15,7 @@ export default function UnderlineTab({
   ...props
 }: IUnderlineTabProps) {
   const [activeTab, setActiveTab] = useState(defaultValue || items[0]?.value);
+
   const handleValueChange = useCallback(
     (value: string) => {
       setActiveTab(value);
@@ -23,18 +24,19 @@ export default function UnderlineTab({
     [onValueChange],
   );
 
+  const getCustomStyles = () => {
+    if (!underlineHeight) return undefined;
+    return {
+      "--underline-height": `${underlineHeight}px`,
+    } as React.CSSProperties;
+  };
+
   return (
     <Tabs.Root
       value={activeTab}
       className={styles.tabRoot}
       onValueChange={handleValueChange}
-      style={
-        underlineHeight
-          ? ({
-              "--underline-height": `${underlineHeight}px`,
-            } as React.CSSProperties)
-          : undefined
-      }
+      style={getCustomStyles()}
       {...props}
     >
       <Tabs.List color={underlineColor} size={size}>
