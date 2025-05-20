@@ -1,0 +1,30 @@
+{
+  "path": "cz-conventional-changelog",
+  "disableEmoji": true,
+  "types": {
+    "feat": {
+      "description": "A new feature"
+    },
+    "fix": {
+      "description": "A bug fix"
+    },
+    "build": {
+      "description": "Build process or auxiliary tool changes"
+    },
+    "chore": {
+      "description": "Project setup, config, or housekeeping tasks"
+    },
+    "refactor": {
+      "description": "A code change that neither fixes a bug or adds a feature"
+    },
+    "release": {
+      "description": "Create a release commit"
+    },
+    "test": {
+      "description": "Adding missing tests"
+    },
+    "perf": {
+      "description": "A code change that improves performance"
+    }
+  }
+}
