@@ -29,7 +29,7 @@ const tabItems = [
   },
   {
     value: "tab3",
-    label: "我的收藏",
+    label: "收藏",
     content: "收藏的内容",
   },
 ];

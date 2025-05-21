@@ -34,17 +34,17 @@ export default function UnderlineTab({
   return (
     <Tabs.Root
       value={activeTab}
-      className={styles.tabRoot}
+      className={`${styles.tabRoot} w-full`}
       onValueChange={handleValueChange}
       style={getCustomStyles()}
       {...props}
     >
-      <Tabs.List color={underlineColor} size={size}>
+      <Tabs.List className="flex w-full" color={underlineColor} size={size}>
         {items.map((item) => (
           <Tabs.Trigger
             key={item.value}
             value={item.value}
-            className="cursor-pointer"
+            className="cursor-pointer flex-1 text-center min-w-[100px]"
           >
             {item.label}
           </Tabs.Trigger>

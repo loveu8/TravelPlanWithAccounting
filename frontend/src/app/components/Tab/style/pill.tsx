@@ -25,24 +25,24 @@ export default function PillTab({
   return (
     <Tabs.Root
       value={activeTab}
-      className="h-[32px]"
+      className="w-full"
       onValueChange={handleValueChange}
       {...props}
     >
-      <Tabs.List className={`${backgroundColor} rounded-[4px] w-full`}>
+      <Tabs.List className={`${backgroundColor} rounded-[4px] flex`}>
         {items.map((item, idx) => (
           <Tabs.Trigger
             key={item.value}
             value={item.value}
             className={cn(
-              "cursor-pointer p-[6px]",
+              "cursor-pointer p-[6px] text-center flex-1 min-w-[100px]",
               activeTab === item.value
                 ? styles["active-pill"]
                 : cn(
                     "bg-transparent",
                     idx < items.length - 1 &&
                       activeTab !== items[idx + 1].value &&
-                      "border-r border-gray-100",
+                      "border-r border-gray-200",
                   ),
             )}
           >
