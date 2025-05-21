@@ -6,4 +6,5 @@ import lombok.Data;
 public class LocationName {
   private String code;
   private String name;
+  private String langType;
 }

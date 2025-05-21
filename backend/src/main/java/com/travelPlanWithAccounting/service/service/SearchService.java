@@ -90,11 +90,13 @@ public class SearchService {
 
     for (Object[] row : results) {
       Location location = (Location) row[0];
-      String countryName = (String) row[1];
+      String name = (String) row[1];
+      String langType = (String) row[2];
 
       LocationName locationName = new LocationName();
       locationName.setCode(location.getCode());
-      locationName.setName(countryName != null ? countryName : location.getCode());
+      locationName.setName(name != null ? name : location.getCode());
+      locationName.setLangType(langType);
       locationNames.add(locationName);
     }
 

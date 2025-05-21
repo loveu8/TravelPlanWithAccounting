@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 public interface SearchAllLocationRepository extends JpaRepository<Location, UUID> {
 
   @Query(
-      "SELECT l, lm.textContent AS countryName "
+      "SELECT l, lm.textContent AS countryName, lm.langType as langType "
           + "FROM Location l "
           + "LEFT JOIN l.metadata lm ON lm.locationMetaType = '001' AND l.id = lm.location.id "
           + "WHERE l.level <= 2 "
