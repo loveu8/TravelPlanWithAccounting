@@ -19,7 +19,9 @@ acceptLanguage.languages(languages);
  * @param {NextRequest} req - Next.js 請求物件
  * @returns {NextResponse} - 處理後的回應
  */
-export function middleware(req: NextRequest): NextResponse {
+export function middleware(
+  req: NextRequest,
+): ReturnType<typeof NextResponse.next> {
   // 排除 icon 與 chrome 路徑
   if (
     req.nextUrl.pathname.includes("icon") ||

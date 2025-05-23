@@ -1,10 +1,10 @@
 {
-  "ssr-demo":{
+  "ssr-demo": {
     "title": "Demo page",
-    "h1": "Hi, here is SSR page",    
+    "h1": "Hi, here is SSR page",
     "to-csr-page": "To CSR page"
   },
-  "csr-demo":{
+  "csr-demo": {
     "h1": "Hi, here is CSR page",
     "counter": "Counter: {{count}}",
     "to-ssr-page": "To SSR page"
