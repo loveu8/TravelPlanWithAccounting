@@ -1,6 +1,0 @@
-#!/bin/sh
-# $2: The second parameter of the git hook, indicates the source of the commit message
-# If the commit message is empty, use git-cz
-if [ -z "$2" ]; then
-  exec < /dev/tty && cd frontend && npx git-cz --hook || true
-fi

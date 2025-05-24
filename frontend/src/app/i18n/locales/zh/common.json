@@ -1,0 +1,12 @@
+{
+  "ssr-demo": {
+    "title": "Demo 頁",
+    "h1": "哈囉, 這是伺服器端渲染頁",
+    "to-csr-page": "至CSR頁面"
+  },
+  "csr-demo": {
+    "h1": "哈囉, 這是客戶端渲染頁",
+    "counter": "次數: {{count}}",
+    "to-ssr-page": "至SSR頁面"
+  }
+}
