@@ -2,11 +2,13 @@ package com.travelPlanWithAccounting.service.service;
 
 import com.travelPlanWithAccounting.service.dto.search.response.City;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
+import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.LocationGroup;
 import com.travelPlanWithAccounting.service.entity.LocationGroupMapping;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
+import com.travelPlanWithAccounting.service.repository.SearchAllLocationRepository;
 import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -78,5 +80,26 @@ public class SearchService {
     }
 
     return countries;
+  }
+
+  @Autowired private SearchAllLocationRepository searchAllLocationRepository;
+
+  public List<LocationName> searchLocations() {
+    List<Object[]> results = searchAllLocationRepository.findAllLocation();
+    List<LocationName> locationNames = new ArrayList<>();
+
+    for (Object[] row : results) {
+      Location location = (Location) row[0];
+      String name = (String) row[1];
+      String langType = (String) row[2];
+
+      LocationName locationName = new LocationName();
+      locationName.setCode(location.getCode());
+      locationName.setName(name != null ? name : location.getCode());
+      locationName.setLangType(langType);
+      locationNames.add(locationName);
+    }
+
+    return locationNames;
   }
 }

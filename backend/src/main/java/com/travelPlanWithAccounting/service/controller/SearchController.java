@@ -2,6 +2,7 @@ package com.travelPlanWithAccounting.service.controller;
 
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
+import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.service.SearchService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,5 +30,10 @@ public class SearchController {
   @PostMapping("/regions")
   public List<Region> searchRegions(@RequestBody SearchRequest request) {
     return searchService.searchRegions(request.getCountryCode(), request.getLangType());
+  }
+
+  @GetMapping("/allLocations")
+  public List<LocationName> allLocations() {
+    return searchService.searchLocations();
   }
 }
