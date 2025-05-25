@@ -10,21 +10,27 @@ import {
   DialogTrigger,
 } from "@/app/components/Dialog";
 import TextField, { TextFieldSlot } from "@/app/components/TextField";
+import DatePicker from "@/app/components/DatePicker";
 
 import { AvatarIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
-import Tab from "@/app/components/Tab";
+import { UnderlineTab, PillTab } from "@/app/components/Tab";
 
-const items = [
+const tabItems = [
   {
     value: "tab1",
-    label: "標籤 1",
-    content: <div>標籤 1 的内容</div>,
+    label: "行程列表",
+    content: <div>行程列表的内容</div>,
   },
   {
     value: "tab2",
-    label: "標籤 2",
-    content: <div>標籤 2 的内容</div>,
+    label: "探索地圖",
+    content: <div>探索地圖的内容</div>,
+  },
+  {
+    value: "tab3",
+    label: "收藏",
+    content: "收藏的内容",
   },
 ];
 
@@ -82,14 +88,29 @@ export default function Home() {
           </DialogContent>
         </DialogRoot>
 
-        <Tab
-          items={items}
-          defaultValue="tab1"
-          onValueChange={(value) => console.log("tab onValueChange", value)}
-          color="yellow"
-          indicatorHeight={3}
-        />
-
+        <div className="w-full flex gap-10 mb-8">
+          <div>
+            <h3>underline</h3>
+            <UnderlineTab
+              items={tabItems}
+              underlineColor="yellow"
+              underlineHeight={3}
+              onValueChange={(value: string) =>
+                console.log("UnderlineTab onValueChange", value)
+              }
+            />
+          </div>
+          <div>
+            <h3>pill</h3>
+            <PillTab
+              items={tabItems}
+              backgroundColor="bg-red-100"
+              onValueChange={(value: string) =>
+                console.log("PillTab onValueChange", value)
+              }
+            />
+          </div>
+        </div>
         <div className="space-x-4">
           <TextField size="3" placeholder="請輸入..." label="輸入欄位" disabled>
             <TextFieldSlot side="right">
@@ -98,6 +119,7 @@ export default function Home() {
           </TextField>
         </div>
         <div className="space-x-4">
+          <DatePicker localeType="zh-TW" />
           <form onSubmit={(e) => e.preventDefault()}>
             <TextField
               size="2"
