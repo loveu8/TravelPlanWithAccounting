@@ -113,7 +113,8 @@ public class ServiceApplication {
    */
   private static void logPropertySetting(String key, String value) {
     String envValue = System.getenv(key);
-    boolean isPasswordKey = key.contains("PASSWORD");
+    boolean isPasswordKey =
+        key.contains("PASSWORD") || key.contains("SECRET") || key.contains("KEY");
     String maskedValue = isPasswordKey ? "********" : value;
 
     if (envValue != null) {
