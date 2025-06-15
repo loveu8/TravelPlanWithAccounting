@@ -1,0 +1,5 @@
+@reference "tailwindcss";
+
+.img-container {
+  @apply relative overflow-hidden rounded-lg aspect-[3/2] bg-black;
+}
