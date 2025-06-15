@@ -15,8 +15,8 @@ export default function CardBody({
       </div>
       {!!tags.length && (
         <div className="space-x-2">
-          {tags.map((tag, index) => (
-            <Badge key={index} text={tag} />
+          {tags.map((tag) => (
+            <Badge key={tag} text={tag} />
           ))}
         </div>
       )}
