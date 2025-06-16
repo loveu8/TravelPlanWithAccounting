@@ -1,0 +1,9 @@
+@reference "tailwindcss";
+
+:global(.rt-SelectIcon) {
+  color: var(--placeholder-color);
+}
+
+:global(.rt-SelectTrigger[data-placeholder]) :global(.rt-SelectTriggerInner) span {
+  color: var(--placeholder-color);
+}
