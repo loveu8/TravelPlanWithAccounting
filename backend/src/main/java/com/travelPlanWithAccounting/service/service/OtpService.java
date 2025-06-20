@@ -3,12 +3,17 @@ package com.travelPlanWithAccounting.service.service;
 import com.travelPlanWithAccounting.service.dto.otp.OtpSendResponse;
 import com.travelPlanWithAccounting.service.dto.otp.OtpStatusResponse;
 import com.travelPlanWithAccounting.service.dto.otp.OtpVerifyResponse;
+import com.travelPlanWithAccounting.service.exception.InvalidOtpException;
 import com.travelPlanWithAccounting.service.model.OtpData;
 import com.travelPlanWithAccounting.service.model.OtpPurpose;
+import com.travelPlanWithAccounting.service.model.OtpRequest;
+import com.travelPlanWithAccounting.service.model.OtpVerificationRequest;
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,12 +36,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OtpService {
   private static final int OTP_LENGTH = 6;
-  private static final int OTP_EXPIRY_MINUTES = 5;
+  private static final int OTP_EXPIRY_MINUTES = 1;
   private static final int MAX_ATTEMPTS = 3;
 
   private final OtpCacheService otpCacheService;
   private final EmailService emailService;
   private final Random random = new Random();
+
+  @Value("${otp.resend-interval-seconds:30}")
+  private int otpResendIntervalSeconds;
 
   /**
    * 產生新的 OTP 驗證碼並快取。<br>
@@ -46,9 +54,17 @@ public class OtpService {
    * @return 產生的 OTP 資料物件 (Generated OtpData)
    */
   public OtpData generateOtp(String email) {
+    OtpData existingOtp = otpCacheService.getOtpData(email);
+    LocalDateTime now = LocalDateTime.now();
+    if (existingOtp != null
+        && existingOtp.getLastSentTime() != null
+        && existingOtp.getLastSentTime().plusSeconds(otpResendIntervalSeconds).isAfter(now)) {
+      throw new InvalidOtpException.ResendTooFrequently(otpResendIntervalSeconds);
+    }
     String otpCode = generateRandomOtp();
-    LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES);
+    LocalDateTime expiryTime = now.plusMinutes(OTP_EXPIRY_MINUTES);
     OtpData otpData = new OtpData(otpCode, email, expiryTime);
+    otpData.setLastSentTime(now);
     log.info("為用戶 {} 產生OTP: {}", email, otpCode);
     sendOtpNotification(email, otpCode);
     otpCacheService.updateOtpData(email, otpData);
@@ -84,6 +100,7 @@ public class OtpService {
       otpData.setVerified(true);
       log.info("用戶 {} OTP驗證成功", email);
       otpCacheService.evictOtp(email);
+      // otpCacheService.markOtpVerified(email); // 已廢除
       return true;
     }
     log.warn("用戶 {} OTP驗證失敗，嘗試次數: {}", email, otpData.getAttemptCount());
@@ -106,12 +123,12 @@ public class OtpService {
    * 產生 OTP 並回傳發送結果 DTO。<br>
    * Generates OTP and returns send result DTO.
    *
-   * @param email 用戶電子郵件 (User email)
+   * @param request OTP 請求 DTO (OtpRequest)
    * @return 發送結果 DTO (OtpSendResponse)
    */
-  public OtpSendResponse sendOtp(String email) {
-    generateOtp(email);
-    return new OtpSendResponse(email);
+  public OtpSendResponse sendOtp(OtpRequest request) {
+    generateOtp(request.getEmail());
+    return new OtpSendResponse(request.getEmail());
   }
 
   /**
@@ -122,9 +139,18 @@ public class OtpService {
    * @param inputOtp 使用者輸入的 OTP 驗證碼 (User input OTP code)
    * @return 驗證結果 DTO (OtpVerifyResponse)
    */
-  public OtpVerifyResponse verifyOtpResponse(String email, String inputOtp) {
+  public OtpVerifyResponse verifyOtpResponse(OtpVerificationRequest request) {
+
+    String email = request.getEmail();
+    String inputOtp = request.getOtpCode();
+
     boolean isValid = verifyOtp(email, inputOtp);
-    return new OtpVerifyResponse(isValid);
+    String token = null;
+    if (isValid) {
+      token = UUID.randomUUID().toString();
+      otpCacheService.putOtpVerifiedToken(token, email);
+    }
+    return new OtpVerifyResponse(isValid, token);
   }
 
   /**
@@ -146,6 +172,31 @@ public class OtpService {
           otpData.isVerified(),
           otpData.getExpiryTime());
     }
+  }
+
+  /**
+   * 僅用於測試：產生 OTP 但不發送 email，直接回傳 OtpData。<br>
+   * For test only: generate OTP without sending email, return OtpData.<br>
+   *
+   * @param email 用戶電子郵件 (User email)
+   * @return 產生的 OTP 資料物件 (Generated OtpData)
+   */
+  public OtpData generateOtpWithoutMail(OtpRequest request) {
+    String email = request.getEmail();
+    OtpData existingOtp = otpCacheService.getOtpData(email);
+    LocalDateTime now = LocalDateTime.now();
+    if (existingOtp != null
+        && existingOtp.getLastSentTime() != null
+        && existingOtp.getLastSentTime().plusSeconds(otpResendIntervalSeconds).isAfter(now)) {
+      throw new InvalidOtpException.ResendTooFrequently(otpResendIntervalSeconds);
+    }
+    String otpCode = generateRandomOtp();
+    LocalDateTime expiryTime = now.plusMinutes(OTP_EXPIRY_MINUTES);
+    OtpData otpData = new OtpData(otpCode, email, expiryTime);
+    otpData.setLastSentTime(now);
+    log.info("[TEST] 為用戶 {} 產生OTP(不發送mail): {}", email, otpCode);
+    otpCacheService.updateOtpData(email, otpData);
+    return otpData;
   }
 
   private String generateRandomOtp() {

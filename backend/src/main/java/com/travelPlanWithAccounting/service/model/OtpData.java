@@ -8,6 +8,7 @@ public class OtpData {
   private LocalDateTime expiryTime;
   private int attemptCount;
   private boolean verified;
+  private LocalDateTime lastSentTime;
 
   public OtpData(String otpCode, String email, LocalDateTime expiryTime) {
     this.otpCode = otpCode;
@@ -15,6 +16,7 @@ public class OtpData {
     this.expiryTime = expiryTime;
     this.attemptCount = 0;
     this.verified = false;
+    this.lastSentTime = null;
   }
 
   public String getOtpCode() {
@@ -55,6 +57,14 @@ public class OtpData {
 
   public void setVerified(boolean verified) {
     this.verified = verified;
+  }
+
+  public LocalDateTime getLastSentTime() {
+    return lastSentTime;
+  }
+
+  public void setLastSentTime(LocalDateTime lastSentTime) {
+    this.lastSentTime = lastSentTime;
   }
 
   public void incrementAttemptCount() {

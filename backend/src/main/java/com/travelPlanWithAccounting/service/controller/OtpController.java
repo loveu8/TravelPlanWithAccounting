@@ -26,13 +26,13 @@ public class OtpController {
   @PostMapping("/send-otp")
   @Operation(summary = "發送 OTP 驗證碼")
   public OtpSendResponse sendOtp(@RequestBody OtpRequest request) {
-    return otpService.sendOtp(request.getEmail());
+    return otpService.sendOtp(request);
   }
 
   @PostMapping("/verify-otp")
   @Operation(summary = "驗證 OTP 驗證碼")
   public OtpVerifyResponse verifyOtp(@RequestBody OtpVerificationRequest request) {
-    return otpService.verifyOtpResponse(request.getEmail(), request.getOtpCode());
+    return otpService.verifyOtpResponse(request);
   }
 
   @GetMapping("/otp-status/{email}")

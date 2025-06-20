@@ -23,4 +23,19 @@ public class OtpCacheService {
   public void evictOtp(String email) {
     // 僅負責快取移除
   }
+
+  @CachePut(value = CacheConstants.OTP_VERIFIED_TOKEN_CACHE, key = "#token")
+  public String putOtpVerifiedToken(String token, String email) {
+    return email;
+  }
+
+  @Cacheable(value = CacheConstants.OTP_VERIFIED_TOKEN_CACHE, key = "#token")
+  public String getOtpVerifiedEmailByToken(String token) {
+    return null;
+  }
+
+  @CacheEvict(value = CacheConstants.OTP_VERIFIED_TOKEN_CACHE, key = "#token")
+  public void evictOtpVerifiedToken(String token) {
+    // 僅負責快取移除
+  }
 }

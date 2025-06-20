@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -44,7 +43,6 @@ public abstract class BaseEntity {
   @CreatedBy
   @JdbcTypeCode(SqlTypes.UUID)
   @Schema(description = "輸入者", example = "a01")
-  @Size(min = 1, max = 10)
   @Column(name = "created_by", updatable = false)
   private UUID createdBy;
 
@@ -61,7 +59,6 @@ public abstract class BaseEntity {
   @LastModifiedBy
   @JdbcTypeCode(SqlTypes.UUID)
   @Schema(description = "修改者", example = "a01")
-  @Size(min = 1, max = 10)
   @Column(name = "updated_by")
   private UUID updatedBy;
 
