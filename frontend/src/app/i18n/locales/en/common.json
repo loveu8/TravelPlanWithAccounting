@@ -8,5 +8,32 @@
     "h1": "Hi, here is CSR page",
     "counter": "Counter: {{count}}",
     "to-ssr-page": "To SSR page"
+  },
+  "validation": {
+    "required": "Please fill in {{label}}.",
+    "min-length": "At least {{min}} characters.",
+    "max-length": "At most {{max}} characters.",
+    "pattern": "{{label}} is incorrect."
+  },
+  "login": {
+    "title": "Login / Sign Up",
+    "otp": "One Time Password",
+    "placeholder": "Email",
+    "button-confirm": "Confirm",
+    "button-cancel": "Cancel",
+    "button-login": "Login",
+    "button-sign-up": "Sign Up",
+    "error-not-found": "Account not found.",
+    "error-otp-expired": "OTP expired!",
+    "sign-up": "Sign Up Account",
+    "otp-resend": "Resend OTP",
+    "valid-time": "Valid for: {{time}} seconds."
+  },
+  "account": {
+    "surname": "Surname",
+    "given-name": "Given Name",
+    "nickname": "Nickname",
+    "birthday": "Birthday",
+    "email": "Email"
   }
 }
