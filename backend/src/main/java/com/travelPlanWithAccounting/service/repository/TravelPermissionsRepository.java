@@ -5,8 +5,8 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.travelPlanWithAccounting.service.entity.TravelDetail;
+import com.travelPlanWithAccounting.service.entity.TravelPermissions;
 
 @Repository
-public interface TravelDetailRepository extends JpaRepository<TravelDetail, UUID> {
+public interface TravelPermissionsRepository extends JpaRepository<TravelPermissions, UUID> {
 }

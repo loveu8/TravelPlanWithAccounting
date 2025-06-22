@@ -1,12 +1,17 @@
 package com.travelPlanWithAccounting.service.entity;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -26,13 +31,16 @@ import lombok.NoArgsConstructor;
 @Table(name = "travel_permissions")
 public class TravelPermissions extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "travel_id", nullable = false)
-    private TravelMain travelMain;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID) // 使用 GenerationType.UUID 讓JPA自動生成UUID
+    @Column(name = "id", nullable = false, updatable = false)
+    private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    @Column(name = "travel_id", nullable = false)
+    private UUID travelId; // 不建立雙向關聯
+
+    @Column(name = "member_id", nullable = false)
+    private UUID memberId; // 不建立雙向關聯
 
     @Column(name = "email")
     private String email;
@@ -43,4 +51,17 @@ public class TravelPermissions extends BaseEntity {
     @Column(name = "permissions")
     private Boolean permissions;
 
+    @Column(name = "created_by")
+    private UUID createdBy;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

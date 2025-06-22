@@ -70,14 +70,6 @@ public class Member extends BaseEntity {
 
   @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
   @ToString.Exclude
-  private List<TravelMain> travelMains;
-
-  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-  @ToString.Exclude
-  private List<TravelPermissions> travelPermissions;
-
-  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-  @ToString.Exclude
   private List<FavoriteInfo> favoriteInfos;
 
   @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
