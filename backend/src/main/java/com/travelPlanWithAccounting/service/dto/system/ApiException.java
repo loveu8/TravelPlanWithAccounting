@@ -1,7 +1,6 @@
 package com.travelPlanWithAccounting.service.dto.system;
 
 import com.travelPlanWithAccounting.service.message.MessageCode;
-import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,22 +36,22 @@ public class ApiException extends RuntimeException {
   private final MessageCode messageCode;
 
   /**
-   * 與錯誤相關的額外資料，可為任何可序列化的物件。（可選）<br>
-   * Additional data related to the error, any serializable object. (optional)
+   * 與錯誤相關的額外資料，可為任何物件。（可選）<br>
+   * Additional data related to the error, any object. (optional)
    */
-  private final Serializable data;
+  private final transient Object data;
 
   /**
    * 輔助資訊，例如分頁、API版本、請求識別碼等。（可選）<br>
    * Meta information, such as pagination info, API version, request ID, etc. (optional)
    */
-  private final Serializable meta;
+  private final transient Object meta;
 
   /**
    * 用於替換訊息模板中參數的資料陣列。（可選）<br>
    * Array of arguments used for placeholder substitution in the message. (optional)
    */
-  private final Serializable[] args;
+  private final transient Object[] args;
 
   /**
    * 此錯誤對應的 HTTP 狀態碼。<br>
@@ -89,7 +88,7 @@ public class ApiException extends RuntimeException {
    * @param messageCode 描述錯誤內容的訊息代碼 / The message code describing the error
    * @param args 用於訊息模板參數替換的資料 / Arguments used for message formatting
    */
-  public ApiException(MessageCode messageCode, Serializable[] args) {
+  public ApiException(MessageCode messageCode, Object[] args) {
     super(messageCode.getMessage(args));
     this.messageCode = messageCode;
     this.args = args;

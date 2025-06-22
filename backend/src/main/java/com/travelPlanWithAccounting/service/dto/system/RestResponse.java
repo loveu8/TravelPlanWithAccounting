@@ -2,7 +2,6 @@ package com.travelPlanWithAccounting.service.dto.system;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.io.Serializable;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,9 +23,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RestResponse<D extends Serializable, M extends Serializable> implements Serializable {
-  private static final long serialVersionUID = 1L;
-
+public class RestResponse<D, M> {
   private D data;
   private M meta;
   private Error error;
@@ -57,9 +54,7 @@ public class RestResponse<D extends Serializable, M extends Serializable> implem
   @NoArgsConstructor
   @AllArgsConstructor
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public static class Error implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+  public static class Error {
     private String code;
     private String message;
     private Instant timestamp;

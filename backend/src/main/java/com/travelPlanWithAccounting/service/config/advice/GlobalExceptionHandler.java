@@ -4,7 +4,6 @@ import com.travelPlanWithAccounting.service.dto.system.ApiException;
 import com.travelPlanWithAccounting.service.dto.system.RestResponse;
 import com.travelPlanWithAccounting.service.message.SystemMessageCode;
 import com.travelPlanWithAccounting.service.util.RestResponseUtils;
-import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -39,11 +38,10 @@ public class GlobalExceptionHandler {
    * @return 標準化錯誤回應 / the standardized error response wrapped in {@link RestResponse}
    */
   @ExceptionHandler(ApiException.class)
-  public ResponseEntity<RestResponse<Serializable, Serializable>> handleApiException(
-      ApiException ex) {
+  public ResponseEntity<RestResponse<Object, Object>> handleApiException(ApiException ex) {
     log.error(
         "[ApiException] code={}, message={}", ex.getMessageCode().getCode(), ex.getMessage(), ex);
-    RestResponse<Serializable, Serializable> response = RestResponseUtils.error(ex);
+    RestResponse<Object, Object> response = RestResponseUtils.error(ex);
     return ResponseEntity.status(ex.getHttpStatus()).body(response);
   }
 
@@ -55,10 +53,9 @@ public class GlobalExceptionHandler {
    * @return 標準化錯誤回應 / the standardized error response wrapped in {@link RestResponse}
    */
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<RestResponse<Serializable, Serializable>> handleUnexpectedException(
-      Exception ex) {
+  public ResponseEntity<RestResponse<Object, Object>> handleUnexpectedException(Exception ex) {
     log.error("[UnexpectedException] {}", ex.getMessage(), ex);
-    RestResponse<Serializable, Serializable> response =
+    RestResponse<Object, Object> response =
         RestResponseUtils.error(SystemMessageCode.UNEXPECTED_ERROR, null, ex);
     return ResponseEntity.status(SystemMessageCode.UNEXPECTED_ERROR.getHttpStatus()).body(response);
   }
@@ -73,10 +70,10 @@ public class GlobalExceptionHandler {
    * @return 標準化錯誤回應 / the standardized error response wrapped in {@link RestResponse}
    */
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ResponseEntity<RestResponse<Serializable, Serializable>>
-      handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+  public ResponseEntity<RestResponse<Object, Object>> handleHttpMessageNotReadableException(
+      HttpMessageNotReadableException ex) {
     log.error("[HttpMessageNotReadableException] {}", ex.getMessage(), ex);
-    RestResponse<Serializable, Serializable> response =
+    RestResponse<Object, Object> response =
         RestResponseUtils.error(SystemMessageCode.REQUEST_NOT_READABLE, null, ex);
     return ResponseEntity.status(SystemMessageCode.REQUEST_NOT_READABLE.getHttpStatus())
         .body(response);
