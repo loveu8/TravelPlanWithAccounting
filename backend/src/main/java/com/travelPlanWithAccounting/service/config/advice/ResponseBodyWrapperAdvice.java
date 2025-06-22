@@ -95,6 +95,9 @@ public class ResponseBodyWrapperAdvice implements ResponseBodyAdvice<Object> {
 
     // 理論上不應該到此，如果到此表示沒有合適的處理器
     throw new IllegalStateException(
-        "No BodyWriteHandler could handle the body: " + (body != null ? body.getClass() : "null"));
+        "No BodyWriteHandler could handle the body: "
+            + (body != null ? body.getClass() : "null")
+            + ". 請確認回傳物件已實作 java.io.Serializable (Please ensure the response object implements"
+            + " java.io.Serializable).");
   }
 }
