@@ -1,6 +1,6 @@
 import React from "react";
-import type { ICardBodyProps } from "./../../card.types";
-import Badge from "./../../../Badge";
+import type { ICardBodyProps } from "@/app/components/Card/card.types";
+import Badge from "@/app/components/Badge";
 
 export default function CardBody({
   title,

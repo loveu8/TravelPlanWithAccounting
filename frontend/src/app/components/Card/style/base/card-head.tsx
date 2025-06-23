@@ -1,8 +1,8 @@
 import React from "react";
 import Image from "next/image";
-import type { ICardHeadProps } from "./../../card.types";
+import type { ICardHeadProps } from "@/app/components/Card/card.types";
 
-import Styles from "./../../card.module.css";
+import Styles from "@/components/Card/style/base/card-head.module.css";
 
 export default function CardHead({ imgSrc, title }: ICardHeadProps) {
   return (

@@ -1,7 +1,7 @@
 import React from "react";
-import type { ICardBaseProps } from "./../../card.types";
-import CardHead from "./card-head";
-import CardBody from "./card-body";
+import type { ICardBaseProps } from "@/app/components/Card/card.types";
+import CardHead from "@/app/components/Card/style/base/card-head";
+import CardBody from "@/app/components/Card/style/base/card-body";
 
 export default function CardBase({
   title,

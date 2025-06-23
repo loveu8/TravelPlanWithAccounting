@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import type { ICountryCardProps } from "./../card.types";
+import type { ICountryCardProps } from "@/app/components/Card/card.types";
 
 export default function CountryCard({
   countryName,

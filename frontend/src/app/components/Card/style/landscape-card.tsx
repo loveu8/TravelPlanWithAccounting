@@ -1,8 +1,8 @@
 "use client";
-import type { ILandscapeCardProps } from "./../card.types";
-import Badge from "../../Badge";
-import Button from "../../Button";
-import CardBase from "./base/card-base";
+import type { ILandscapeCardProps } from "@/app/components/Card/card.types";
+import Badge from "@/app/components/Badge";
+import Button from "@/app/components/Button";
+import CardBase from "@/app/components/Card/style/base/card-base";
 import {
   BookmarkIcon,
   BookmarkFilledIcon,
