@@ -4,12 +4,14 @@ import React from "react";
 import { Badge as RadixBadge } from "@radix-ui/themes/components/badge";
 import { CrossCircledIcon } from "@radix-ui/react-icons";
 import IBadgeProps from "./badge.types";
+import { cn } from "@/app/lib/utils";
 
 export default function Badge({
   text,
   bgColor = "gray",
   icon,
   handleRemoveClick,
+  ...props
 }: IBadgeProps) {
   const isTransparent = bgColor === "transparent";
   const badgeColor = isTransparent ? "gray" : bgColor;
@@ -20,7 +22,11 @@ export default function Badge({
       size={badgeSize}
       color={badgeColor}
       variant="soft"
-      className={`${isTransparent ? "bg-transparent" : ""}   ${icon ? "text-base" : ""}`}
+      className={cn(
+        isTransparent && "bg-transparent",
+        icon && "text-base",
+        props.className,
+      )}
     >
       {icon}
       {handleRemoveClick && (
