@@ -1,8 +1,10 @@
 package com.travelPlanWithAccounting.service.controller;
 
+import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
+import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.service.SearchService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,5 +37,10 @@ public class SearchController {
   @GetMapping("/allLocations")
   public List<LocationName> allLocations() {
     return searchService.searchLocations();
+  }
+
+  @PostMapping("/searchNearby")
+  public List<LocationSearch> searchNearby(@RequestBody NearbySearchRequest request) {
+    return searchService.searchNearby(request);
   }
 }
