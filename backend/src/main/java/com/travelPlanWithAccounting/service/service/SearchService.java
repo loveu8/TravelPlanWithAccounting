@@ -17,9 +17,9 @@ import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -124,13 +124,14 @@ public class SearchService {
             "places.addressComponents" // ★ 取城市用
             );
     // 2. 先把想抓城市的 type 全列進 Set，方便 contains()
-    Set<String> cityTypes =
-        Set.of(
-            "locality", // 一般城市
-            "postal_town", // 英式地區常用
-            "administrative_area_level_3", // 台灣、日韓部分縣市
-            "administrative_area_level_2" // 縣、市
-            );
+    LinkedHashSet<String> cityTypes = new LinkedHashSet<String>();
+    cityTypes.add("administrative_area_level_1");
+    cityTypes.add("locality");
+    cityTypes.add("postal_town");
+    cityTypes.add("administrative_area_level_3");
+    cityTypes.add("administrative_area_level_2");
+
+    System.out.println("cityTypes" + cityTypes);
     JsonNode result = mapService.searchNearby(request, fieldMask);
     List<LocationSearch> locations = new ArrayList<>();
 
@@ -165,24 +166,16 @@ public class SearchService {
         for (JsonNode t : comp.path("types")) {
           String type = t.asText();
           // 只收我們關心的層級
-          if (List.of(
-                  "locality",
-                  "postal_town",
-                  "administrative_area_level_2",
-                  "administrative_area_level_3")
-              .contains(type)) {
+          if (cityTypes.contains(type)) {
             candidate.put(type, longText);
           }
         }
       }
 
+      System.out.println("candidate :" + candidate);
+
       /* 依優先順序決定最終城市 */
-      for (String key :
-          List.of(
-              "administrative_area_level_2",
-              "administrative_area_level_3",
-              "locality",
-              "postal_town")) {
+      for (String key : cityTypes) {
         if (candidate.containsKey(key)) {
           city = candidate.get(key);
           break;
