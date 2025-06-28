@@ -8,5 +8,5 @@ public class LocationSearch {
   private String name;
   private String city;
   private String photoUrl;
-  private String rating;
+  private long rating;
 }

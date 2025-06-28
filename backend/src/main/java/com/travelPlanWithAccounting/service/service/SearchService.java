@@ -131,7 +131,6 @@ public class SearchService {
     cityTypes.add("administrative_area_level_3");
     cityTypes.add("administrative_area_level_2");
 
-    System.out.println("cityTypes" + cityTypes);
     JsonNode result = mapService.searchNearby(request, fieldMask);
     List<LocationSearch> locations = new ArrayList<>();
 
@@ -139,7 +138,7 @@ public class SearchService {
 
       String placeId = place.path("id").asText();
       String name = place.path("displayName").path("text").asText();
-      double rating = place.has("rating") ? place.path("rating").asDouble() : -1;
+      long rating = place.has("rating") ? place.path("rating").asLong() : -1;
 
       /* ---------- 取相片 ---------- */
       String photoUrl = null;
@@ -155,7 +154,6 @@ public class SearchService {
                 + "/media?key="
                 + googleApiConfig.getGoogleApiKey()
                 + "&maxWidthPx=400"; // 至少要給 width 或 height
-        // 若要 JSON 而不是 302 轉址可再加 &skipHttpRedirect=true
       }
 
       String city = null;
@@ -171,8 +169,6 @@ public class SearchService {
           }
         }
       }
-
-      System.out.println("candidate :" + candidate);
 
       /* 依優先順序決定最終城市 */
       for (String key : cityTypes) {
@@ -192,7 +188,7 @@ public class SearchService {
       loc.setPlaceId(placeId);
       loc.setName(name);
       loc.setCity(city);
-      loc.setRating(String.valueOf(rating));
+      loc.setRating(rating);
       loc.setPhotoUrl(photoUrl);
 
       locations.add(loc);
