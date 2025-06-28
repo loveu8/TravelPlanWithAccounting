@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OtpService {
   private static final int OTP_LENGTH = 6;
-  private static final int OTP_EXPIRY_MINUTES = 1;
+  private static final int OTP_EXPIRY_MINUTES = 10; // OTP 有效時間 (10 分鐘)
   private static final int MAX_ATTEMPTS = 3;
 
   private final OtpCacheService otpCacheService;

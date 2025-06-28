@@ -25,4 +25,16 @@ public class MemberException extends ApiException {
       super(MemberMessageCode.EMAIL_ALREADY_EXISTS);
     }
   }
+
+  public static class EmailNotFound extends ApiException {
+    public EmailNotFound() {
+      super(MemberMessageCode.EMAIL_NOT_FOUND);
+    }
+  }
+
+  public static class EmailFormatInvalid extends ApiException {
+    public EmailFormatInvalid() {
+      super(MemberMessageCode.EMAIL_FORMAT_INVALID);
+    }
+  }
 }

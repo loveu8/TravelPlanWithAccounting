@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  * OTP test API for dev only, returns OTP code directly without sending email.
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/auth/otps-test")
 @RequiredArgsConstructor
 @Tag(name = "OTP 驗證", description = "OTP 驗證與查詢 API")
 @Profile("dev")
@@ -31,8 +31,8 @@ public class OtpTestController {
    * @param email 用戶電子郵件 (User email)
    * @return 產生的 OTP 驗證碼 (Generated OTP code)
    */
-  @PostMapping("/send-otp-test")
-  @Operation(summary = "發送 OTP 驗證碼(for test)")
+  @PostMapping("/")
+  @Operation(summary = "產生 OTP 驗證碼並直接回傳不發送EMAIL(for test)")
   public String generateOtpForTest(@RequestBody OtpRequest request) {
     OtpData otpData = otpService.generateOtpWithoutMail(request);
     return otpData.getOtpCode();

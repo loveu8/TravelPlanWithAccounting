@@ -40,7 +40,10 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ApiException.class)
   public ResponseEntity<RestResponse<Object, Object>> handleApiException(ApiException ex) {
     log.error(
-        "[ApiException] code={}, message={}", ex.getMessageCode().getCode(), ex.getMessage(), ex);
+        "[ApiException] code={}, message={}",
+        ex.getMessageCode().getCode(),
+        ex.getMessage(),
+        ex.getOriginalException());
     RestResponse<Object, Object> response = RestResponseUtils.error(ex);
     return ResponseEntity.status(ex.getHttpStatus()).body(response);
   }
