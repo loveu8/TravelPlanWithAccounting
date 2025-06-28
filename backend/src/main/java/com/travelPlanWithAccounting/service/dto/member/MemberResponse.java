@@ -7,16 +7,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 會員註冊回應 DTO。<br>
- * Member registration response DTO.<br>
+ * 會員回應 DTO。<br>
+ * Member response DTO.<br>
  *
- * <p>註冊成功後回傳會員資料與預留 JWT 欄位。<br>
- * Returns member data and reserved JWT field after successful registration.
+ * <p>回傳會員資料與預留 JWT 欄位。<br>
+ * Returns member data and reserved JWT field.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MemberRegisterResponse implements Serializable {
+public class MemberResponse implements Serializable {
   private static final long serialVersionUID = 1L;
 
   @Schema(description = "電子郵件 (Email)")
