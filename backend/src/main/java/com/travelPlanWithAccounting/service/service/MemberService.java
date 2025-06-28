@@ -1,10 +1,11 @@
 package com.travelPlanWithAccounting.service.service;
 
 import com.travelPlanWithAccounting.service.dto.member.MemberRegisterRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberRegisterResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
 import com.travelPlanWithAccounting.service.entity.Member;
 import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
+import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +38,7 @@ public class MemberService {
    * @throws MemberException.OtpTokenInvalid 若 OTP token 驗證失敗 (if OTP token is invalid)
    */
   @Transactional
-  public MemberRegisterResponse register(MemberRegisterRequest req) {
+  public MemberResponse register(MemberRegisterRequest req) {
     validateEmail(req.getEmail());
     checkEmailDuplicate(req.getEmail());
     validateOtpToken(req.getOtpToken(), req.getEmail());
@@ -48,13 +49,13 @@ public class MemberService {
             .nickName(req.getNickName())
             .birthday(req.getBirthday())
             .email(req.getEmail())
-            .subscribe(false) // 預設不訂閱 (default not subscribed)
-            .status(Short.valueOf("1")) // 預設狀態為啟用 (default status is enabled)
+            .subscribe(false)
+            .status(Short.valueOf("1"))
             .build();
     Member saved = memberRepository.save(member);
     otpCacheService.evictOtpVerifiedToken(req.getOtpToken());
-    String jwt = null; // TODO: 產生 JWT 並回傳
-    return new MemberRegisterResponse(saved.getEmail(), jwt);
+    String jwt = generateJwt(saved);
+    return new MemberResponse(saved.getEmail(), jwt);
   }
 
   /**
@@ -66,6 +67,9 @@ public class MemberService {
   private void validateEmail(String email) {
     if (email == null || email.isEmpty()) {
       throw new MemberException.EmailRequired();
+    }
+    if (!EmailValidatorUtil.isValid(email)) {
+      throw new MemberException.EmailFormatInvalid();
     }
   }
 
@@ -93,5 +97,33 @@ public class MemberService {
     if (verifiedEmail == null || !verifiedEmail.equals(email)) {
       throw new MemberException.OtpTokenInvalid();
     }
+  }
+
+  /**
+   * 會員登入。<br>
+   * Login member.<br>
+   *
+   * <p>檢查 email 是否存在。<br>
+   * Check if email exists.
+   *
+   * @param email 電子郵件 (email)
+   * @return 登入成功的會員資料與預留 JWT 欄位 (Logged-in member and reserved JWT field)
+   * @throws MemberException.EmailRequired 若 email 未填 (if email is missing)
+   * @throws MemberException.EmailNotFound 若 email 不存在 (if email not found)
+   */
+  @Transactional(readOnly = true)
+  public MemberResponse login(String email, String otpToken) {
+    validateEmail(email);
+    validateOtpToken(otpToken, email);
+    Member member =
+        memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
+    String jwt = generateJwt(member);
+    return new MemberResponse(member.getEmail(), jwt);
+  }
+
+  // 範例 JWT 產生方法（請依實際專案替換）
+  private String generateJwt(Member member) {
+    // TODO: 串接 JWT 工具類別
+    return "mock-jwt-token";
   }
 }

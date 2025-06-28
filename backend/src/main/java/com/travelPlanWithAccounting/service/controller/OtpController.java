@@ -17,25 +17,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/auth/otps")
 @RequiredArgsConstructor
 @Tag(name = "OTP 驗證", description = "OTP 驗證與查詢 API")
 public class OtpController {
   private final OtpService otpService;
 
-  @PostMapping("/send-otp")
+  @PostMapping("/")
   @Operation(summary = "發送 OTP 驗證碼")
   public OtpSendResponse sendOtp(@RequestBody OtpRequest request) {
     return otpService.sendOtp(request);
   }
 
-  @PostMapping("/verify-otp")
+  @PostMapping("/verification")
   @Operation(summary = "驗證 OTP 驗證碼")
   public OtpVerifyResponse verifyOtp(@RequestBody OtpVerificationRequest request) {
     return otpService.verifyOtpResponse(request);
   }
 
-  @GetMapping("/otp-status/{email}")
+  @GetMapping("/{email}/status")
   @Operation(summary = "查詢 OTP 狀態")
   public OtpStatusResponse getOtpStatus(@PathVariable String email) {
     return otpService.getOtpStatusResponse(email);
