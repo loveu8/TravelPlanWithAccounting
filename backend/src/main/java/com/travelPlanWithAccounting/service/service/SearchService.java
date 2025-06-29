@@ -3,6 +3,7 @@ package com.travelPlanWithAccounting.service.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
+import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.City;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
@@ -14,12 +15,14 @@ import com.travelPlanWithAccounting.service.entity.LocationGroupMapping;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllLocationRepository;
 import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
+import com.travelPlanWithAccounting.service.repository.SearchLocationByCodeRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,8 @@ public class SearchService {
   @Autowired private MapService mapService;
 
   @Autowired private GoogleApiConfig googleApiConfig;
+
+  @Autowired private SearchLocationByCodeRepository searchLocationByCodeRepository;
 
   public List<Region> searchRegions(String countryCode, String langType) {
     List<Object[]> results = searchCountryRepository.findRegionsAndCities(countryCode, langType);
@@ -112,6 +117,95 @@ public class SearchService {
     return locationNames;
   }
 
+  // ==================== 新增：直接回傳 Location 物件的方法 ====================
+
+  /**
+   * 取得所有國家 (直接回傳 Location 物件)
+   *
+   * @return List<Location>
+   */
+  public List<Location> getAllCountries() {
+    return searchLocationByCodeRepository.findAllCountries();
+  }
+
+  /**
+   * 根據國家代碼取得該國家的所有州省
+   *
+   * @param countryCode 國家代碼
+   * @return List<Location>
+   */
+  public List<Location> getProvincesByCountryCode(String countryCode) {
+    return searchLocationByCodeRepository.findProvincesByCountryCode(countryCode);
+  }
+
+  /**
+   * 根據州省代碼取得該州省的所有城市
+   *
+   * @param provinceCode 州省代碼
+   * @return List<Location>
+   */
+  public List<Location> getCitiesByProvinceCode(String provinceCode) {
+    return searchLocationByCodeRepository.findCitiesByProvinceCode(provinceCode);
+  }
+
+  /**
+   * 根據代碼查詢單一 Location
+   *
+   * @param code Location 代碼
+   * @return Optional<Location>
+   */
+  public Optional<Location> getLocationByCode(String code) {
+    return searchLocationByCodeRepository.findByCode(code);
+  }
+
+  /**
+   * 根據代碼和層級查詢 Location
+   *
+   * @param code Location 代碼
+   * @param level 層級 (1=國家 2=州省 3=城市)
+   * @return Optional<Location>
+   */
+  public Optional<Location> getLocationByCodeAndLevel(String code, Short level) {
+    return searchLocationByCodeRepository.findByCodeAndLevel(code, level);
+  }
+
+  /**
+   * 根據層級查詢所有該層級的 Location
+   *
+   * @param level 層級 (1=國家 2=州省 3=城市)
+   * @return List<Location>
+   */
+  public List<Location> getLocationsByLevel(Short level) {
+    return searchLocationByCodeRepository.findByLevelOrderByOrderIndex(level);
+  }
+
+  /**
+   * 根據經緯度範圍查詢附近的 Location
+   *
+   * @param minLat 最小緯度
+   * @param maxLat 最大緯度
+   * @param minLon 最小經度
+   * @param maxLon 最大經度
+   * @return List<Location>
+   */
+  public List<Location> getLocationsByCoordinates(
+      Double minLat, Double maxLat, Double minLon, Double maxLon) {
+    return searchLocationByCodeRepository.findLocationsByCoordinates(
+        minLat, maxLat, minLon, maxLon);
+  }
+
+  /**
+   * 根據 ISO 類型查詢 Location
+   *
+   * @param isoType ISO 類型 (001: ISO-3166-1, 002: ISO-3166-2)
+   * @return List<Location>
+   */
+  public List<Location> getLocationsByIsoType(String isoType) {
+    return searchLocationByCodeRepository.findByIsoTypeOrderByOrderIndex(isoType);
+  }
+
+  // ==================== 原有的 Google Places API 方法 ====================
+
   public List<LocationSearch> searchNearby(NearbySearchRequest request) {
 
     // 1. 欄位遮罩 ─ 新增 addressComponents，並保留 photos.name
@@ -138,7 +232,7 @@ public class SearchService {
 
       String placeId = place.path("id").asText();
       String name = place.path("displayName").path("text").asText();
-      long rating = place.has("rating") ? place.path("rating").asLong() : -1;
+      Double rating = place.has("rating") ? place.path("rating").asDouble() : -1;
 
       /* ---------- 取相片 ---------- */
       String photoUrl = null;
@@ -194,5 +288,53 @@ public class SearchService {
       locations.add(loc);
     }
     return locations;
+  }
+
+  /**
+   * 根據 Location 代碼搜尋附近景點
+   *
+   * @param request 包含 Location 代碼的搜尋請求
+   * @return List<LocationSearch>
+   */
+  public List<LocationSearch> searchNearbyByLocationCode(SearchRequest request) {
+    // 1. 先拿到 Location 的對應經緯度
+    String code = request.getCode();
+    Optional<Location> locationOpt = searchLocationByCodeRepository.findByCode(code);
+
+    if (locationOpt.isEmpty()) {
+      throw new RuntimeException("找不到代碼為 " + code + " 的地點");
+    }
+
+    Location location = locationOpt.get();
+
+    // 檢查是否有經緯度資料
+    if (location.getLat() == null || location.getLon() == null) {
+      throw new RuntimeException("地點 " + code + " 沒有經緯度資料");
+    }
+
+    // 2. 建立 NearbySearchRequest
+    NearbySearchRequest nearbyRequest = new NearbySearchRequest();
+    nearbyRequest.setMaxResultCount(5);
+    nearbyRequest.setRankPreference("DISTANCE");
+    nearbyRequest.setLanguageCode(request.getLangType());
+
+    // 設定位置限制
+    com.travelPlanWithAccounting.service.dto.google.LocationRestriction locationRestriction =
+        new com.travelPlanWithAccounting.service.dto.google.LocationRestriction();
+    com.travelPlanWithAccounting.service.dto.google.Circle circle =
+        new com.travelPlanWithAccounting.service.dto.google.Circle();
+    com.travelPlanWithAccounting.service.dto.google.LatLng center =
+        new com.travelPlanWithAccounting.service.dto.google.LatLng();
+
+    center.setLatitude(location.getLat().doubleValue());
+    center.setLongitude(location.getLon().doubleValue());
+    circle.setCenter(center);
+    circle.setRadius(5000.0); // radius 在這裡設定
+    locationRestriction.setCircle(circle);
+    nearbyRequest.setLocationRestriction(locationRestriction);
+    nearbyRequest.setIncludedTypes(request.getIncludedTypes());
+
+    // 3. 呼叫 Google Places API
+    return searchNearby(nearbyRequest);
   }
 }

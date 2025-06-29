@@ -14,12 +14,6 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Places API V1 附近地點搜尋請求 DTO")
 public class NearbySearchRequest {
 
-  @Schema(
-      description = "搜尋半徑 (公尺)，最大為 50000",
-      example = "1000",
-      requiredMode = Schema.RequiredMode.REQUIRED)
-  private Integer radius; // Required
-
   @Schema(description = "可選。篩選結果，僅包含評分高於或等於此值的地點。值應在 0.0 到 5.0 之間。", example = "4.0")
   private Double minRating; // Optional
 
@@ -38,8 +32,8 @@ public class NearbySearchRequest {
   @Schema(
       description = "可選。結果嚴格限制在指定地理區域內。",
       example =
-          "{\"rectangle\": {\"low\": {\"latitude\": 24.9, \"longitude\": 121.4}, \"high\":"
-              + " {\"latitude\": 25.2, \"longitude\": 121.8}}}")
+          "{\"circle\": {\"center\": {\"latitude\": 25.0330, \"longitude\": 121.5654}, \"radius\":"
+              + " 5000.0}}")
   private LocationRestriction locationRestriction;
 
   @Schema(description = "可選。限制搜尋結果的區域代碼，例如 'TW'。", example = "TW")
