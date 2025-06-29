@@ -24,7 +24,6 @@ import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -252,54 +251,23 @@ public class SearchService {
    * @param request 包含 Location 代碼和搜尋文字的請求
    * @return List<LocationSearch>
    */
-  public List<LocationSearch> searchTextByLocationCode(TextSearchRequest request) {
-    // 1. 先拿到 Location 的對應經緯度
-    String code = request.getCode();
-    Optional<Location> locationOpt = searchLocationByCodeRepository.findByCode(code);
+  public List<LocationSearch> searchTextByLocationCode(TextSearchRequest uiReq) {
 
-    if (locationOpt.isEmpty()) {
-      throw new RuntimeException("找不到代碼為 " + code + " 的地點");
-    }
+    // 1) 驗證參數
+    validator.validateText(uiReq);
 
-    Location location = locationOpt.get();
+    // 2) 取 Location（含代碼存在 & 經緯度檢查）
+    Location loc = locationHelper.getLocationOrThrow(uiReq.getCode());
 
-    // 檢查是否有經緯度資料
-    if (location.getLat() == null || location.getLon() == null) {
-      throw new RuntimeException("地點 " + code + " 沒有經緯度資料");
-    }
+    // 3) 組 Google TextSearchRequest（UI → Google DTO）
+    com.travelPlanWithAccounting.service.dto.google.TextSearchRequest googleReq =
+        requestFactory.buildText(loc, uiReq);
 
-    // 2. 建立 TextSearchRequest
-    com.travelPlanWithAccounting.service.dto.google.TextSearchRequest textRequest =
-        new com.travelPlanWithAccounting.service.dto.google.TextSearchRequest();
-    textRequest.setTextQuery(request.getTextQuery());
-    textRequest.setLanguageCode(request.getLangType());
-    textRequest.setMaxResultCount(
-        request.getMaxResultCount() != null ? request.getMaxResultCount() : 5);
-    textRequest.setRankPreference(
-        request.getRankPreference() != null ? request.getRankPreference() : "RELEVANCE");
+    // 4) 呼叫 API
+    JsonNode json = mapService.searchText(googleReq, GooglePlaceConstants.FIELD_MASK);
 
-    // 設定位置偏向 (locationBias) - 讓結果偏向指定區域
-    com.travelPlanWithAccounting.service.dto.google.LocationBias locationBias =
-        new com.travelPlanWithAccounting.service.dto.google.LocationBias();
-    com.travelPlanWithAccounting.service.dto.google.Circle circle =
-        new com.travelPlanWithAccounting.service.dto.google.Circle();
-    com.travelPlanWithAccounting.service.dto.google.LatLng center =
-        new com.travelPlanWithAccounting.service.dto.google.LatLng();
-
-    center.setLatitude(location.getLat().doubleValue());
-    center.setLongitude(location.getLon().doubleValue());
-    circle.setCenter(center);
-    circle.setRadius(50000.0); // 文字搜尋使用較大的半徑
-    locationBias.setCircle(circle);
-    textRequest.setLocationBias(locationBias);
-
-    // 設定地點類型篩選
-    if (request.getIncludedTypes() != null && !request.getIncludedTypes().isEmpty()) {
-      textRequest.setIncludedType(request.getIncludedTypes().get(0)); // TextSearch 只支援單一類型
-    }
-
-    // 3. 呼叫 Google Places API
-    return searchText(textRequest);
+    // 5) Mapper 轉 DTO
+    return placeMapper.toLocationSearchList(json);
   }
 
   /**
@@ -310,86 +278,10 @@ public class SearchService {
    */
   public List<LocationSearch> searchText(
       com.travelPlanWithAccounting.service.dto.google.TextSearchRequest request) {
-    // 1. 欄位遮罩 ─ 與 searchNearby 保持一致
-    List<String> fieldMask =
-        List.of(
-            "places.id",
-            "places.displayName",
-            "places.rating",
-            "places.photos", // ★ photos 陣列
-            "places.addressComponents" // ★ 取城市用
-            );
+    // 1) 呼叫 Google API，欄位遮罩沿用共用常數
+    JsonNode json = mapService.searchText(request, GooglePlaceConstants.FIELD_MASK);
 
-    // 2. 先把想抓城市的 type 全列進 Set，方便 contains()
-    LinkedHashSet<String> cityTypes = new LinkedHashSet<String>();
-    cityTypes.add("administrative_area_level_1");
-    cityTypes.add("locality");
-    cityTypes.add("postal_town");
-    cityTypes.add("administrative_area_level_3");
-    cityTypes.add("administrative_area_level_2");
-
-    JsonNode result = mapService.searchText(request, fieldMask);
-    List<LocationSearch> locations = new ArrayList<>();
-
-    for (JsonNode place : result.path("places")) {
-
-      String placeId = place.path("id").asText();
-      String name = place.path("displayName").path("text").asText();
-      Double rating = place.has("rating") ? place.path("rating").asDouble() : -1.0;
-
-      /* ---------- 取相片 ---------- */
-      String photoUrl = null;
-      JsonNode photosNode = place.path("photos");
-      if (photosNode.isArray() && photosNode.size() > 0) {
-        // ★ 直接拿到 photo name（包含 placeId 與 photo resource）
-        String photoName = photosNode.get(0).path("name").asText();
-
-        // ★ 新版 Photo 端點：…/{PHOTO_NAME}/media
-        photoUrl =
-            "https://places.googleapis.com/v1/"
-                + photoName
-                + "/media?key="
-                + googleApiConfig.getGoogleApiKey()
-                + "&maxWidthPx=400"; // 至少要給 width 或 height
-      }
-
-      String city = null;
-      Map<String, String> candidate = new HashMap<>();
-
-      for (JsonNode comp : place.path("addressComponents")) {
-        String longText = comp.path("longText").asText();
-        for (JsonNode t : comp.path("types")) {
-          String type = t.asText();
-          // 只收我們關心的層級
-          if (cityTypes.contains(type)) {
-            candidate.put(type, longText);
-          }
-        }
-      }
-
-      /* 依優先順序決定最終城市 */
-      for (String key : cityTypes) {
-        if (candidate.containsKey(key)) {
-          city = candidate.get(key);
-          break;
-        }
-      }
-
-      /* 後備：formattedAddress 整條地址 */
-      if (city == null && place.has("formattedAddress")) {
-        city = place.path("formattedAddress").asText();
-      }
-
-      /* ---------- 組回結果 ---------- */
-      LocationSearch loc = new LocationSearch();
-      loc.setPlaceId(placeId);
-      loc.setName(name);
-      loc.setCity(city);
-      loc.setRating(rating);
-      loc.setPhotoUrl(photoUrl);
-
-      locations.add(loc);
-    }
-    return locations;
+    // 2) 交由 Mapper 解析 JSON → DTO
+    return placeMapper.toLocationSearchList(json);
   }
 }
