@@ -38,6 +38,8 @@ sequenceDiagram
 | GET | `/api/search/allLocations` | 取得所有地點資料 |
 | POST | `/api/search/searchNearbyByLocationCode` | 根據 Location 代碼搜尋附近景點 |
 | POST | `/api/search/searchTextByLocationCode` | 根據 Location 代碼和文字查詢搜尋景點 |
+| GET | `/api/search/settings/{category}` | 根據類別查詢設定 |
+| GET | `/api/search/settings/language-types` | 查詢所有語言類型設定 |
 
 ---
 
@@ -139,6 +141,42 @@ sequenceDiagram
 ```
 - **說明**：結合文字搜尋和位置偏向，在指定區域內搜尋特定景點
 - **回應格式**：與搜尋附近景點相同
+
+### 6. 根據類別查詢設定 ⭐
+- **API**：`GET /api/search/settings/{category}`
+- **參數**：
+  - `category` (路徑參數)：設定類別，目前只支援 `LANG_TYPE`
+- **回應範例**：
+```json
+[
+  {
+    "category": "LANG_TYPE",
+    "name": "繁體中文",
+    "codeName": "zh-TW",
+    "codeDesc": "繁體中文 (台灣)"
+  },
+  {
+    "category": "LANG_TYPE",
+    "name": "English",
+    "codeName": "en-US",
+    "codeDesc": "English (United States)"
+  }
+]
+```
+
+### 7. 查詢所有語言類型設定 ⭐
+- **API**：`GET /api/search/settings/language-types`
+- **說明**：專門用於查詢語言類型設定的快捷端點
+- **回應格式**：與根據類別查詢設定相同
+
+### SettingResponse 參數
+
+| 參數 | 型別 | 說明 |
+|------|------|------|
+| `category` | String | 設定類別 |
+| `name` | String | 設定名稱 |
+| `codeName` | String | 設定代碼 |
+| `codeDesc` | String | 設定描述 |
 
 ---
 
@@ -250,6 +288,14 @@ const textSearch = await fetch('/api/search/searchTextByLocationCode', {
     includedTypes: ['tourist_attraction']
   })
 }).then(res => res.json());
+
+// 5. 查詢語言類型設定
+const languageTypes = await fetch('/api/search/settings/LANG_TYPE')
+  .then(res => res.json());
+
+// 6. 查詢所有語言類型設定
+const allLanguageTypes = await fetch('/api/search/settings/language-types')
+  .then(res => res.json());
 ```
 
 ---
@@ -274,24 +320,19 @@ API 會回傳標準 HTTP 狀態碼：
 
 ## 注意事項
 
-1. **Google Places API 限制**：
-   - 需要有效的 Google API Key
-   - 有每日請求限制
-   - 照片 URL 有時效性
+1. **設定查詢限制**：目前設定查詢只支援 `LANG_TYPE` 類別
+2. **搜尋結果限制**：`maxResultCount` 參數限制在 5-20 之間
+3. **排序偏好**：`rankPreference` 只支援 `RELEVANCE` 和 `DISTANCE`
+4. **Google Places API**：需要有效的 Google API Key 才能使用景點搜尋功能
 
-2. **效能考量**：
+5. **效能考量**：
    - 建議設定適當的 `maxResultCount`
    - 搜尋半徑不宜過大
    - 可快取常用搜尋結果
 
-3. **資料來源**：
+6. **資料來源**：
    - 國家/地區/城市資料來自本地資料庫
    - 附近景點資料來自 Google Places API
 
-4. **搜尋方式差異**：
-   - `searchNearby`：嚴格限制在指定區域內
-   - `searchText`：使用位置偏向，結果可能超出指定區域但會優先顯示區域內結果
-
----
-
-> 如有任何問題，請參考 API 回應的錯誤訊息進行除錯。
+7. **搜尋方式差異**：
+   - `

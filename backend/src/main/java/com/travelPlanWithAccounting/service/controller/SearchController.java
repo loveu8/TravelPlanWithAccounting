@@ -7,8 +7,10 @@ import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
+import com.travelPlanWithAccounting.service.dto.setting.SettingResponse;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.service.SearchService;
+import com.travelPlanWithAccounting.service.service.SettingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -28,6 +30,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class SearchController {
 
   @Autowired private SearchService searchService;
+  @Autowired private SettingService settingService;
+
+  // ==================== 設定相關 API ====================
+
+  @GetMapping("/settings/{category}")
+  @Operation(summary = "根據類別查詢設定")
+  public List<SettingResponse> getSettingsByCategory(@PathVariable String category) {
+    return settingService.getSettingsByCategory(category);
+  }
+
+  @GetMapping("/settings/language-types")
+  @Operation(summary = "查詢所有語言類型設定")
+  public List<SettingResponse> getAllLanguageTypes() {
+    return settingService.getAllLanguageTypes();
+  }
+
+  // ==================== 原有的搜尋 API ====================
 
   @GetMapping("/countries/{langType}")
   @Operation(summary = "取得國家列表 (DTO 格式)")
