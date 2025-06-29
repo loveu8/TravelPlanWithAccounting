@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
+import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.City;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
@@ -204,7 +205,74 @@ public class SearchService {
     return searchLocationByCodeRepository.findByIsoTypeOrderByOrderIndex(isoType);
   }
 
-  // ==================== 原有的 Google Places API 方法 ====================
+  /**
+   * 根據 Location 代碼搜尋附近景點
+   *
+   * @param request 包含 Location 代碼的搜尋請求
+   * @return List<LocationSearch>
+   */
+  public List<LocationSearch> searchNearbyByLocationCode(SearchRequest request) {
+    // 1. 先拿到 Location 的對應經緯度
+    String code = request.getCode();
+    Optional<Location> locationOpt = searchLocationByCodeRepository.findByCode(code);
+
+    if (locationOpt.isEmpty()) {
+      throw new RuntimeException("找不到代碼為 " + code + " 的地點");
+    }
+
+    Location location = locationOpt.get();
+
+    // 檢查是否有經緯度資料
+    if (location.getLat() == null || location.getLon() == null) {
+      throw new RuntimeException("地點 " + code + " 沒有經緯度資料");
+    }
+
+    // 2. 驗證和設定 maxResultCount (限制 5-20 之間)
+    Integer maxResultCount = request.getMaxResultCount();
+    if (maxResultCount != null) {
+      if (maxResultCount < 5 || maxResultCount > 20) {
+        throw new RuntimeException("maxResultCount 必須在 5-20 之間，當前值: " + maxResultCount);
+      }
+    } else {
+      maxResultCount = 5; // 預設值
+    }
+
+    // 3. 驗證和設定 rankPreference (只允許 RELEVANCE 或 DISTANCE)
+    String rankPreference = request.getRankPreference();
+    if (rankPreference != null) {
+      if (!"RELEVANCE".equals(rankPreference) && !"DISTANCE".equals(rankPreference)) {
+        throw new RuntimeException(
+            "rankPreference 只能是 RELEVANCE 或 DISTANCE，當前值: " + rankPreference);
+      }
+    } else {
+      rankPreference = "DISTANCE"; // 預設值
+    }
+
+    // 4. 建立 NearbySearchRequest
+    NearbySearchRequest nearbyRequest = new NearbySearchRequest();
+    nearbyRequest.setMaxResultCount(maxResultCount);
+    nearbyRequest.setRankPreference(rankPreference);
+    nearbyRequest.setLanguageCode(request.getLangType());
+
+    // 設定位置限制
+    com.travelPlanWithAccounting.service.dto.google.LocationRestriction locationRestriction =
+        new com.travelPlanWithAccounting.service.dto.google.LocationRestriction();
+    com.travelPlanWithAccounting.service.dto.google.Circle circle =
+        new com.travelPlanWithAccounting.service.dto.google.Circle();
+    com.travelPlanWithAccounting.service.dto.google.LatLng center =
+        new com.travelPlanWithAccounting.service.dto.google.LatLng();
+
+    center.setLatitude(location.getLat().doubleValue());
+    center.setLongitude(location.getLon().doubleValue());
+    circle.setCenter(center);
+    circle.setRadius(5000.0); // radius 在這裡設定
+    locationRestriction.setCircle(circle);
+    nearbyRequest.setLocationRestriction(locationRestriction);
+    nearbyRequest.setIncludedTypes(request.getIncludedTypes());
+
+    // 5. 呼叫 Google Places API
+    return searchNearby(nearbyRequest);
+  }
 
   public List<LocationSearch> searchNearby(NearbySearchRequest request) {
 
@@ -291,12 +359,12 @@ public class SearchService {
   }
 
   /**
-   * 根據 Location 代碼搜尋附近景點
+   * 根據 Location 代碼和文字查詢搜尋景點
    *
-   * @param request 包含 Location 代碼的搜尋請求
+   * @param request 包含 Location 代碼和搜尋文字的請求
    * @return List<LocationSearch>
    */
-  public List<LocationSearch> searchNearbyByLocationCode(SearchRequest request) {
+  public List<LocationSearch> searchTextByLocationCode(TextSearchRequest request) {
     // 1. 先拿到 Location 的對應經緯度
     String code = request.getCode();
     Optional<Location> locationOpt = searchLocationByCodeRepository.findByCode(code);
@@ -312,15 +380,19 @@ public class SearchService {
       throw new RuntimeException("地點 " + code + " 沒有經緯度資料");
     }
 
-    // 2. 建立 NearbySearchRequest
-    NearbySearchRequest nearbyRequest = new NearbySearchRequest();
-    nearbyRequest.setMaxResultCount(5);
-    nearbyRequest.setRankPreference("DISTANCE");
-    nearbyRequest.setLanguageCode(request.getLangType());
+    // 2. 建立 TextSearchRequest
+    com.travelPlanWithAccounting.service.dto.google.TextSearchRequest textRequest =
+        new com.travelPlanWithAccounting.service.dto.google.TextSearchRequest();
+    textRequest.setTextQuery(request.getTextQuery());
+    textRequest.setLanguageCode(request.getLangType());
+    textRequest.setMaxResultCount(
+        request.getMaxResultCount() != null ? request.getMaxResultCount() : 5);
+    textRequest.setRankPreference(
+        request.getRankPreference() != null ? request.getRankPreference() : "RELEVANCE");
 
-    // 設定位置限制
-    com.travelPlanWithAccounting.service.dto.google.LocationRestriction locationRestriction =
-        new com.travelPlanWithAccounting.service.dto.google.LocationRestriction();
+    // 設定位置偏向 (locationBias) - 讓結果偏向指定區域
+    com.travelPlanWithAccounting.service.dto.google.LocationBias locationBias =
+        new com.travelPlanWithAccounting.service.dto.google.LocationBias();
     com.travelPlanWithAccounting.service.dto.google.Circle circle =
         new com.travelPlanWithAccounting.service.dto.google.Circle();
     com.travelPlanWithAccounting.service.dto.google.LatLng center =
@@ -329,12 +401,107 @@ public class SearchService {
     center.setLatitude(location.getLat().doubleValue());
     center.setLongitude(location.getLon().doubleValue());
     circle.setCenter(center);
-    circle.setRadius(5000.0); // radius 在這裡設定
-    locationRestriction.setCircle(circle);
-    nearbyRequest.setLocationRestriction(locationRestriction);
-    nearbyRequest.setIncludedTypes(request.getIncludedTypes());
+    circle.setRadius(50000.0); // 文字搜尋使用較大的半徑
+    locationBias.setCircle(circle);
+    textRequest.setLocationBias(locationBias);
+
+    // 設定地點類型篩選
+    if (request.getIncludedTypes() != null && !request.getIncludedTypes().isEmpty()) {
+      textRequest.setIncludedType(request.getIncludedTypes().get(0)); // TextSearch 只支援單一類型
+    }
 
     // 3. 呼叫 Google Places API
-    return searchNearby(nearbyRequest);
+    return searchText(textRequest);
+  }
+
+  /**
+   * 使用 Google Places API 進行文字搜尋
+   *
+   * @param request TextSearchRequest 物件
+   * @return List<LocationSearch>
+   */
+  public List<LocationSearch> searchText(
+      com.travelPlanWithAccounting.service.dto.google.TextSearchRequest request) {
+    // 1. 欄位遮罩 ─ 與 searchNearby 保持一致
+    List<String> fieldMask =
+        List.of(
+            "places.id",
+            "places.displayName",
+            "places.rating",
+            "places.photos", // ★ photos 陣列
+            "places.addressComponents" // ★ 取城市用
+            );
+
+    // 2. 先把想抓城市的 type 全列進 Set，方便 contains()
+    LinkedHashSet<String> cityTypes = new LinkedHashSet<String>();
+    cityTypes.add("administrative_area_level_1");
+    cityTypes.add("locality");
+    cityTypes.add("postal_town");
+    cityTypes.add("administrative_area_level_3");
+    cityTypes.add("administrative_area_level_2");
+
+    JsonNode result = mapService.searchText(request, fieldMask);
+    List<LocationSearch> locations = new ArrayList<>();
+
+    for (JsonNode place : result.path("places")) {
+
+      String placeId = place.path("id").asText();
+      String name = place.path("displayName").path("text").asText();
+      Double rating = place.has("rating") ? place.path("rating").asDouble() : -1.0;
+
+      /* ---------- 取相片 ---------- */
+      String photoUrl = null;
+      JsonNode photosNode = place.path("photos");
+      if (photosNode.isArray() && photosNode.size() > 0) {
+        // ★ 直接拿到 photo name（包含 placeId 與 photo resource）
+        String photoName = photosNode.get(0).path("name").asText();
+
+        // ★ 新版 Photo 端點：…/{PHOTO_NAME}/media
+        photoUrl =
+            "https://places.googleapis.com/v1/"
+                + photoName
+                + "/media?key="
+                + googleApiConfig.getGoogleApiKey()
+                + "&maxWidthPx=400"; // 至少要給 width 或 height
+      }
+
+      String city = null;
+      Map<String, String> candidate = new HashMap<>();
+
+      for (JsonNode comp : place.path("addressComponents")) {
+        String longText = comp.path("longText").asText();
+        for (JsonNode t : comp.path("types")) {
+          String type = t.asText();
+          // 只收我們關心的層級
+          if (cityTypes.contains(type)) {
+            candidate.put(type, longText);
+          }
+        }
+      }
+
+      /* 依優先順序決定最終城市 */
+      for (String key : cityTypes) {
+        if (candidate.containsKey(key)) {
+          city = candidate.get(key);
+          break;
+        }
+      }
+
+      /* 後備：formattedAddress 整條地址 */
+      if (city == null && place.has("formattedAddress")) {
+        city = place.path("formattedAddress").asText();
+      }
+
+      /* ---------- 組回結果 ---------- */
+      LocationSearch loc = new LocationSearch();
+      loc.setPlaceId(placeId);
+      loc.setName(name);
+      loc.setCity(city);
+      loc.setRating(rating);
+      loc.setPhotoUrl(photoUrl);
+
+      locations.add(loc);
+    }
+    return locations;
   }
 }

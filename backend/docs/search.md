@@ -36,7 +36,8 @@ sequenceDiagram
 | GET | `/api/search/countries/{langType}` | 取得所有國家列表 |
 | POST | `/api/search/regions` | 取得指定國家的地區和城市 |
 | GET | `/api/search/allLocations` | 取得所有地點資料 |
-| POST | `/api/search/searchNearby` | 搜尋附近景點 |
+| POST | `/api/search/searchNearbyByLocationCode` | 根據 Location 代碼搜尋附近景點 |
+| POST | `/api/search/searchTextByLocationCode` | 根據 Location 代碼和文字查詢搜尋景點 |
 
 ---
 
@@ -108,45 +109,36 @@ sequenceDiagram
 ]
 ```
 
-### 4. 搜尋附近景點 ⭐
-- **API**：`POST /api/search/searchNearby`
+### 4. 根據 Location 代碼搜尋附近景點 ⭐
+- **API**：`POST /api/search/searchNearbyByLocationCode`
 - **Body 範例**：
 ```json
 {
-  "locationRestriction": {
-    "circle": {
-      "center": {
-        "latitude": 25.0330,
-        "longitude": 121.5654
-      },
-      "radius": 5000.0
-    }
-  },
-  "rankPreference": "DISTANCE",
-  "maxResultCount": 20,
-  "includedTypes": ["restaurant", "tourist_attraction"]
+  "code": "TPE",
+  "langType": "zh-TW",
+  "includedTypes": ["restaurant", "hotel", "tourist_attraction"],
+  "maxResultCount": 10, // 可選
+  "rankPreference": "DISTANCE" // 可選
 }
 ```
+- **說明**：使用 Location 代碼自動取得經緯度，然後搜尋附近景點
+- **回應格式**：與搜尋附近景點相同
 
-- **回應範例**：
+### 5. 根據 Location 代碼和文字查詢搜尋景點 ⭐
+- **API**：`POST /api/search/searchTextByLocationCode`
+- **Body 範例**：
 ```json
-[
-  {
-    "placeId": "ChIJ...",
-    "name": "台北101",
-    "city": "台北市",
-    "rating": 4.5,
-    "photoUrl": "https://places.googleapis.com/v1/places/ChIJ.../media?key=...&maxWidthPx=400"
-  },
-  {
-    "placeId": "ChIJ...",
-    "name": "鼎泰豐",
-    "city": "台北市",
-    "rating": 4.3,
-    "photoUrl": "https://places.googleapis.com/v1/places/ChIJ.../media?key=...&maxWidthPx=400"
-  }
-]
+{
+  "textQuery": "台北101",
+  "code": "TPE",
+  "langType": "zh-TW",
+  "maxResultCount": 10,
+  "rankPreference": "RELEVANCE", // 可選
+  "includedTypes": ["tourist_attraction"] // 可選
+}
 ```
+- **說明**：結合文字搜尋和位置偏向，在指定區域內搜尋特定景點
+- **回應格式**：與搜尋附近景點相同
 
 ---
 
@@ -160,7 +152,28 @@ sequenceDiagram
 | `locationRestriction.circle.center.longitude` | Double | ✓ | 搜尋中心點經度 |
 | `locationRestriction.circle.radius` | Double | ✓ | 搜尋半徑 (公尺) |
 | `rankPreference` | String | | 排序方式 (DISTANCE, RATING) |
-| `maxResultCount` | Integer | | 最大結果數量 (預設 20) |
+| `maxResultCount` | Integer | | 最大結果數量 (限制 5-20，預設 5) |
+| `includedTypes` | List<String> | | 景點類型篩選 |
+
+### SearchRequest 參數
+
+| 參數 | 型別 | 必填 | 說明 |
+|------|------|------|------|
+| `code` | String | ✓ | Location 代碼 |
+| `langType` | String | ✓ | 語言類型 |
+| `includedTypes` | List<String> | | 景點類型篩選 |
+| `maxResultCount` | Integer | | 最大結果數量 (限制 5-20，預設 5) |
+| `rankPreference` | String | | 排序方式 (RELEVANCE, DISTANCE，預設 DISTANCE) |
+
+### TextSearchRequest 參數
+
+| 參數 | 型別 | 必填 | 說明 |
+|------|------|------|------|
+| `textQuery` | String | ✓ | 要搜尋的文字查詢 |
+| `code` | String | ✓ | Location 代碼 |
+| `langType` | String | ✓ | 語言類型 |
+| `maxResultCount` | Integer | | 最大結果數量 (預設 5) |
+| `rankPreference` | String | | 排序方式 (RELEVANCE, DISTANCE) |
 | `includedTypes` | List<String> | | 景點類型篩選 |
 
 ### 常用景點類型 (includedTypes)
@@ -230,6 +243,33 @@ const nearbyPlaces = await fetch('/api/search/searchNearby', {
     includedTypes: ['restaurant', 'tourist_attraction']
   })
 }).then(res => res.json());
+
+// 4. 根據 Location 代碼搜尋附近景點
+const nearbyByCode = await fetch('/api/search/searchNearbyByLocationCode', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    code: 'TPE',
+    langType: 'zh-TW',
+    includedTypes: ['restaurant', 'tourist_attraction'],
+    maxResultCount: 10,
+    rankPreference: 'DISTANCE'
+  })
+}).then(res => res.json());
+
+// 5. 根據 Location 代碼和文字查詢搜尋景點
+const textSearch = await fetch('/api/search/searchTextByLocationCode', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    textQuery: '台北101',
+    code: 'TPE',
+    langType: 'zh-TW',
+    maxResultCount: 10,
+    rankPreference: 'RELEVANCE',
+    includedTypes: ['tourist_attraction']
+  })
+}).then(res => res.json());
 ```
 
 ---
@@ -267,6 +307,10 @@ API 會回傳標準 HTTP 狀態碼：
 3. **資料來源**：
    - 國家/地區/城市資料來自本地資料庫
    - 附近景點資料來自 Google Places API
+
+4. **搜尋方式差異**：
+   - `searchNearby`：嚴格限制在指定區域內
+   - `searchText`：使用位置偏向，結果可能超出指定區域但會優先顯示區域內結果
 
 ---
 

@@ -2,6 +2,7 @@ package com.travelPlanWithAccounting.service.controller;
 
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
+import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
@@ -109,5 +110,11 @@ public class SearchController {
   @Operation(summary = "根據 Location 代碼搜尋附近景點")
   public List<LocationSearch> searchNearbyByLocationCode(@RequestBody SearchRequest request) {
     return searchService.searchNearbyByLocationCode(request);
+  }
+
+  @PostMapping("/searchTextByLocationCode")
+  @Operation(summary = "根據 Location 代碼和文字查詢搜尋景點")
+  public List<LocationSearch> searchTextByLocationCode(@RequestBody TextSearchRequest request) {
+    return searchService.searchTextByLocationCode(request);
   }
 }
