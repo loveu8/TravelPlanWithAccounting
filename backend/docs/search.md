@@ -224,27 +224,7 @@ const regions = await fetch('/api/search/regions', {
   })
 }).then(res => res.json());
 
-// 3. 搜尋附近景點
-const nearbyPlaces = await fetch('/api/search/searchNearby', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    locationRestriction: {
-      circle: {
-        center: {
-          latitude: 25.0330,
-          longitude: 121.5654
-        },
-        radius: 5000.0
-      }
-    },
-    rankPreference: 'DISTANCE',
-    maxResultCount: 10,
-    includedTypes: ['restaurant', 'tourist_attraction']
-  })
-}).then(res => res.json());
-
-// 4. 根據 Location 代碼搜尋附近景點
+// 3. 根據 Location 代碼搜尋附近景點
 const nearbyByCode = await fetch('/api/search/searchNearbyByLocationCode', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -257,7 +237,7 @@ const nearbyByCode = await fetch('/api/search/searchNearbyByLocationCode', {
   })
 }).then(res => res.json());
 
-// 5. 根據 Location 代碼和文字查詢搜尋景點
+// 4. 根據 Location 代碼和文字查詢搜尋景點
 const textSearch = await fetch('/api/search/searchTextByLocationCode', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
