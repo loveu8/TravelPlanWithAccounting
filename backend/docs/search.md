@@ -20,7 +20,7 @@ sequenceDiagram
     
     Note over User,Google: 附近景點搜尋流程
     User->>FE: 輸入位置搜尋附近景點
-    FE->>BE: 呼叫 searchNearby API
+    FE->>BE: 呼叫 searchNearbyByLocationCode(鄰近點搜尋) / searchTextByLocationCode (關鍵字搜尋) API
     BE->>Google: 呼叫 Google Places API
     Google-->>BE: 回傳景點資料
     BE->>BE: 解析景點資訊 (placeId, 名稱, 照片, 城市)
