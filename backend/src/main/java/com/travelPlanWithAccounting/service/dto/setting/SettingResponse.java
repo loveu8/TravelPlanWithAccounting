@@ -22,6 +22,6 @@ public class SettingResponse {
   @Schema(description = "設定代碼", example = "zh-TW")
   private String codeName;
 
-  @Schema(description = "設定描述", example = "繁體中文 (台灣)")
+  @Schema(description = "設定描述", example = "繁體中文(台灣)")
   private String codeDesc;
 }

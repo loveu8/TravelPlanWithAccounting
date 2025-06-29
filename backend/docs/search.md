@@ -153,13 +153,13 @@ sequenceDiagram
     "category": "LANG_TYPE",
     "name": "繁體中文",
     "codeName": "zh-TW",
-    "codeDesc": "繁體中文 (台灣)"
+    "codeDesc": "繁體中文(台灣)"
   },
   {
     "category": "LANG_TYPE",
     "name": "English",
     "codeName": "en-US",
-    "codeDesc": "English (United States)"
+    "codeDesc": "English(USA)"
   }
 ]
 ```
