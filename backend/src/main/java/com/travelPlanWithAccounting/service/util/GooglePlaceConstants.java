@@ -27,6 +27,21 @@ public final class GooglePlaceConstants {
               "administrative_area_level_3",
               "administrative_area_level_2"));
 
+  /** 查詢地圖詳情遮罩 (Place Details) */
+  public static final List<String> PLACE_DETAILS_FIELD_MASK =
+      List.of(
+          "id",
+          "displayName",
+          "formattedAddress",
+          "rating",
+          "userRatingCount", // 評論數
+          "editorialSummary", // 簡介
+          "internationalPhoneNumber",
+          "websiteUri",
+          "regularOpeningHours", // 完整營業時段
+          "photos" // 最多 5 張
+          );
+
   public static final int DEFAULT_NEARBY_RADIUS_METERS = 5_000;
   public static final int DEFAULT_TEXT_RADIUS_METERS = 50_000;
   public static final int MIN_RESULT_COUNT = 5;

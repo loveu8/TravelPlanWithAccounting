@@ -6,6 +6,7 @@ import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
+import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.dto.setting.SettingResponse;
 import com.travelPlanWithAccounting.service.entity.Location;
@@ -135,5 +136,12 @@ public class SearchController {
   @Operation(summary = "根據 Location 代碼和文字查詢搜尋景點")
   public List<LocationSearch> searchTextByLocationCode(@RequestBody TextSearchRequest request) {
     return searchService.searchTextByLocationCode(request);
+  }
+
+  @GetMapping("/placeDetails")
+  @Operation(summary = "取得地點詳細資訊 (含照片)")
+  public PlaceDetailResponse getPlaceDetails(
+      @RequestParam String placeId, @RequestParam(defaultValue = "zh-TW") String langType) {
+    return searchService.getPlaceDetailById(placeId, langType);
   }
 }

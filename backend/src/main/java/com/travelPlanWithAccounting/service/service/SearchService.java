@@ -1,18 +1,20 @@
 package com.travelPlanWithAccounting.service.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
+import com.travelPlanWithAccounting.service.dto.google.PlaceDetailRequestPost;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.City;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
+import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.LocationGroup;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
+import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllLocationRepository;
@@ -20,6 +22,7 @@ import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchLocationByCodeRepository;
 import com.travelPlanWithAccounting.service.util.GooglePlaceConstants;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
+import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,17 +39,17 @@ public class SearchService {
 
   @Autowired private SearchCountryRepository searchCountryRepository;
 
-  @Autowired private MapService mapService;
-
-  @Autowired private GoogleApiConfig googleApiConfig;
-
   @Autowired private SearchLocationByCodeRepository searchLocationByCodeRepository;
 
-  // Google 相關驗證服務
+  @Autowired private MapService mapService;
+
+  // Google 相關服務
   @Autowired private LocationHelper locationHelper;
   @Autowired private SearchRequestValidator validator;
   @Autowired private GoogleRequestFactory requestFactory;
   @Autowired private GooglePlaceMapper placeMapper;
+  @Autowired private PlaceDetailValidator placeDetailValidator;
+  @Autowired private GooglePlaceDetailMapper placeDetailMapper;
 
   public List<Region> searchRegions(String countryCode, String langType) {
     List<Object[]> results = searchCountryRepository.findRegionsAndCities(countryCode, langType);
@@ -283,5 +286,27 @@ public class SearchService {
 
     // 2) 交由 Mapper 解析 JSON → DTO
     return placeMapper.toLocationSearchList(json);
+  }
+
+  /**
+   * 根據 placeId 查詢完整景點
+   *
+   * @param placeId Google Map placeId
+   * @param langType 語系
+   * @return PlaceDetailResponse
+   */
+  public PlaceDetailResponse getPlaceDetailById(String placeId, String langType) {
+
+    // 1) 驗證輸入
+    placeDetailValidator.validate(placeId, langType);
+
+    // 2) 交給 Factory 組請求
+    PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
+
+    // 3) MapService 呼叫
+    JsonNode json = mapService.getPlaceDetails(req);
+
+    // 4) Mapper 轉 DTO
+    return placeDetailMapper.toDto(json);
   }
 }

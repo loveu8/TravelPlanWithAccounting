@@ -66,4 +66,14 @@ public class GoogleRequestFactory {
 
     return req;
   }
+
+  /** PlaceDetails builder */
+  public PlaceDetailRequestPost buildPlaceDetails(String placeId, String langType) {
+
+    PlaceDetailRequestPost req = new PlaceDetailRequestPost();
+    req.setPlaceId(placeId);
+    req.setLanguageCode(langType);
+    req.setFieldMask(PLACE_DETAILS_FIELD_MASK); // 常數集中管理
+    return req;
+  }
 }
