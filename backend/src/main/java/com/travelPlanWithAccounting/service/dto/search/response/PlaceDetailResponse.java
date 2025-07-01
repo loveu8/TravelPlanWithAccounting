@@ -20,4 +20,8 @@ public class PlaceDetailResponse {
   private String website;
   private List<String> photoUrls; // 最多 5 張
   private JsonNode regularHoursRaw; // ★ 保留原始 regularOpeningHours 物件
+  private Double lat;
+  private Double lon;
+  private String city;
+  private String country;
 }
