@@ -4,15 +4,14 @@ import com.travelPlanWithAccounting.service.dto.system.ApiException;
 import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.dto.system.RestResponse;
 import com.travelPlanWithAccounting.service.message.MessageCode;
-import java.io.Serializable;
 import org.springframework.data.domain.Page;
 
 /**
  * {@code RestResponseUtils} 提供快速建立標準化 API 回應物件的方法。<br>
  * {@code RestResponseUtils} provides utility methods to quickly build standardized API responses.
  *
- * <p>支援成功與失敗回應，並確保資料型別符合 {@code Serializable}。<br>
- * Supports success and error responses, ensuring payloads are {@code Serializable}.
+ * <p>支援成功與失敗回應，並確保資料型別可被 Jackson 正確序列化。<br>
+ * Supports success and error responses, ensuring payloads can be serialized by Jackson.
  *
  * @author
  */
@@ -28,9 +27,8 @@ public class RestResponseUtils {
    *
    * @param data 資料內容 / The main payload
    * @return 標準化成功回應 / Standard success response
-   * @param <D> 資料型別 / Type of data
    */
-  public static RestResponse<Serializable, Serializable> success(Serializable data) {
+  public static RestResponse<Object, Object> success(Object data) {
     return RestResponse.builder().data(data).build();
   }
 
@@ -41,12 +39,9 @@ public class RestResponseUtils {
    * @param data 資料內容 / The main payload
    * @param meta 輔助資訊 / Meta information
    * @return 標準化成功回應 / Standard success response
-   * @param <D> 資料型別 / Type of data
-   * @param <M> Meta型別 / Type of meta
    */
-  public static <D extends Serializable, M extends Serializable> RestResponse<D, M> successWithMeta(
-      D data, M meta) {
-    return RestResponse.<D, M>builder().data(data).meta(meta).build();
+  public static RestResponse<Object, Object> successWithMeta(Object data, Object meta) {
+    return RestResponse.builder().data(data).meta(meta).build();
   }
 
   /**
@@ -54,11 +49,9 @@ public class RestResponseUtils {
    * Build a success response from Spring Data {@link Page} result.
    *
    * @param page 分頁結果物件 / Page result
-   * @param <T> 頁面中的資料型別 / Type of elements inside page
    * @return 標準化成功回應（包含資料與分頁 meta） / Standard success response with page meta
    */
-  public static <T extends Serializable> RestResponse<Serializable, Serializable> successWithPage(
-      Page<T> page) {
+  public static RestResponse<Object, Object> successWithPage(Page<?> page) {
     if (page == null) {
       throw new IllegalArgumentException("Page must not be null");
     }
@@ -71,10 +64,7 @@ public class RestResponseUtils {
             .totalElements(page.getTotalElements())
             .build();
 
-    return RestResponse.<Serializable, Serializable>builder()
-        .data((Serializable) page.getContent())
-        .meta(pageMeta)
-        .build();
+    return RestResponse.builder().data(page.getContent()).meta(pageMeta).build();
   }
 
   /**
@@ -84,7 +74,7 @@ public class RestResponseUtils {
    * @param ex 捕捉到的例外 / The ApiException caught
    * @return 標準化錯誤回應 / Standard error response
    */
-  public static RestResponse<Serializable, Serializable> error(ApiException ex) {
+  public static RestResponse<Object, Object> error(ApiException ex) {
     return new RestResponse<>(ex);
   }
 
@@ -95,7 +85,7 @@ public class RestResponseUtils {
    * @param messageCode 錯誤代碼 / Error message code
    * @return 標準化錯誤回應 / Standard error response
    */
-  public static RestResponse<Serializable, Serializable> error(MessageCode messageCode) {
+  public static RestResponse<Object, Object> error(MessageCode messageCode) {
     return new RestResponse<>(new ApiException(messageCode));
   }
 
@@ -107,8 +97,7 @@ public class RestResponseUtils {
    * @param args 替換訊息模板的參數 / Arguments for message formatting
    * @return 標準化錯誤回應 / Standard error response
    */
-  public static RestResponse<Serializable, Serializable> error(
-      MessageCode messageCode, Serializable[] args) {
+  public static RestResponse<Object, Object> error(MessageCode messageCode, Object[] args) {
     return new RestResponse<>(new ApiException(messageCode, args));
   }
 
@@ -121,8 +110,8 @@ public class RestResponseUtils {
    * @param originalException 原始例外 / Original exception
    * @return 標準化錯誤回應 / Standard error response
    */
-  public static RestResponse<Serializable, Serializable> error(
-      MessageCode messageCode, Serializable[] args, Exception originalException) {
+  public static RestResponse<Object, Object> error(
+      MessageCode messageCode, Object[] args, Exception originalException) {
     return new RestResponse<>(
         ApiException.builder()
             .messageCode(messageCode)

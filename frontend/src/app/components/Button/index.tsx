@@ -3,6 +3,7 @@
 import React from "react";
 import { Button as RadixButton } from "@radix-ui/themes/components/button";
 import IButtonProps from "./button.types";
+import { cn } from "@/app/lib/utils";
 
 export default function Button({
   text,
@@ -21,7 +22,7 @@ export default function Button({
       size={size}
       color={btnColor}
       variant={btnVariant}
-      className={isDisabled ? "" : "cursor-pointer"}
+      className={cn(!isDisabled && "cursor-pointer", props.className)}
       disabled={isDisabled}
       onClick={(e) => {
         if (props.onClick) props.onClick(e); // 保留 Radix 的內部邏輯

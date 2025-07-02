@@ -4,6 +4,7 @@ import com.travelPlanWithAccounting.service.exception.EmailSendException;
 import com.travelPlanWithAccounting.service.model.OtpPurpose;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -14,12 +15,15 @@ public class EmailService {
 
   private final JavaMailSender mailSender;
 
+  @Value("${spring.mail.username:}")
+  private String username;
+
   public void sendOtp(String email, String code, OtpPurpose purpose) {
     try {
       MimeMessage message = mailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-      helper.setFrom("noreply@yourapp.com");
+      helper.setFrom(username);
       helper.setTo(email);
       helper.setSubject(getOtpSubject(purpose));
       helper.setText(getOtpEmailBody(code, purpose), true);
@@ -35,7 +39,7 @@ public class EmailService {
       MimeMessage message = mailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-      helper.setFrom("noreply@yourapp.com");
+      helper.setFrom(username);
       helper.setTo(email);
       helper.setSubject("Login to Your App");
       helper.setText(getMagicLinkEmailBody(magicLink), true);

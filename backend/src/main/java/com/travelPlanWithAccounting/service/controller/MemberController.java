@@ -1,7 +1,8 @@
 package com.travelPlanWithAccounting.service.controller;
 
+import com.travelPlanWithAccounting.service.dto.member.MemberLoginRequest;
 import com.travelPlanWithAccounting.service.dto.member.MemberRegisterRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberRegisterResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
 import com.travelPlanWithAccounting.service.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,7 +42,20 @@ public class MemberController {
    */
   @PostMapping("/register")
   @Operation(summary = "會員註冊 (Register member)")
-  public MemberRegisterResponse register(@RequestBody MemberRegisterRequest req) {
+  public MemberResponse register(@RequestBody MemberRegisterRequest req) {
     return memberService.register(req);
+  }
+
+  /**
+   * 會員登入。<br>
+   * Login member.<br>
+   *
+   * @param req 會員登入請求 (Member login request)
+   * @return 登入成功的會員資料與預留 JWT 欄位 (Logged-in member and reserved JWT field)
+   */
+  @PostMapping("/login")
+  @Operation(summary = "會員登入 (Login member)")
+  public MemberResponse login(@RequestBody MemberLoginRequest req) {
+    return memberService.login(req.getEmail(), req.getOtpToken());
   }
 }
