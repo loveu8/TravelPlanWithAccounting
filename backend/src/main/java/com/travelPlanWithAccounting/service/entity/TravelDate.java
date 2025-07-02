@@ -1,5 +1,6 @@
 package com.travelPlanWithAccounting.service.entity;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -28,7 +29,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "travel_date")
-public class TravelDate {
+public class TravelDate implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID) // 使用 GenerationType.UUID 讓JPA自動生成UUID

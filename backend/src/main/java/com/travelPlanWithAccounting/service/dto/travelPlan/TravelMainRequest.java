@@ -6,7 +6,8 @@ import java.util.UUID;
 import lombok.Data;
 
 @Data
-public class CreateTravelMainRequest {
+public class TravelMainRequest {
+    private UUID id;
     private UUID memberId;
     private Boolean isPrivate;
     private LocalDate startDate;

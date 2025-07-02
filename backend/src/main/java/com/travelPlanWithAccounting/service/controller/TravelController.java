@@ -1,22 +1,22 @@
 package com.travelPlanWithAccounting.service.controller;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.NoSuchElementException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.travelPlanWithAccounting.service.dto.travelPlan.CreateTravelMainRequest;
+import com.travelPlanWithAccounting.service.dto.UuidRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
+import com.travelPlanWithAccounting.service.entity.TravelDate;
+import com.travelPlanWithAccounting.service.entity.TravelDetail;
 import com.travelPlanWithAccounting.service.entity.TravelMain;
 import com.travelPlanWithAccounting.service.service.TravelService;
 
@@ -29,95 +29,204 @@ public class TravelController {
 
     private final TravelService travelService;
 
-    @Autowired
     public TravelController(TravelService travelService) {
         this.travelService = travelService;
     }
 
-    @PostMapping("/createMain")
-    public ResponseEntity<TravelMainResponse> createTravelMain(@RequestBody CreateTravelMainRequest request) {
-        TravelMain savedTravelMain = travelService.createTravelMain(request);
-        System.err.println("savedTravelMain =" + savedTravelMain.toString());
-        // 將 entity 轉換為 response DTO
-        TravelMainResponse response = new TravelMainResponse();
-        response.setId(savedTravelMain.getId());
-        response.setMemberId(savedTravelMain.getMemberId());
-        response.setIsPrivate(savedTravelMain.getIsPrivate());
-        response.setStartDate(savedTravelMain.getStartDate());
-        response.setEndDate(savedTravelMain.getEndDate());
-        response.setTitle(savedTravelMain.getTitle());
-        response.setNotes(savedTravelMain.getNotes());
-        response.setVisitPlace(savedTravelMain.getVisitPlace());
-        response.setCreatedAt(savedTravelMain.getCreatedAt());
-
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
-
-    /**
-     * 根據ID獲取旅行主行程。
-     * GET /api/travels/{id}
-     * @param id 旅行主行程的 UUID
-     * @return 找到的行程資訊及 HTTP 200 OK 狀態碼，如果未找到則返回 HTTP 404 Not Found。
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<TravelMainResponse> getTravelMainById(@PathVariable UUID id) {
-        Optional<TravelMain> travelMain = travelService.getTravelMainById(id);
-        return travelMain.map(main -> {
-            TravelMainResponse response = new TravelMainResponse();
-            response.setId(main.getId());
-            response.setMemberId(main.getMemberId());
-            response.setIsPrivate(main.getIsPrivate());
-            response.setStartDate(main.getStartDate());
-            response.setEndDate(main.getEndDate());
-            response.setTitle(main.getTitle());
-            response.setNotes(main.getNotes());
-            response.setVisitPlace(main.getVisitPlace());
-            response.setCreatedAt(main.getCreatedAt());
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        }).orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
-
-    /**
-     * 獲取所有旅行主行程。
-     * GET /api/travels
-     * @return 所有行程的列表及 HTTP 200 OK 狀態碼。
-     */
-    @GetMapping
-    public ResponseEntity<List<TravelMainResponse>> getAllTravelMains() {
-        List<TravelMain> travelMains = travelService.getAllTravelMains();
-        List<TravelMainResponse> responses = travelMains.stream()
-                .map(main -> {
-                    TravelMainResponse response = new TravelMainResponse();
-                    response.setId(main.getId());
-                    response.setMemberId(main.getMemberId());
-                    response.setIsPrivate(main.getIsPrivate());
-                    response.setStartDate(main.getStartDate());
-                    response.setEndDate(main.getEndDate());
-                    response.setTitle(main.getTitle());
-                    response.setNotes(main.getNotes());
-                    response.setVisitPlace(main.getVisitPlace());
-                    response.setCreatedAt(main.getCreatedAt());
-                    return response;
-                })
-                .collect(Collectors.toList());
-        return new ResponseEntity<>(responses, HttpStatus.OK);
-    }
-/* 
-    @PostMapping("/{travelMainId}/day-plans")
-    public ResponseEntity<TravelMain> addDayPlanDetails(@PathVariable UUID travelMainId,
-                                                        @RequestBody TravelDayPlanCreateDTO request) {
+    @PostMapping("/createTravelMain")
+    public ResponseEntity<?> createTravelMain(@RequestBody TravelMainRequest request) {
         try {
-            // 假設 createdBy 來自身份驗證上下文。為簡單起見，這裡使用一個模擬的 UUID
-            // 實際應用中，應替換為來自安全上下文的實際用戶 ID
-            UUID createdBy = UUID.randomUUID(); 
-            TravelMain updatedTravelMain = travelService.addDayPlanDetails(travelMainId, request, createdBy);
-            return new ResponseEntity<>(updatedTravelMain, HttpStatus.OK); // 使用 OK 因為是更新操作
+            TravelMainResponse newTravelMainResponse = travelService.createTravelMain(request);
+            return new ResponseEntity<>(newTravelMainResponse, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseEntity("添加每日行程詳細資訊時發生錯誤。", HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("創建行程主表時發生未知錯誤: " + e.getMessage());
         }
     }
-        */
+
+    @PostMapping("/updateTravelMain") // 更新行程主表 (POST 請求，ID在 Request Body 中)
+    public ResponseEntity<?> updateTravelMain(@RequestBody TravelMainRequest request) {
+        try {
+            TravelMain updatedTravelMain = travelService.updateTravelMain(request);
+            return ResponseEntity.ok(updatedTravelMain);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("更新行程主表時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/getTravelMain") // 根據ID獲取行程主表 (POST 請求，ID在 Request Body 中)
+    public ResponseEntity<?> getTravelMain(@RequestBody UuidRequest request) {
+        try {  
+            if (request.getId() == null) {
+                return ResponseEntity.badRequest().body("行程主表ID不能為空。");
+            }  
+            TravelMain travelMain = travelService.getTravelMainById(request.getId());
+            if (travelMain != null) {
+                return ResponseEntity.ok(travelMain);
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到ID為 " + request.getId() + " 的行程主表。");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("獲取行程主表時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/getTravelMainsByMemberId")
+    public ResponseEntity<?> getTravelMainsByMemberId(@RequestBody UuidRequest request) {
+        try {
+            if (request.getId() == null) {
+                return ResponseEntity.badRequest().body("會員ID不能為空。");
+            }
+            List<TravelMain> travelMains = travelService.getTravelMainsByMemberId(request.getId());
+            if (!travelMains.isEmpty()) {
+                return ResponseEntity.ok(travelMains);
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到會員ID為 " + request.getId() + " 的行程主表。");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("根據會員ID獲取行程主表時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/addTravelDate")
+    public ResponseEntity<?> addTravelDate(@RequestBody TravelDateRequest request) {
+        try {    
+            if (request.getTravelMainId() == null || request.getTravelDate() == null) {
+                return ResponseEntity.badRequest().body("行程主表ID和基準日期不能為空。");
+            }
+            TravelDate nextTravelDate = travelService.addTravelDate(
+                    request.getTravelMainId(),
+                    request.getTravelDate(),
+                    request.getCreatedBy()
+            );
+            return new ResponseEntity<>(nextTravelDate, HttpStatus.CREATED);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 例如找不到相關的 TravelMain
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("創建隔一天行程日期時發生未知錯誤: " + e.getMessage());
+        }    
+    }
+
+    @PostMapping("/deleteTravelDate") // 刪除行程日期 (POST 請求，ID在 Request Body 中)
+    public ResponseEntity<String> deleteTravelDate(@RequestBody UuidRequest request) {
+        try {
+            if (request.getId() == null) {
+                return ResponseEntity.badRequest().body("行程日期ID不能為空。");
+            }
+            travelService.deleteTravelDate(request.getId());
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 404 Not Found
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage()); // 400 Bad Request
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("刪除行程日期時發生未知錯誤: " + e.getMessage()); // 500 Internal Server Error
+        }
+    }
+
+    @PostMapping("/getTravelDate")
+    public ResponseEntity<?> getTravelDate(@RequestBody UuidRequest request) {
+        try {
+            if (request.getId() == null) {
+                return ResponseEntity.badRequest().body("行程日期ID不能為空。");
+            }
+            TravelDate travelDate = travelService.getTravelDateById(request.getId());
+            if (travelDate != null) {
+                return ResponseEntity.ok(travelDate);
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到ID為 " + request.getId() + " 的行程日期。");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("獲取行程日期時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/getTravelDatesByTravelMainId")
+    public ResponseEntity<?> getTravelDatesByTravelMainId(@RequestBody UuidRequest request) {
+        try {
+            if (request.getId() == null) {
+                return ResponseEntity.badRequest().body("行程主表ID不能為空。");
+            }    
+            List<TravelDate> travelDates = travelService.getTravelDatesByTravelMainId(request.getId());
+            if (!travelDates.isEmpty()) {
+                return ResponseEntity.ok(travelDates);
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到行程主表ID為 " + request.getId() + " 的行程日期。");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("根據行程主表ID獲取行程日期時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/createTravelDetail")
+    public ResponseEntity<?> createTravelDetail(@RequestBody TravelDetailRequest request) {
+        try {
+            if (request.getTravelMainId() == null || request.getTravelDateId() == null || request.getType() == null) {
+                return ResponseEntity.badRequest().body("行程主表ID、行程日期ID和類型不能為空。");
+            }
+            TravelDetail newTravelDetail = travelService.createTravelDetail(request);
+            return new ResponseEntity<>(newTravelDetail, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("創建行程詳情時發生未知錯誤: " + e.getMessage());
+        }    
+    }
+
+    @PostMapping("/updateTravelDetail") // 更新行程詳情 (POST 請求，ID在 Request Body 中)
+    public ResponseEntity<?> updateTravelDetail(@RequestBody TravelDetailRequest request) {
+        try {
+            TravelDetail updatedTravelDetail = travelService.updateTravelDetail(request);
+            return ResponseEntity.ok(updatedTravelDetail);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage()); // ID 為空時的處理
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("更新行程詳情時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/getTravelDetail")
+    public ResponseEntity<?> getTravelDetail(@RequestBody UuidRequest request) {
+        try {
+            if (request.getId() == null) {
+                return ResponseEntity.badRequest().body("行程詳情ID不能為空。");
+            }    
+            TravelDetail travelDetail = travelService.getTravelDetailById(request.getId());
+            if (travelDetail != null) {
+                return ResponseEntity.ok(travelDetail);
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到ID為 " + request.getId() + " 的行程詳情。");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("獲取行程詳情時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/getTravelDetailsByTravelDateId")
+    public ResponseEntity<?> getTravelDetailsByTravelDateId(@RequestBody UuidRequest request) {
+        List<TravelDetail> travelDetails = travelService.getTravelDetailsByTravelDateId(request.getId());
+        if (!travelDetails.isEmpty()) {
+            return ResponseEntity.ok(travelDetails);
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到ID為 " + request.getId() + " 的行程詳情。");
+    }
+
+    @PostMapping("/deleteTravelDetail") // 刪除行程詳情 (POST 請求，ID在 Request Body 中)
+    public ResponseEntity<String> deleteTravelDetailById(@RequestBody UuidRequest request) {
+        try {
+            if (request.getId() == null) {
+                return ResponseEntity.badRequest().body("行程詳情ID不能為空。");
+            }
+            travelService.deleteTravelDetailById(request.getId());
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 如果找不到該 ID 的 TravelDetail
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("刪除行程詳情時發生未知錯誤: " + e.getMessage());
+        }
+    }
 }
