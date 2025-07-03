@@ -1,25 +1,25 @@
 package com.travelPlanWithAccounting.service.entity;
 
+import java.io.Serializable;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Entity
 @Valid
@@ -28,19 +28,32 @@ import lombok.ToString;
 @DynamicUpdate
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @Table(name = "travel_date")
-public class TravelDate extends BaseEntity {
+public class TravelDate implements Serializable {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "travel_main_id", nullable = false)
-    private TravelMain travelMain;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID) // 使用 GenerationType.UUID 讓JPA自動生成UUID
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
+    private UUID id;
 
-    @Column(name = "travel_date")
+    @Column(name = "travel_main_id", nullable = false)
+    private UUID travelMainId; // 不建立雙向關聯
+
+    @Column(name = "travel_date", nullable = false)
     private LocalDate travelDate;
 
-    @OneToMany(mappedBy = "travelDate", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    private List<TravelDetail> travelDetails;
+    @Column(name = "created_by")
+    private UUID createdBy;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
 }
