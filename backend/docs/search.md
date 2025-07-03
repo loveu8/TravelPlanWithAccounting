@@ -40,6 +40,7 @@ sequenceDiagram
 | POST | `/api/search/searchTextByLocationCode` | 根據 Location 代碼和文字查詢搜尋景點 |
 | GET | `/api/search/settings/{category}` | 根據類別查詢設定 |
 | GET | `/api/search/settings/language-types` | 查詢所有語言類型設定 |
+| GET | `/api/search/placeDetails` | 取得地點詳細資訊 (含照片) |
 
 ---
 
@@ -177,6 +178,39 @@ sequenceDiagram
 | `name` | String | 設定名稱 |
 | `codeName` | String | 設定代碼 |
 | `codeDesc` | String | 設定描述 |
+
+### 8. 取得地點詳細資訊 (含照片)
+- **API**：`GET /api/search/placeDetails`
+- **參數**：
+  - `placeId` (query)：Google Place 的唯一識別碼
+  - `langType` (query, 選填，預設 `zh-TW`)：語言類型
+- **回應範例**：
+```json
+{
+  "id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+  "name": "Google Sydney",
+  "addr": "48 Pirrama Rd, Pyrmont NSW 2009, Australia",
+  "rate": 4.5,
+  "cnt": 1000,
+  "desc": "Google's Sydney office.",
+  "tel": "+61 2 9374 4000",
+  "site": "https://www.google.com.au/about/careers/locations/sydney/",
+  "lat": -33.866651,
+  "lon": 151.195827,
+  "city": "Sydney",
+  "country": "Australia",
+  "photos": [
+    "https://places.googleapis.com/v1/xxx/media?key=xxx&maxWidthPx=400"
+  ],
+  "rawHours": {
+    "weekdayDescriptions": [
+      "Monday: 9:00 AM – 5:00 PM",
+      "Tuesday: 9:00 AM – 5:00 PM"
+    ]
+  }
+}
+```
+- **說明**：根據 Google PlaceId 取得該地點的詳細資訊，包含名稱、地址、評分、評論數、描述、電話、網站、經緯度、城市、國家、相片與營業時間等。
 
 ---
 
