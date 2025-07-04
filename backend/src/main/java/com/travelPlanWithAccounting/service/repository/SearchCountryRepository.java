@@ -16,9 +16,9 @@ public interface SearchCountryRepository extends JpaRepository<LocationGroup, UU
           + " LocationGroup g LEFT JOIN g.metadata m ON m.langType = :langType AND"
           + " m.locationMetaType = '001' JOIN g.mappings lgm JOIN lgm.location loc LEFT JOIN"
           + " loc.metadata lm ON lm.langType = :langType AND lm.locationMetaType = '001' WHERE"
-          + " g.parent.id = (SELECT l.id FROM Location l WHERE l.code = :countryCode AND l.parent"
-          + " IS NULL) AND g.code <> :countryCode"
+          + " g.parent.id = (SELECT l.id FROM Location l WHERE l.code = :code AND l.parent"
+          + " IS NULL) AND g.code <> :code"
           + " ORDER BY g.orderIndex, lgm.seqno")
   List<Object[]> findRegionsAndCities(
-      @Param("countryCode") String countryCode, @Param("langType") String langType);
+      @Param("code") String code, @Param("langType") String langType);
 }
