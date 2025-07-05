@@ -31,7 +31,7 @@ export default function TravelPlanCard(props: ITravelPlanCardProps) {
       <CardBase {...props}>
         <Badge
           text={location}
-          icon={<PinpointIcon />}
+          icon={<PinpointIcon className="text-blue-9" />}
           bgColor="transparent"
           className="pl-0 py-0 rounded-none"
         />
