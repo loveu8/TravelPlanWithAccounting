@@ -22,13 +22,9 @@ export default function LoginSignup({
   const handleStartLogin = async () => {
     try {
       await loginDialogRef.current?.openDialogWithPromise();
-      console.log("Login dialog opened successfully");
-      console.log("Waiting for OTP dialog to open");
       await otpDialogRef.current?.openDialogWithPromise();
-      console.log("Login process completed successfully");
     } catch (error) {
       if (error === CLOSE_REJECT) {
-        console.log("Dialog closed without submission");
         return;
       }
       if (!error || !(error instanceof Error)) {
@@ -43,7 +39,6 @@ export default function LoginSignup({
       await signUpDialogRef.current?.openDialogWithPromise();
     } catch (error) {
       if (error === CLOSE_REJECT) {
-        console.log("Dialog closed without submission");
         return;
       }
       if (!error || !(error instanceof Error)) {

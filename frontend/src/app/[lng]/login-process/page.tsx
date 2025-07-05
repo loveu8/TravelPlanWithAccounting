@@ -9,7 +9,7 @@ export default function Page() {
     <>
       <LoginSignup>登入</LoginSignup>
       <LoginSignup asChild>
-        <Button text="登入 asChild"></Button>
+        <Button text="登入"></Button>
       </LoginSignup>
     </>
   );

@@ -133,7 +133,7 @@ export default function OTPDialog({
               )}
             </DialogBody>
             <DialogFooter justify="center" withCloseBtn>
-              <Button type="submit" text="登入"></Button>
+              <Button type="submit" text={t("login.button-login")}></Button>
             </DialogFooter>
           </Grid>
         </form>

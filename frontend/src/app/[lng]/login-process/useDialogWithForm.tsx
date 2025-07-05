@@ -17,7 +17,6 @@ function useDialogWithForm<T>({
   const [error, setError] = useState<string>("");
   const [countdown, setCountdown] = useState<number>(timeout || 0);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   const resolverRef = useRef<((value: T) => void) | null>(null);
   const rejecterRef = useRef<((reason?: unknown) => void) | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,9 +61,6 @@ function useDialogWithForm<T>({
       if (!isOpen) {
         animationTimeoutRef.current = setTimeout(() => {
           setError("");
-          if (formRef.current) {
-            formRef.current.reset();
-          }
         }, 300);
         // If dialog closed without submit, reject the promise
         if (rejecterRef.current) {
@@ -112,9 +108,6 @@ function useDialogWithForm<T>({
         setOpen(false);
         animationTimeoutRef.current = setTimeout(() => {
           setError("");
-          if (formRef.current) {
-            formRef.current.reset();
-          }
         }, 300);
         if (resolverRef.current) {
           resolverRef.current(result);
