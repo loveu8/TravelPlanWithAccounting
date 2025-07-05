@@ -1,27 +1,25 @@
 package com.travelPlanWithAccounting.service.entity;
 
-import java.time.LocalDate;
-import java.util.List;
-
-import org.hibernate.annotations.DynamicUpdate;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
 @Valid
 @Data
-@Builder
+@SuperBuilder
 @DynamicUpdate
 @NoArgsConstructor
 @AllArgsConstructor
@@ -67,14 +65,6 @@ public class Member extends BaseEntity {
   @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
   @ToString.Exclude
   private List<AuthInfo> authInfos;
-
-  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-  @ToString.Exclude
-  private List<TravelMain> travelMains;
-
-  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-  @ToString.Exclude
-  private List<TravelPermissions> travelPermissions;
 
   @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
   @ToString.Exclude

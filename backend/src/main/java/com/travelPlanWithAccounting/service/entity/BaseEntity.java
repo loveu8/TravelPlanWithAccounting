@@ -1,21 +1,10 @@
 package com.travelPlanWithAccounting.service.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.travelPlanWithAccounting.service.util.UuidGeneratorUtils;
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.PrePersist;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
+
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -24,6 +13,20 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.travelPlanWithAccounting.service.util.UuidGeneratorUtils;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
+import jakarta.validation.Valid;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @Valid
@@ -44,7 +47,6 @@ public abstract class BaseEntity {
   @CreatedBy
   @JdbcTypeCode(SqlTypes.UUID)
   @Schema(description = "輸入者", example = "a01")
-  @Size(min = 1, max = 10)
   @Column(name = "created_by", updatable = false)
   private UUID createdBy;
 
@@ -61,7 +63,6 @@ public abstract class BaseEntity {
   @LastModifiedBy
   @JdbcTypeCode(SqlTypes.UUID)
   @Schema(description = "修改者", example = "a01")
-  @Size(min = 1, max = 10)
   @Column(name = "updated_by")
   private UUID updatedBy;
 

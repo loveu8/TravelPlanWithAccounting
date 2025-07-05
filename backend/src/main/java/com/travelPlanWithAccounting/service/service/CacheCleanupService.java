@@ -48,10 +48,10 @@ public class CacheCleanupService {
   /**
    * 定期執行的快取清理任務。 Periodically executed cache cleanup task.
    *
-   * <p>該方法每分鐘執行一次，清理所有類型的過期快取項目。 This method runs every minute to clean up all types of expired
+   * <p>該方法每52分鐘執行一次，清理所有類型的過期快取項目。 This method runs every 5 minute to clean up all types of expired
    * cache entries.
    */
-  @Scheduled(fixedRate = 60000) // 每分鐘執行一次
+  @Scheduled(fixedRate = 300000) // 每5分鐘執行一次
   public void cleanupExpiredEntries() {
     cleanupOtpCache();
     // TODO: 實現其他快取的清理邏輯

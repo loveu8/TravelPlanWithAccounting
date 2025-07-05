@@ -6,4 +6,5 @@ public class CacheConstants {
   public static final String ONE_TIME_TOKEN_CACHE = "one-time-tokens";
   public static final String REFRESH_TOKEN_CACHE = "refresh-tokens";
   public static final String USER_TOKENS_CACHE = "user-tokens";
+  public static final String OTP_VERIFIED_TOKEN_CACHE = "otp-verified-token";
 }

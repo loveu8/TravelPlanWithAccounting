@@ -1,29 +1,27 @@
 package com.travelPlanWithAccounting.service.entity;
 
+import java.io.Serializable;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Entity
 @Valid
@@ -32,21 +30,24 @@ import lombok.ToString;
 @DynamicUpdate
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @Table(name = "travel_main")
-public class TravelMain extends BaseEntity {
+public class TravelMain implements Serializable {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID) // 使用 GenerationType.UUID 讓JPA自動生成UUID
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
+    private UUID id;
+
+    @Column(name = "member_id", nullable = false)
+    private UUID memberId; // 不建立雙向關聯，直接使用 UUID
 
     @Column(name = "is_private")
     private Boolean isPrivate;
 
-    @Column(name = "start_date")
+    @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
-    @Column(name = "end_date")
+    @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
     @Column(name = "title", length = 255)
@@ -56,19 +57,21 @@ public class TravelMain extends BaseEntity {
     private String notes;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "visit_place", columnDefinition = "jsonb")
-    private JsonNode visitPlace;
+    @Column(name = "visit_place", columnDefinition = "JSONB")
+    // 將 JSON 儲存為 String，您可以使用自定義類型以實現更結構化的訪問
+    private String visitPlace;
 
-    @OneToMany(mappedBy = "travelMain", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    private List<TravelPermissions> travelPermissions;
+    @Column(name = "created_by")
+    private UUID createdBy;
 
-    @OneToMany(mappedBy = "travelMain", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    private List<TravelDate> travelDates;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
-    @OneToMany(mappedBy = "travelMain", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    private List<TravelDetail> travelDetails;
+    @Column(name = "updated_by")
+    private UUID updatedBy;
 
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }
