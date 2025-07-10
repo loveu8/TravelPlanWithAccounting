@@ -75,6 +75,12 @@ public class GooglePlaceDetailMapper {
     JsonNode rawHours =
         p.path("regularOpeningHours"); // regularOpeningHours :contentReference[oaicite:6]{index=6}
 
+    /* ======== 解析 types ======== */
+    List<String> types = new ArrayList<>();
+    for (JsonNode t : p.path("types")) { // types[] :contentReference[oaicite:2]{index=2}
+      types.add(t.asText());
+    }
+
     /* ======== 組 DTO ======== */
     return new PlaceDetailResponse(
         id, // 1 placeId
@@ -90,7 +96,7 @@ public class GooglePlaceDetailMapper {
         lat, // 11
         lon, // 12
         city, // 13
-        country // 14
-        );
+        country, // 14
+        types);
   }
 }

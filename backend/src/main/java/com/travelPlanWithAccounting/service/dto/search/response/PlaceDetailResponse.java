@@ -24,4 +24,5 @@ public class PlaceDetailResponse {
   private Double lon;
   private String city;
   private String country;
+  private List<String> types;
 }
