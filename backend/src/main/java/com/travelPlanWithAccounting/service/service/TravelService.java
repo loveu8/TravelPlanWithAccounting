@@ -345,7 +345,7 @@ public class TravelService {
         existingTravelDetail.setEndTime(request.getEndTime());
         existingTravelDetail.setGoogleMapInfo(request.getGoogleMapInfo());
         existingTravelDetail.setNotes(request.getNotes());
-        existingTravelDetail.setCreatedBy(request.getCreatedBy()); // 假設 request.createdBy 是更新人
+        existingTravelDetail.setUpdatedBy(request.getCreatedBy()); // 假設 request.createdBy 是更新人
 
         return travelDetailRepository.save(existingTravelDetail);
     }

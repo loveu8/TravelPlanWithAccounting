@@ -1,15 +1,5 @@
 package com.travelPlanWithAccounting.service.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
-import com.travelPlanWithAccounting.service.dto.google.AutocompleteRequest;
-import com.travelPlanWithAccounting.service.dto.google.DirectionsRequest;
-import com.travelPlanWithAccounting.service.dto.google.DistanceMatrixRequest;
-import com.travelPlanWithAccounting.service.dto.google.GeocodingRequest;
-import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
-import com.travelPlanWithAccounting.service.dto.google.PlaceDetailRequestPost;
-import com.travelPlanWithAccounting.service.dto.google.TextSearchRequest;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -18,9 +8,23 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
+import com.travelPlanWithAccounting.service.dto.google.AutocompleteRequest;
+import com.travelPlanWithAccounting.service.dto.google.ComputeRoutesRequest;
+import com.travelPlanWithAccounting.service.dto.google.DirectionsRequest;
+import com.travelPlanWithAccounting.service.dto.google.DistanceMatrixRequest;
+import com.travelPlanWithAccounting.service.dto.google.GeocodingRequest;
+import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
+import com.travelPlanWithAccounting.service.dto.google.PlaceDetailRequestPost;
+import com.travelPlanWithAccounting.service.dto.google.TextSearchRequest;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -38,14 +42,13 @@ public class MapService {
   }
 
   /** 輔助方法：執行 HTTP 請求並處理響應 */
-  private JsonNode executeHttpRequest(String apiType, String query, HttpRequest request) {
+  private JsonNode executeHttpRequest(String apiType, HttpRequest request) {
     try {
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() >= 200 && response.statusCode() < 300) {
         JsonNode jsonResponse = objectMapper.readTree(response.body());
-        // logApiCall(apiType, query, jsonResponse);
         return jsonResponse;
       } else {
         log.error(
@@ -53,31 +56,18 @@ public class MapService {
             apiType,
             response.statusCode(),
             response.body());
-        /*
-        JsonNode errorNode = objectMapper.createObjectNode()
-                .put("status", response.statusCode())
-                .put("error_message", response.body());
-        logApiCall(apiType, query, errorNode);
-        */
+        
         throw new RuntimeException("Google API Error: " + response.body());
       }
     } catch (IOException | InterruptedException e) {
       log.error("Network or parsing error calling {} API: {}", apiType, e.getMessage());
-      /*
-      JsonNode errorNode = objectMapper.createObjectNode()
-              .put("error_message", "Network or processing error: " + e.getMessage());
-      logApiCall(apiType, query, errorNode);
-      */
+      
       throw new RuntimeException(
           "Network or processing error during Google API call: " + e.getMessage(), e);
     } catch (Exception e) {
       e.printStackTrace();
       log.error("Unexpected error calling {} API: {}", apiType, e.getMessage());
-      /*
-      JsonNode errorNode = objectMapper.createObjectNode()
-              .put("error_message", "Unexpected error: " + e.getMessage());
-      logApiCall(apiType, query, errorNode);
-      */
+      
       throw new RuntimeException("Unexpected error during Google API call: " + e.getMessage(), e);
     }
   }
@@ -102,7 +92,7 @@ public class MapService {
               .header("Content-Type", "application/json")
               .POST(HttpRequest.BodyPublishers.ofString(requestBody))
               .build();
-      return executeHttpRequest("TextSearch", request.getTextQuery(), httpRequest);
+      return executeHttpRequest("TextSearch", httpRequest);
     } catch (Exception e) {
       throw new RuntimeException("Error preparing Text Search request: " + e.getMessage(), e);
     }
@@ -128,12 +118,7 @@ public class MapService {
               .header("Content-Type", "application/json")
               .POST(HttpRequest.BodyPublishers.ofString(requestBody))
               .build();
-      return executeHttpRequest(
-          "NearbySearch",
-          request.getLocationRestriction().getCircle().getCenter().getLatitude()
-              + ","
-              + request.getLocationRestriction().getCircle().getCenter().getLongitude(),
-          httpRequest);
+      return executeHttpRequest("NearbySearch", httpRequest);
     } catch (Exception e) {
       throw new RuntimeException("Error preparing Nearby Search request: " + e.getMessage(), e);
     }
@@ -157,7 +142,7 @@ public class MapService {
               .header("Content-Type", "application/json")
               .POST(HttpRequest.BodyPublishers.ofString(requestBody))
               .build();
-      return executeHttpRequest("Autocomplete", request.getInput(), httpRequest);
+      return executeHttpRequest("Autocomplete", httpRequest);
     } catch (Exception e) {
       throw new RuntimeException("Error preparing Autocomplete request: " + e.getMessage(), e);
     }
@@ -189,7 +174,7 @@ public class MapService {
             .header("X-Goog-FieldMask", String.join(",", request.getFieldMask()))
             .GET() // 內部實際呼叫 Google API 仍然使用 GET
             .build();
-    return executeHttpRequest("PlaceDetails", request.getPlaceId(), httpRequest);
+    return executeHttpRequest("PlaceDetails", httpRequest);
   }
 
   /**
@@ -225,7 +210,7 @@ public class MapService {
             .uri(URI.create(url))
             .GET() // 內部實際呼叫 Google API 仍然使用 GET
             .build();
-    return executeHttpRequest("Geocoding", queryParamValue, httpRequest);
+    return executeHttpRequest("Geocoding", httpRequest);
   }
 
   /**
@@ -255,7 +240,7 @@ public class MapService {
             .GET() // 內部實際呼叫 Google API 仍然使用 GET
             .build();
     return executeHttpRequest(
-        "Directions", request.getOrigin() + "->" + request.getDestination(), httpRequest);
+        "Directions", httpRequest);
   }
 
   /**
@@ -288,10 +273,45 @@ public class MapService {
             .GET() // 內部實際呼叫 Google API 仍然使用 GET
             .build();
     return executeHttpRequest(
-        "DistanceMatrix", request.getOrigins() + " to " + request.getDestinations(), httpRequest);
+        "DistanceMatrix", httpRequest);
     }
 
-
-    
-    
+    public JsonNode getComputeRoutes(ComputeRoutesRequest request, List<String> fieldMask) {
+      String url = googleApiConfig.getRoutesApiBaseUrl() + "directions/v2:computeRoutes";
+      log.info("Calling compute routes API (POST): {}", url);
+      try {
+        String requestBody = objectMapper.writeValueAsString(request);
+        HttpRequest httpRequest =
+            HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-Goog-Api-Key", googleApiConfig.getGoogleApiKey())
+                .header("X-Goog-FieldMask", String.join(",", fieldMask))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+        return executeHttpRequest("ComputeRoutes", httpRequest);
+      } catch (Exception e) {
+        throw new RuntimeException("Error preparing Compute Routes request: " + e.getMessage(), e);
+      }
+    }
+    /*
+    public JsonNode getComputeRouteMatrix(ComputeRouteMatrixRequest  request, List<String> fieldMask) {
+      String url = googleApiConfig.getRoutesApiBaseUrl() + "distanceMatrix/v2:computeRouteMatrix";
+      log.info("Calling compute route matrix API (POST): {}", url);
+      try {
+        String requestBody = objectMapper.writeValueAsString(request);
+        HttpRequest httpRequest =
+            HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("X-Goog-Api-Key", googleApiConfig.getGoogleApiKey())
+                .header("X-Goog-FieldMask", String.join(",", fieldMask))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+        return executeHttpRequest("ComputeRouteMatrix", httpRequest);
+      } catch (Exception e) {
+        throw new RuntimeException("Error preparing Compute Route Matrix request: " + e.getMessage(), e);
+      }
+    }
+       */
 }
