@@ -19,6 +19,9 @@ public class GoogleApiConfig {
     @Value("${google.maps-api-base-url}")
     private String mapsApiBaseUrl;
 
+    @Value("${google.routes.api.base-url}")
+    private String routesApiBaseUrl;
+
     @Bean
     public HttpClient httpClient() {
         // 配置 HttpClient，例如設置超時時間
@@ -38,5 +41,9 @@ public class GoogleApiConfig {
 
     public String getMapsApiBaseUrl() {
         return mapsApiBaseUrl;
+    }
+
+    public String getRoutesApiBaseUrl() {
+        return routesApiBaseUrl;
     }
 }
