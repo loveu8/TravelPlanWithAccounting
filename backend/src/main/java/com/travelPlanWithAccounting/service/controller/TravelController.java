@@ -113,13 +113,13 @@ public class TravelController {
     }
 
     @PostMapping("/deleteTravelDate") // 刪除行程日期 (POST 請求，ID在 Request Body 中)
-    public ResponseEntity<String> deleteTravelDate(@RequestBody UuidRequest request) {
+    public ResponseEntity<?> deleteTravelDate(@RequestBody UuidRequest request) {
         try {
             if (request.getId() == null) {
                 return ResponseEntity.badRequest().body("行程日期ID不能為空。");
             }
             travelService.deleteTravelDate(request.getId());
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok().body("日期已成功刪除。");
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 404 Not Found
         } catch (IllegalStateException e) {
@@ -216,13 +216,13 @@ public class TravelController {
     }
 
     @PostMapping("/deleteTravelDetail") // 刪除行程詳情 (POST 請求，ID在 Request Body 中)
-    public ResponseEntity<String> deleteTravelDetailById(@RequestBody UuidRequest request) {
+    public ResponseEntity<?> deleteTravelDetailById(@RequestBody UuidRequest request) {
         try {
             if (request.getId() == null) {
                 return ResponseEntity.badRequest().body("行程詳情ID不能為空。");
             }
             travelService.deleteTravelDetailById(request.getId());
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok().body("明細已成功刪除。");
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 如果找不到該 ID 的 TravelDetail
         } catch (Exception e) {

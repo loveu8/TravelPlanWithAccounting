@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.travelPlanWithAccounting.service.dto.google.AutocompleteRequest;
+import com.travelPlanWithAccounting.service.dto.google.ComputeRoutesRequest;
 import com.travelPlanWithAccounting.service.dto.google.DirectionsRequest;
 import com.travelPlanWithAccounting.service.dto.google.DistanceMatrixRequest;
 import com.travelPlanWithAccounting.service.dto.google.GeocodingRequest;
@@ -185,4 +186,34 @@ public class MapController {
         }
     }
 
+    @Operation(summary = "計算單一路線", description = "搜尋單一路線資訊。請提供 FieldMask 以指定回應欄位。")
+    // 移除 @ApiResponse
+    @PostMapping("/compute-routes")
+    public ResponseEntity<JsonNode> computeRoutes(
+            @RequestBody(required = true)
+            ComputeRoutesRequest request,
+            @RequestParam List<String> fieldMask) {
+        try {
+            JsonNode response = mapService.getComputeRoutes(request, fieldMask);
+            return handleBlockingApiResponse(response);
+        } catch (Exception e) {
+            return handleBlockingApiError(e);
+        }
+    }
+    /*
+    @Operation(summary = "計算多個起點到多個終點的路線矩陣", description = "多個起點到多個終點路線矩陣。請提供 FieldMask 以指定回應欄位。")
+    // 移除 @ApiResponse
+    @PostMapping("/compute-route-matrix")
+    public ResponseEntity<JsonNode> computeRouteMatrix(
+            @RequestBody(required = true)
+            ComputeRouteMatrixRequest request,
+            @RequestParam List<String> fieldMask) {
+        try {
+            JsonNode response = mapService.getComputeRouteMatrix(request, fieldMask);
+            return handleBlockingApiResponse(response);
+        } catch (Exception e) {
+            return handleBlockingApiError(e);
+        }
+    }
+         */
 }
