@@ -6,9 +6,12 @@ import org.springframework.stereotype.Component;
 /** zh-TW <-> 001 / en-US <-> 002 */
 @Component
 public class LangTypeMapper {
-  private final Map<String,String> langMap; // e.g., {zh-TW=001,en-US=002}
 
-  public LangTypeMapper(Map<String,String> poiLangLookup) {this.langMap = poiLangLookup;}
+  private final Map<String, String> langMap; // e.g., {zh-TW=001,en-US=002}
+
+  public LangTypeMapper(Map<String, String> poiLangLookup) {
+    this.langMap = poiLangLookup;
+  }
 
   public String toCode(String langType) {
     String c = langMap.get(langType);

@@ -1,8 +1,6 @@
 package com.travelPlanWithAccounting.service.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.google.PlaceDetailRequestPost;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
@@ -32,6 +30,7 @@ import com.travelPlanWithAccounting.service.repository.SearchAllLocationReposito
 import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchLocationByCodeRepository;
 import com.travelPlanWithAccounting.service.util.GooglePlaceConstants;
+import com.travelPlanWithAccounting.service.util.JsonHelper;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
 import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
@@ -74,6 +73,7 @@ public class SearchService {
   @Autowired private PoiTypeMapper poiTypeMapper;
   @Autowired private PoiLanguageEnrichmentPublisher enrichmentPublisher;
   @Autowired private PlaceDetailFacade placeDetailFacade;
+  @Autowired private JsonHelper jsonHelper;
 
   public List<Region> searchRegions(String countryCode, String langType) {
     List<Object[]> results = searchCountryRepository.findRegionsAndCities(countryCode, langType);
@@ -337,7 +337,7 @@ public class SearchService {
   @Transactional
   public SaveMemberPoiResponse saveMemberPoi(UUID authMemberId, SaveMemberPoiRequest req) {
     // 1) 驗證會員與身分一致
-    // memberService.assertActiveMember(authMemberId, req.getMemberId());
+    memberService.assertActiveMember(authMemberId, req.getMemberId());
 
     // 2) 語系 -> 內碼
     String langCode;
@@ -396,9 +396,9 @@ public class SearchService {
     poi.setReviewCount(dto.getReviewCount());
     poi.setPhone(dto.getPhone());
     poi.setWebsite(dto.getWebsite());
-    poi.setOpeningPeriods(serialize(dto.getRegularHoursRaw()));
-    poi.setPhotoUrls(serialize(dto.getPhotos()));
-    poi.setTypes(serialize(dto.getTypes()));
+    poi.setOpeningPeriods(jsonHelper.serialize(dto.getRegularHoursRaw()));
+    poi.setPhotoUrls(jsonHelper.serialize(dto.getPhotos()));
+    poi.setTypes(jsonHelper.serialize(dto.getTypes()));
     poi.setLat(new BigDecimal(dto.getLat()));
     poi.setLon(new BigDecimal(dto.getLon()));
     // geom 略（可用 native SQL 更新）
@@ -420,8 +420,8 @@ public class SearchService {
     JsonNode hours = dto.getRegularHoursRaw();
     if (hours != null && hours.has("weekdayDescriptions"))
       weekday = hours.get("weekdayDescriptions");
-    i18n.setWeekdayDescriptions(serialize(weekday));
-    i18n.setInfosRaw(serialize(dto.getRawJson()));
+    i18n.setWeekdayDescriptions(jsonHelper.serialize(weekday));
+    i18n.setInfosRaw(jsonHelper.serialize(dto.getRawJson()));
     poiI18nRepository.save(i18n);
 
     // member_poi link
@@ -434,15 +434,5 @@ public class SearchService {
     }
 
     return new TxResult(poi.getId(), poiCreated, langInserted, alreadySaved);
-  }
-
-  private String serialize(Object any) {
-    if (any == null) return null;
-    try {
-      return new ObjectMapper().writeValueAsString(any);
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-      return null; // 或丟 ApiException
-    }
   }
 }
