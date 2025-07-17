@@ -1,8 +1,12 @@
 package com.travelPlanWithAccounting.service.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.google.PlaceDetailRequestPost;
+import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.City;
@@ -10,20 +14,31 @@ import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
+import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponseV2;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.LocationGroup;
+import com.travelPlanWithAccounting.service.entity.Poi;
+import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
+import com.travelPlanWithAccounting.service.repository.MemberPoiRepository;
+import com.travelPlanWithAccounting.service.repository.PoiI18nRepository;
+import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllLocationRepository;
 import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchLocationByCodeRepository;
 import com.travelPlanWithAccounting.service.util.GooglePlaceConstants;
+import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
+import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
+import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -50,6 +65,15 @@ public class SearchService {
   @Autowired private GooglePlaceMapper placeMapper;
   @Autowired private PlaceDetailValidator placeDetailValidator;
   @Autowired private GooglePlaceDetailMapper placeDetailMapper;
+
+  @Autowired private MemberService memberService;
+  @Autowired private PoiRepository poiRepository;
+  @Autowired private PoiI18nRepository poiI18nRepository;
+  @Autowired private MemberPoiRepository memberPoiRepository;
+  @Autowired private LangTypeMapper langTypeMapper;
+  @Autowired private PoiTypeMapper poiTypeMapper;
+  @Autowired private PoiLanguageEnrichmentPublisher enrichmentPublisher;
+  @Autowired private PlaceDetailFacade placeDetailFacade;
 
   public List<Region> searchRegions(String countryCode, String langType) {
     List<Object[]> results = searchCountryRepository.findRegionsAndCities(countryCode, langType);
@@ -308,5 +332,117 @@ public class SearchService {
 
     // 4) Mapper 轉 DTO
     return placeDetailMapper.toDto(json);
+  }
+
+  @Transactional
+  public SaveMemberPoiResponse saveMemberPoi(UUID authMemberId, SaveMemberPoiRequest req) {
+    // 1) 驗證會員與身分一致
+    // memberService.assertActiveMember(authMemberId, req.getMemberId());
+
+    // 2) 語系 -> 內碼
+    String langCode;
+    try {
+      langCode = langTypeMapper.toCode(req.getLangType());
+    } catch (Exception e) {
+      throw new ApiException("unsupported langType");
+    }
+
+    // 3) 呼叫 Google Place Details
+    PlaceDetailResponseV2 dto;
+    try {
+      dto = placeDetailFacade.fetch(req.getPlaceId(), req.getLangType());
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      throw new ApiException("place not found");
+    }
+    if (dto.getPlaceId() == null || dto.getName() == null) {
+      throw new ApiException("place missing required fields");
+    }
+
+    // 4) DB 交易寫入
+    TxResult tx = doSaveTx(authMemberId, dto, langCode);
+
+    // 5) 背景補齊另一語系
+    enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), req.getLangType());
+
+    // 6) 回傳
+    return SaveMemberPoiResponse.builder()
+        .code(1)
+        .desc(tx.alreadySaved() ? "already saved" : "OK")
+        .poiId(tx.poiId())
+        .poiCreated(tx.poiCreated())
+        .langInserted(tx.langInserted())
+        .alreadySaved(tx.alreadySaved())
+        .build();
+  }
+
+  private record TxResult(
+      UUID poiId, boolean poiCreated, boolean langInserted, boolean alreadySaved) {}
+
+  @Transactional
+  protected TxResult doSaveTx(UUID memberId, PlaceDetailResponseV2 dto, String langCode) {
+    // lock existing poi
+    Optional<Poi> opt = poiRepository.lockByExternalId(dto.getPlaceId());
+    boolean poiCreated = opt.isEmpty();
+    Poi poi = opt.orElseGet(Poi::new);
+    if (poiCreated) poi.setExternalId(dto.getPlaceId());
+
+    // map poiType
+    String poiType = poiTypeMapper.map(dto.getPrimaryType(), dto.getTypes());
+    poi.setPoiType(poiType);
+
+    // scalar fields
+    poi.setRating(new BigDecimal(dto.getRating()));
+    poi.setReviewCount(dto.getReviewCount());
+    poi.setPhone(dto.getPhone());
+    poi.setWebsite(dto.getWebsite());
+    poi.setOpeningPeriods(serialize(dto.getRegularHoursRaw()));
+    poi.setPhotoUrls(serialize(dto.getPhotos()));
+    poi.setTypes(serialize(dto.getTypes()));
+    poi.setLat(new BigDecimal(dto.getLat()));
+    poi.setLon(new BigDecimal(dto.getLon()));
+    // geom 略（可用 native SQL 更新）
+
+    poi = poiRepository.save(poi);
+
+    // i18n upsert
+    Optional<PoiI18n> optI18n = poiI18nRepository.findByPoi_IdAndLangType(poi.getId(), langCode);
+    boolean langInserted = optI18n.isEmpty();
+    PoiI18n i18n = optI18n.orElseGet(PoiI18n::new);
+    i18n.setPoi(poi);
+    i18n.setLangType(langCode);
+    i18n.setName(dto.getName());
+    i18n.setDescription(dto.getDescription());
+    i18n.setAddress(dto.getAddress());
+    i18n.setCityName(dto.getCity());
+    i18n.setCountryName(dto.getCountry());
+    Object weekday = null;
+    JsonNode hours = dto.getRegularHoursRaw();
+    if (hours != null && hours.has("weekdayDescriptions"))
+      weekday = hours.get("weekdayDescriptions");
+    i18n.setWeekdayDescriptions(serialize(weekday));
+    i18n.setInfosRaw(serialize(dto.getRawJson()));
+    poiI18nRepository.save(i18n);
+
+    // member_poi link
+    boolean alreadySaved;
+    if (memberPoiRepository.existsByMemberIdAndPoi_Id(memberId, poi.getId())) {
+      alreadySaved = true;
+    } else {
+      int rows = memberPoiRepository.insertIgnore(memberId, poi.getId());
+      alreadySaved = rows == 0; // 0 表示衝突已存在
+    }
+
+    return new TxResult(poi.getId(), poiCreated, langInserted, alreadySaved);
+  }
+
+  private String serialize(Object any) {
+    if (any == null) return null;
+    try {
+      return new ObjectMapper().writeValueAsString(any);
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+      return null; // 或丟 ApiException
+    }
   }
 }

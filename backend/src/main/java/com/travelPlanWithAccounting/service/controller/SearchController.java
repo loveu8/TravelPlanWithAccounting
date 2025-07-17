@@ -1,6 +1,8 @@
 package com.travelPlanWithAccounting.service.controller;
 
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
@@ -10,17 +12,22 @@ import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailRespo
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.dto.setting.SettingResponse;
 import com.travelPlanWithAccounting.service.entity.Location;
+import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.service.SearchService;
 import com.travelPlanWithAccounting.service.service.SettingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -143,5 +150,24 @@ public class SearchController {
   public PlaceDetailResponse getPlaceDetails(
       @RequestParam String placeId, @RequestParam(defaultValue = "zh-TW") String langType) {
     return searchService.getPlaceDetailById(placeId, langType);
+  }
+
+  @PostMapping("/saveMemberPoi")
+  @Operation(summary = "儲存會員景點")
+  public ResponseEntity<SaveMemberPoiResponse> save(
+      @RequestHeader("X-member-id") UUID memberId, @Valid @RequestBody SaveMemberPoiRequest req) {
+    try {
+      SaveMemberPoiResponse resp = searchService.saveMemberPoi(memberId, req);
+      return ResponseEntity.ok(resp);
+    } catch (ApiException ex) {
+      return ResponseEntity.ok(
+          SaveMemberPoiResponse.builder()
+              .code(0)
+              .desc(ex.getDesc())
+              .poiCreated(false)
+              .langInserted(false)
+              .alreadySaved(false)
+              .build());
+    }
   }
 }
