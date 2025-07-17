@@ -14,6 +14,6 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
 
   Optional<Member> findByEmail(String email);
 
-  @Query("SELECT 1 FROM Member m WHERE m.id = :id AND m.status = 1")
+  @Query("SELECT m FROM Member m WHERE m.id = :id AND m.status = 1")
   Optional<Member> findStatusById(@Param("id") UUID id);
 }

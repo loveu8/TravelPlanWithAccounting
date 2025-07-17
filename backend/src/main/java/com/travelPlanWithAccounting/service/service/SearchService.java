@@ -12,12 +12,12 @@ import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
-import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponseV2;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.LocationGroup;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.entity.TxResult;
 import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
@@ -336,10 +336,8 @@ public class SearchService {
 
   @Transactional
   public SaveMemberPoiResponse saveMemberPoi(UUID authMemberId, SaveMemberPoiRequest req) {
-    // 1) 驗證會員與身分一致
     memberService.assertActiveMember(authMemberId, req.getMemberId());
 
-    // 2) 語系 -> 內碼
     String langCode;
     try {
       langCode = langTypeMapper.toCode(req.getLangType());
@@ -347,25 +345,20 @@ public class SearchService {
       throw new ApiException("unsupported langType");
     }
 
-    // 3) 呼叫 Google Place Details
-    PlaceDetailResponseV2 dto;
+    PlaceDetailResponse dto;
     try {
       dto = placeDetailFacade.fetch(req.getPlaceId(), req.getLangType());
     } catch (Exception ex) {
-      ex.printStackTrace();
       throw new ApiException("place not found");
     }
     if (dto.getPlaceId() == null || dto.getName() == null) {
       throw new ApiException("place missing required fields");
     }
 
-    // 4) DB 交易寫入
     TxResult tx = doSaveTx(authMemberId, dto, langCode);
 
-    // 5) 背景補齊另一語系
     enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), req.getLangType());
 
-    // 6) 回傳
     return SaveMemberPoiResponse.builder()
         .code(1)
         .desc(tx.alreadySaved() ? "already saved" : "OK")
@@ -376,39 +369,42 @@ public class SearchService {
         .build();
   }
 
-  private record TxResult(
-      UUID poiId, boolean poiCreated, boolean langInserted, boolean alreadySaved) {}
-
   @Transactional
-  protected TxResult doSaveTx(UUID memberId, PlaceDetailResponseV2 dto, String langCode) {
-    // lock existing poi
+  protected TxResult doSaveTx(UUID memberId, PlaceDetailResponse dto, String langCode) {
+
     Optional<Poi> opt = poiRepository.lockByExternalId(dto.getPlaceId());
     boolean poiCreated = opt.isEmpty();
     Poi poi = opt.orElseGet(Poi::new);
     if (poiCreated) poi.setExternalId(dto.getPlaceId());
 
-    // map poiType
+    // map poiType (原方法不改)
     String poiType = poiTypeMapper.map(dto.getPrimaryType(), dto.getTypes());
     poi.setPoiType(poiType);
 
-    // scalar fields
-    poi.setRating(new BigDecimal(dto.getRating()));
+    // scalar fields (null-safe)
+    poi.setRating(dto.getRating() == null ? null : BigDecimal.valueOf(dto.getRating()));
     poi.setReviewCount(dto.getReviewCount());
     poi.setPhone(dto.getPhone());
     poi.setWebsite(dto.getWebsite());
+
+    // JSON cols
+    // opening_periods / types 還是字串欄位 → serialize
     poi.setOpeningPeriods(jsonHelper.serialize(dto.getRegularHoursRaw()));
-    poi.setPhotoUrls(jsonHelper.serialize(dto.getPhotos()));
     poi.setTypes(jsonHelper.serialize(dto.getTypes()));
-    poi.setLat(new BigDecimal(dto.getLat()));
-    poi.setLon(new BigDecimal(dto.getLon()));
-    // geom 略（可用 native SQL 更新）
+
+    // photo_urls 是 List<String> → 直接塞
+    poi.setPhotoUrls(jsonHelper.serialize(dto.getPhotoUrls()));
+
+    poi.setLat(dto.getLat() == null ? null : BigDecimal.valueOf(dto.getLat()));
+    poi.setLon(dto.getLon() == null ? null : BigDecimal.valueOf(dto.getLon()));
 
     poi = poiRepository.save(poi);
 
     // i18n upsert
-    Optional<PoiI18n> optI18n = poiI18nRepository.findByPoi_IdAndLangType(poi.getId(), langCode);
-    boolean langInserted = optI18n.isEmpty();
-    PoiI18n i18n = optI18n.orElseGet(PoiI18n::new);
+    PoiI18n i18n =
+        poiI18nRepository.findByPoi_IdAndLangType(poi.getId(), langCode).orElseGet(PoiI18n::new);
+    boolean langInserted = i18n.getId() == null;
+
     i18n.setPoi(poi);
     i18n.setLangType(langCode);
     i18n.setName(dto.getName());
@@ -416,12 +412,17 @@ public class SearchService {
     i18n.setAddress(dto.getAddress());
     i18n.setCityName(dto.getCity());
     i18n.setCountryName(dto.getCountry());
-    Object weekday = null;
+
     JsonNode hours = dto.getRegularHoursRaw();
-    if (hours != null && hours.has("weekdayDescriptions"))
-      weekday = hours.get("weekdayDescriptions");
+    JsonNode weekday =
+        (hours != null && hours.has("weekdayDescriptions"))
+            ? hours.get("weekdayDescriptions")
+            : null;
     i18n.setWeekdayDescriptions(jsonHelper.serialize(weekday));
+
+    // 保留完整 raw JSON
     i18n.setInfosRaw(jsonHelper.serialize(dto.getRawJson()));
+
     poiI18nRepository.save(i18n);
 
     // member_poi link
@@ -430,7 +431,7 @@ public class SearchService {
       alreadySaved = true;
     } else {
       int rows = memberPoiRepository.insertIgnore(memberId, poi.getId());
-      alreadySaved = rows == 0; // 0 表示衝突已存在
+      alreadySaved = rows == 0;
     }
 
     return new TxResult(poi.getId(), poiCreated, langInserted, alreadySaved);

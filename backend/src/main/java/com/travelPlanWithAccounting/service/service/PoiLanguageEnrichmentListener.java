@@ -1,60 +1,52 @@
 package com.travelPlanWithAccounting.service.service;
 
-import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponseV2;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
 import com.travelPlanWithAccounting.service.repository.PoiI18nRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.util.JsonHelper;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
-import java.util.Optional;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 背景補齊另一語系; 失敗記 log 不拋 */
 @Component
+@RequiredArgsConstructor
 public class PoiLanguageEnrichmentListener {
-  private static final Logger log = LoggerFactory.getLogger(PoiLanguageEnrichmentListener.class);
 
-  @Autowired private PoiRepository poiRepository;
-  @Autowired private PoiI18nRepository poiI18nRepository;
-  @Autowired private LangTypeMapper langTypeMapper;
-  @Autowired private PlaceDetailFacade placeDetailFacade;
-  @Autowired private JsonHelper jsonHelper;
+  private final PlaceDetailFacade placeDetailFacade;
+  private final PoiRepository poiRepository;
+  private final PoiI18nRepository poiI18nRepository;
+  private final LangTypeMapper langTypeMapper;
+  private final JsonHelper jsonHelper;
 
-  @Async
   @EventListener
-  public void onPoiSaved(PoiSavedEvent ev) {
-    String otherLang = ev.savedLang().equals("zh-TW") ? "en-US" : "zh-TW";
-    String otherCode;
-    try {
-      otherCode = langTypeMapper.toCode(otherLang);
-    } catch (Exception e) {
-      return;
-    }
-
-    Optional<PoiI18n> exists = poiI18nRepository.findByPoi_IdAndLangType(ev.poiId(), otherCode);
-    if (exists.isPresent()) return; // already have
-
-    log.info("Enriching poi {} with lang {}", ev.poiId(), otherLang);
-    try {
-      PlaceDetailResponseV2 dto = placeDetailFacade.fetch(ev.placeId(), otherLang);
-      enrich(ev.poiId(), otherCode, dto);
-    } catch (Exception ex) {
-      log.warn("Failed enrich poi {} lang {}: {}", ev.poiId(), otherLang, ex.toString());
-    }
+  @Transactional
+  public void onPoiSaved(PoiSavedEvent evt) {
+    String targetLang = resolveTargetLang(evt.savedLang());
+    enrich(evt.poiId(), evt.placeId(), targetLang);
   }
 
-  @Transactional
-  protected void enrich(UUID poiId, String langCode, PlaceDetailResponseV2 dto) {
-    Poi poi = poiRepository.findById(poiId).orElseThrow();
-    PoiI18n i18n = new PoiI18n();
+  private String resolveTargetLang(String savedLang) {
+    return "zh-TW".equalsIgnoreCase(savedLang) ? "en-US" : "zh-TW";
+  }
+
+  private void enrich(UUID poiId, String placeId, String targetLang) {
+    PlaceDetailResponse dto = placeDetailFacade.fetch(placeId, targetLang);
+    if (dto == null || dto.getPlaceId() == null) return;
+
+    String langCode = langTypeMapper.toCode(targetLang);
+
+    Poi poi = poiRepository.getReferenceById(poiId);
+
+    PoiI18n i18n =
+        poiI18nRepository.findByPoi_IdAndLangType(poiId, langCode).orElseGet(PoiI18n::new);
+
     i18n.setPoi(poi);
     i18n.setLangType(langCode);
     i18n.setName(dto.getName());
@@ -62,12 +54,16 @@ public class PoiLanguageEnrichmentListener {
     i18n.setAddress(dto.getAddress());
     i18n.setCityName(dto.getCity());
     i18n.setCountryName(dto.getCountry());
-    Object weekday = null;
-    if (dto.getRegularHoursRaw() != null && dto.getRegularHoursRaw().has("weekdayDescriptions")) {
-      weekday = dto.getRegularHoursRaw().get("weekdayDescriptions");
-    }
+
+    JsonNode hours = dto.getRegularHoursRaw();
+    JsonNode weekday =
+        (hours != null && hours.has("weekdayDescriptions"))
+            ? hours.get("weekdayDescriptions")
+            : null;
     i18n.setWeekdayDescriptions(jsonHelper.serialize(weekday));
+
     i18n.setInfosRaw(jsonHelper.serialize(dto.getRawJson()));
+
     poiI18nRepository.save(i18n);
   }
 }
