@@ -34,6 +34,6 @@ public class PlaceDetailFacade {
     validator.validate(placeId, langType);
     PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
     JsonNode json = mapService.getPlaceDetails(req);
-    return mapper.toDto(json);
+    return mapper.toDto(json, true);
   }
 }

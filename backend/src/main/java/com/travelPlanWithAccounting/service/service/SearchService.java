@@ -331,13 +331,15 @@ public class SearchService {
     JsonNode json = mapService.getPlaceDetails(req);
 
     // 4) Mapper 轉 DTO
-    return placeDetailMapper.toDto(json);
+    return placeDetailMapper.toDto(json, false);
   }
 
   @Transactional
   public SaveMemberPoiResponse saveMemberPoi(UUID authMemberId, SaveMemberPoiRequest req) {
+    // 1) 確認會員存在
     memberService.assertActiveMember(authMemberId, req.getMemberId());
 
+    // 2) 確認 語言傳遞正確
     String langCode;
     try {
       langCode = langTypeMapper.toCode(req.getLangType());
@@ -345,6 +347,7 @@ public class SearchService {
       throw new ApiException("unsupported langType");
     }
 
+    // 3) 查詢API確認存在此地點
     PlaceDetailResponse dto;
     try {
       dto = placeDetailFacade.fetch(req.getPlaceId(), req.getLangType());
@@ -355,8 +358,10 @@ public class SearchService {
       throw new ApiException("place missing required fields");
     }
 
+    // 4) 確認儲存
     TxResult tx = doSaveTx(authMemberId, dto, langCode);
 
+    // 5) 背景處理其他語系
     enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), req.getLangType());
 
     return SaveMemberPoiResponse.builder()

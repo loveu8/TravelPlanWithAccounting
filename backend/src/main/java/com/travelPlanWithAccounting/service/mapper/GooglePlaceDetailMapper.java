@@ -15,7 +15,7 @@ public class GooglePlaceDetailMapper {
 
   private final GoogleApiConfig googleApiConfig;
 
-  public PlaceDetailResponse toDto(JsonNode p) {
+  public PlaceDetailResponse toDto(JsonNode p, boolean withDetails) {
 
     /* ======== 基本欄位 ======== */
     String id = p.path("id").asText();
@@ -88,7 +88,7 @@ public class GooglePlaceDetailMapper {
         .country(country)
         .types(types)
         .primaryType(primaryType)
-        .rawJson(p) // 整包節點
+        .rawJson(withDetails ? p : null) // 整包資料
         .build();
   }
 
