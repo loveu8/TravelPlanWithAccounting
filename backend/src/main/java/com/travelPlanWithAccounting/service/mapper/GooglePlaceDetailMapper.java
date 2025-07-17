@@ -67,8 +67,7 @@ public class GooglePlaceDetailMapper {
               // :contentReference[oaicite:5]{index=5}
               + photoName
               + "/media?key="
-              + googleApiConfig.getGoogleApiKey()
-              + "&maxWidthPx=400");
+              + googleApiConfig.getGoogleApiKey());
     }
 
     /* ======== regularOpeningHours 原始 JSON (含 periods/weekdayDescriptions) ======== */
@@ -97,6 +96,6 @@ public class GooglePlaceDetailMapper {
         lon, // 12
         city, // 13
         country, // 14
-        types);
+        types, null, null);
   }
 }
