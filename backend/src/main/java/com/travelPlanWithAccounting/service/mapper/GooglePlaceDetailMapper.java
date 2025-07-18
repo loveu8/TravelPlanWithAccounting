@@ -1,8 +1,12 @@
 package com.travelPlanWithAccounting.service.mapper;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
+import com.travelPlanWithAccounting.service.entity.Poi;
+import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.util.JsonHelper;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class GooglePlaceDetailMapper {
 
   private final GoogleApiConfig googleApiConfig;
+  private final JsonHelper jsonHelper;
 
   public PlaceDetailResponse toDto(JsonNode p, boolean withDetails) {
 
@@ -99,5 +104,28 @@ public class GooglePlaceDetailMapper {
         + googleApiConfig.getGoogleApiKey()
         + "&maxWidthPx="
         + maxWidthPx;
+  }
+
+  // 轉 DB -> PlaceDetailResponse
+  public PlaceDetailResponse toDtoFromDb(Poi p, PoiI18n i) {
+    return PlaceDetailResponse.builder()
+        .placeId(p.getExternalId())
+        .name(i.getName())
+        .address(i.getAddress())
+        .rating(p.getRating() != null ? p.getRating().doubleValue() : null)
+        .reviewCount(p.getReviewCount())
+        .description(i.getDescription())
+        .phone(p.getPhone())
+        .website(p.getWebsite())
+        .photoUrls(jsonHelper.deserialize(p.getPhotoUrls(), new TypeReference<>() {}))
+        .regularHoursRaw(jsonHelper.deserializeToNode(p.getOpeningPeriods()))
+        .lat(p.getLat() != null ? p.getLat().doubleValue() : null)
+        .lon(p.getLon() != null ? p.getLon().doubleValue() : null)
+        .city(i.getCityName())
+        .country(i.getCountryName())
+        .types(jsonHelper.deserialize(p.getTypes(), new TypeReference<>() {}))
+        .primaryType(null) // 如果要也存，可另加欄位
+        .rawJson(jsonHelper.deserializeToNode(i.getInfosRaw()))
+        .build();
   }
 }

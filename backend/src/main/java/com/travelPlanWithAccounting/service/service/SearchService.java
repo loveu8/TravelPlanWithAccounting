@@ -45,11 +45,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SearchService {
+
+  private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
   @Autowired private SearchCountryRepository searchCountryRepository;
 
@@ -324,13 +328,21 @@ public class SearchService {
     // 1) 驗證輸入
     placeDetailValidator.validate(placeId, langType);
 
-    // 2) 交給 Factory 組請求
-    PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
+    // --- 2) 嘗試本地快取 ---
+    // 2.1) 試讀 infos_raw
+    String langCode = langTypeMapper.toCode(langType); // zh‑TW→001 / en‑US→002 …
+    Optional<String> cachedJson = poiRepository.findCachedRawJson(placeId, langCode);
 
-    // 3) MapService 呼叫
-    JsonNode json = mapService.getPlaceDetails(req);
-
-    // 4) Mapper 轉 DTO
+    JsonNode json = null;
+    if (cachedJson.isPresent()) {
+      log.debug("Cache‑hit placeId={} langType={}", placeId, langType);
+      json = jsonHelper.deserializeToNode(cachedJson.get());
+    } else {
+      // --- 2.2) MISS，呼叫 Google ---
+      log.debug("Call api placeId={} langType={}", placeId, langType);
+      PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
+      json = mapService.getPlaceDetails(req);
+    }
     return placeDetailMapper.toDto(json, false);
   }
 
