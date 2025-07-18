@@ -382,7 +382,6 @@ public class SearchService {
     Poi poi = opt.orElseGet(Poi::new);
     if (poiCreated) poi.setExternalId(dto.getPlaceId());
 
-    // map poiType (原方法不改)
     String poiType = poiTypeMapper.map(dto.getPrimaryType(), dto.getTypes());
     poi.setPoiType(poiType);
 
