@@ -17,6 +17,7 @@ import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.LocationGroup;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
 import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
@@ -323,26 +324,31 @@ public class SearchService {
    * @param langType 語系
    * @return PlaceDetailResponse
    */
+  @Transactional
   public PlaceDetailResponse getPlaceDetailById(String placeId, String langType) {
 
-    // 1) 驗證輸入
+    // 1) 驗證
     placeDetailValidator.validate(placeId, langType);
+    String langCode = langTypeMapper.toCode(langType);
 
-    // --- 2) 嘗試本地快取 ---
-    // 2.1) 試讀 infos_raw
-    String langCode = langTypeMapper.toCode(langType); // zh‑TW→001 / en‑US→002 …
+    // 2) 先找 DB（替換原本的 infos_raw 快取）
     Optional<String> cachedJson = poiRepository.findCachedRawJson(placeId, langCode);
+    JsonNode json;
+    boolean hit = cachedJson.isPresent();
 
-    JsonNode json = null;
-    if (cachedJson.isPresent()) {
+    if (hit) {
       log.debug("Cache‑hit placeId={} langType={}", placeId, langType);
       json = jsonHelper.deserializeToNode(cachedJson.get());
     } else {
-      // --- 2.2) MISS，呼叫 Google ---
       log.debug("Call api placeId={} langType={}", placeId, langType);
       PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
       json = mapService.getPlaceDetails(req);
+
+      // 2.3) API 成功 → 立即 upsert 進 DB
+      PlaceDetailResponse dto = placeDetailMapper.toDto(json, false);
+      upsertPoiAndI18n(dto, langCode); // 共用方法，避免重複
     }
+
     return placeDetailMapper.toDto(json, false);
   }
 
@@ -389,36 +395,50 @@ public class SearchService {
   @Transactional
   protected TxResult doSaveTx(UUID memberId, PlaceDetailResponse dto, String langCode) {
 
+    // 1) 先 upsert Poi + i18n
+    TxPoiResult poiTx = upsertPoiAndI18n(dto, langCode);
+
+    // 2) member_poi link（原本程式碼保留）
+    boolean alreadySaved =
+        memberPoiRepository.existsByMemberIdAndPoi_Id(memberId, poiTx.getPoiId());
+    if (!alreadySaved) {
+      int rows = memberPoiRepository.insertIgnore(memberId, poiTx.getPoiId());
+      alreadySaved = rows == 0;
+    }
+
+    return new TxResult(
+        poiTx.getPoiId(), poiTx.isPoiCreated(), poiTx.isLangInserted(), alreadySaved);
+  }
+
+  /** 專責「Poi + PoiI18n」upsert，不處理 member_poi。 傳回 poiId 與旗標，方便統計或後續處理。 */
+  @Transactional
+  protected TxPoiResult upsertPoiAndI18n(PlaceDetailResponse dto, String langCode) {
+
     Optional<Poi> opt = poiRepository.lockByExternalId(dto.getPlaceId());
     boolean poiCreated = opt.isEmpty();
     Poi poi = opt.orElseGet(Poi::new);
     if (poiCreated) poi.setExternalId(dto.getPlaceId());
 
-    String poiType = poiTypeMapper.map(dto.getPrimaryType(), dto.getTypes());
-    poi.setPoiType(poiType);
-
-    // scalar fields (null-safe)
+    // ===== scalar fields =====
+    poi.setPoiType(poiTypeMapper.map(dto.getPrimaryType(), dto.getTypes()));
     poi.setRating(dto.getRating() == null ? null : BigDecimal.valueOf(dto.getRating()));
     poi.setReviewCount(dto.getReviewCount());
     poi.setPhone(dto.getPhone());
     poi.setWebsite(dto.getWebsite());
 
-    // JSON cols
-    // opening_periods / types 還是字串欄位 → serialize
+    // ===== JSON fields =====
     poi.setOpeningPeriods(jsonHelper.serialize(dto.getRegularHoursRaw()));
     poi.setTypes(jsonHelper.serialize(dto.getTypes()));
-
-    // photo_urls 是 List<String> → 直接塞
     poi.setPhotoUrls(jsonHelper.serialize(dto.getPhotoUrls()));
-
     poi.setLat(dto.getLat() == null ? null : BigDecimal.valueOf(dto.getLat()));
     poi.setLon(dto.getLon() == null ? null : BigDecimal.valueOf(dto.getLon()));
 
-    poi = poiRepository.save(poi);
+    poiRepository.save(poi);
 
-    // i18n upsert
+    // ===== i18n upsert =====
     PoiI18n i18n =
         poiI18nRepository.findByPoi_IdAndLangType(poi.getId(), langCode).orElseGet(PoiI18n::new);
+
     boolean langInserted = i18n.getId() == null;
 
     i18n.setPoi(poi);
@@ -429,27 +449,16 @@ public class SearchService {
     i18n.setCityName(dto.getCity());
     i18n.setCountryName(dto.getCountry());
 
-    JsonNode hours = dto.getRegularHoursRaw();
     JsonNode weekday =
-        (hours != null && hours.has("weekdayDescriptions"))
-            ? hours.get("weekdayDescriptions")
-            : null;
+        Optional.ofNullable(dto.getRegularHoursRaw())
+            .filter(h -> h.has("weekdayDescriptions"))
+            .map(h -> h.get("weekdayDescriptions"))
+            .orElse(null);
     i18n.setWeekdayDescriptions(jsonHelper.serialize(weekday));
-
-    // 保留完整 raw JSON
     i18n.setInfosRaw(jsonHelper.serialize(dto.getRawJson()));
 
     poiI18nRepository.save(i18n);
 
-    // member_poi link
-    boolean alreadySaved;
-    if (memberPoiRepository.existsByMemberIdAndPoi_Id(memberId, poi.getId())) {
-      alreadySaved = true;
-    } else {
-      int rows = memberPoiRepository.insertIgnore(memberId, poi.getId());
-      alreadySaved = rows == 0;
-    }
-
-    return new TxResult(poi.getId(), poiCreated, langInserted, alreadySaved);
+    return new TxPoiResult(poi.getId(), poiCreated, langInserted);
   }
 }
