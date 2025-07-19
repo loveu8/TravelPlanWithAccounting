@@ -1,4 +1,5 @@
 import type { DayPickerProps } from "react-day-picker";
+import type ITextFieldProps from "@/app/components/TextField/text-field.types";
 
 export type SupportLocaleType = "en-US" | "zh-TW";
 
@@ -19,6 +20,14 @@ interface IDatePickerBaseProps {
    * 輸入框上方的標籤
    */
   label?: string;
+  /**
+   * 輸入框的大小設定
+   */
+  size?: ITextFieldProps["size"];
+  /**
+   * 是否為必填欄位
+   */
+  required?: boolean;
   /**
    * 多語系支援
    */
