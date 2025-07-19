@@ -41,8 +41,8 @@ public final class GooglePlaceConstants {
           "regularOpeningHours", // 完整營業時段
           "photos", // 最多 5 張
           "location", // ★ 新增：latLng
-          "addressComponents" // ★ 新增：解析國家 / 城市
-          );
+          "addressComponents", // ★ 新增：解析國家 / 城市
+          "types");
 
   public static final int DEFAULT_NEARBY_RADIUS_METERS = 5_000;
   public static final int DEFAULT_TEXT_RADIUS_METERS = 50_000;

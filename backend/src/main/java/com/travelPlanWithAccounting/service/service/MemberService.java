@@ -3,9 +3,11 @@ package com.travelPlanWithAccounting.service.service;
 import com.travelPlanWithAccounting.service.dto.member.MemberRegisterRequest;
 import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
 import com.travelPlanWithAccounting.service.entity.Member;
+import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,5 +127,27 @@ public class MemberService {
   private String generateJwt(Member member) {
     // TODO: 串接 JWT 工具類別
     return "mock-jwt-token";
+  }
+
+  /**
+   * 驗證：body.memberId (若不為 null) 必須與 authMemberId 相同；會員必須存在且為 active。
+   *
+   * @return Member (active)
+   */
+  public Member assertActiveMember(UUID authMemberId, String bodyMemberIdOpt) {
+    if (bodyMemberIdOpt != null) {
+      UUID bodyId;
+      try {
+        bodyId = UUID.fromString(bodyMemberIdOpt);
+      } catch (Exception ex) {
+        throw new ApiException("memberId invalid");
+      }
+      if (!bodyId.equals(authMemberId)) {
+        throw new ApiException("memberId mismatch");
+      }
+    }
+    return memberRepository
+        .findStatusById(authMemberId)
+        .orElseThrow(() -> new ApiException("member not found"));
   }
 }
