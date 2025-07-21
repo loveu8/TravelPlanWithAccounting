@@ -1,5 +1,6 @@
 package com.travelPlanWithAccounting.service.util;
 
+import com.travelPlanWithAccounting.service.exception.MemberPoiException;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -14,9 +15,11 @@ public class LangTypeMapper {
   }
 
   public String toCode(String langType) {
-    String c = langMap.get(langType);
-    if (c == null) throw new IllegalArgumentException("unsupported langType: " + langType);
-    return c;
+    String code = langMap.get(langType);
+    if (code == null) {
+      throw new MemberPoiException.UnsupportedLang(); // <‑‑ 直接拋自家錯誤
+    }
+    return code;
   }
 
   public String toLang(String code) {
@@ -24,6 +27,6 @@ public class LangTypeMapper {
         .filter(e -> e.getValue().equals(code))
         .map(Map.Entry::getKey)
         .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("unsupported lang code:" + code));
+        .orElseThrow(MemberPoiException.UnsupportedLang::new);
   }
 }

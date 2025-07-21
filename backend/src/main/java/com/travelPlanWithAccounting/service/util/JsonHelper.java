@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.travelPlanWithAccounting.service.exception.JsonHelperException;
+import com.travelPlanWithAccounting.service.message.JsonHelperMessageCode;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +63,7 @@ public class JsonHelper {
       return objectMapper.readTree(json);
     } catch (JsonProcessingException e) {
       log.error("deserializeToNode error", e);
-      throw new IllegalStateException("JSON deserializeToNode error", e);
+      throw new JsonHelperException(JsonHelperMessageCode.JSON_DESERIALIZE_ERROR);
     }
   }
 }

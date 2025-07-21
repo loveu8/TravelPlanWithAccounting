@@ -3,6 +3,7 @@ package com.travelPlanWithAccounting.service.service;
 import com.travelPlanWithAccounting.service.dto.setting.SettingResponse;
 import com.travelPlanWithAccounting.service.entity.Setting;
 import com.travelPlanWithAccounting.service.repository.SettingRepository;
+import com.travelPlanWithAccounting.service.validator.Validator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class SettingService {
 
   @Autowired private SettingRepository settingRepository;
+  @Autowired private Validator coommonValidator;
 
   /**
    * 根據類別查詢設定
@@ -20,11 +22,10 @@ public class SettingService {
    * @return List<SettingResponse>
    */
   public List<SettingResponse> getSettingsByCategory(String category) {
-    // 暫時限制只能查詢 LANG_TYPE
-    if (!"LANG_TYPE".equals(category)) {
-      throw new RuntimeException("目前只支援查詢 LANG_TYPE 類別的設定");
-    }
+    // 1) 暫時限制只能查詢 LANG_TYPE
+    coommonValidator.validateCategory(category);
 
+    // 2) 查回實際結果
     List<Setting> settings = settingRepository.findByCategory(category);
     return settings.stream().map(this::convertToResponse).collect(Collectors.toList());
   }
