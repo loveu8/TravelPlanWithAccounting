@@ -7,23 +7,21 @@ import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
-import com.travelPlanWithAccounting.service.dto.search.response.City;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.entity.Location;
-import com.travelPlanWithAccounting.service.entity.LocationGroup;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
 import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
 import com.travelPlanWithAccounting.service.exception.ApiException;
-import com.travelPlanWithAccounting.service.exception.SearchRegionsExecption;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
+import com.travelPlanWithAccounting.service.mapper.RegionAggregator;
 import com.travelPlanWithAccounting.service.repository.MemberPoiRepository;
 import com.travelPlanWithAccounting.service.repository.PoiI18nRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
@@ -37,14 +35,12 @@ import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
 import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
+import com.travelPlanWithAccounting.service.validator.RegionValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -62,6 +58,10 @@ public class SearchService {
   @Autowired private SearchLocationByCodeRepository searchLocationByCodeRepository;
 
   @Autowired private MapService mapService;
+
+  // searchRegions
+  @Autowired private RegionValidator regionValidator;
+  @Autowired private RegionAggregator regionAggregator;
 
   // Google 相關服務
   @Autowired private LocationHelper locationHelper;
@@ -82,52 +82,15 @@ public class SearchService {
   @Autowired private JsonHelper jsonHelper;
 
   public List<Region> searchRegions(String countryCode, String langType) {
-    validate(countryCode, langType);
 
+    // 1) 驗證資料
+    regionValidator.validate(countryCode, langType);
+
+    // 2) 查詢DB
     List<Object[]> results = searchCountryRepository.findRegionsAndCities(countryCode, langType);
 
-    // 使用 Map 按地區聚合城市資料
-    Map<UUID, Region> regionMap = new HashMap<>();
-
-    for (Object[] row : results) {
-      LocationGroup group = (LocationGroup) row[0];
-      String regionName = (String) row[1];
-      Location location = (Location) row[3];
-      String cityName = (String) row[4];
-
-      // 若該地區尚未存在於 Map 中，則初始化
-      Region region =
-          regionMap.computeIfAbsent(
-              group.getId(),
-              id -> {
-                Region dto = new Region();
-                dto.setRegionCode(group.getCode());
-                dto.setRegionName(regionName != null ? regionName : group.getCode());
-                dto.setOrderIndex(group.getOrderIndex());
-                dto.setCities(new ArrayList<>());
-                return dto;
-              });
-
-      // 添加城市資料
-      City city = new City();
-      city.setCode(location.getCode());
-      city.setName(cityName != null ? cityName : location.getCode());
-      region.getCities().add(city);
-    }
-
-    // 轉換為 List 並按 orderIndex 排序
-    List<Region> regions = new ArrayList<>(regionMap.values());
-    regions.sort(Comparator.comparing(Region::getOrderIndex));
-    return regions;
-  }
-
-  private void validate(String countryCode, String langType) {
-    if (countryCode == null || !(List.of("JP", "TW").contains(countryCode))) {
-      throw new SearchRegionsExecption.CountryError();
-    }
-    if (!List.of("zh-TW", "en-US").contains(langType)) {
-      throw new SearchRegionsExecption.LangTypeError();
-    }
+    // 3) 聚合結果
+    return regionAggregator.aggregate(results);
   }
 
   @Autowired private SearchAllCountryRepository searchAllCountryRepository;

@@ -4,8 +4,8 @@ import com.travelPlanWithAccounting.service.config.MessageSourceHolder;
 import org.springframework.http.HttpStatus;
 
 public enum SearchRegionsMessageCode implements MessageCode {
-  COUNTRY_CODE_ERROR("ESR-001", HttpStatus.BAD_REQUEST),
-  LANG_TYPE_ERROR("ESE-002", HttpStatus.BAD_REQUEST);
+  COUNTRY_CODE_ERROR("SR-001", HttpStatus.BAD_REQUEST),
+  LANG_TYPE_ERROR("SR-002", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final HttpStatus httpStatus;
