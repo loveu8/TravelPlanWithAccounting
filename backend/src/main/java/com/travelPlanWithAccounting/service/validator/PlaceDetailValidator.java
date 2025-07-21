@@ -1,5 +1,6 @@
 package com.travelPlanWithAccounting.service.validator;
 
+import com.travelPlanWithAccounting.service.exception.PlaceDetailException;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
@@ -13,10 +14,10 @@ public class PlaceDetailValidator {
 
   public void validate(String placeId, String lang) {
     if (!StringUtils.hasText(placeId) || !PLACE_ID_PATTERN.matcher(placeId).matches()) {
-      throw new IllegalArgumentException("非法的 placeId");
+      throw new PlaceDetailException.InvalidPlaceId();
     }
     if (!SUPPORTED_LANG.contains(lang)) {
-      throw new IllegalArgumentException("不支援的語系: " + lang);
+      throw new PlaceDetailException.UnsupportedLang();
     }
   }
 }
