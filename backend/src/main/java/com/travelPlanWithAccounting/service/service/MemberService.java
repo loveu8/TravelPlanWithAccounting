@@ -3,7 +3,6 @@ package com.travelPlanWithAccounting.service.service;
 import com.travelPlanWithAccounting.service.dto.member.MemberRegisterRequest;
 import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
 import com.travelPlanWithAccounting.service.entity.Member;
-import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
@@ -140,14 +139,14 @@ public class MemberService {
       try {
         bodyId = UUID.fromString(bodyMemberIdOpt);
       } catch (Exception ex) {
-        throw new ApiException("memberId invalid");
+        throw new MemberException.MemberIdInvalid();
       }
       if (!bodyId.equals(authMemberId)) {
-        throw new ApiException("memberId mismatch");
+        throw new MemberException.MemberIdMismatch();
       }
     }
     return memberRepository
         .findStatusById(authMemberId)
-        .orElseThrow(() -> new ApiException("member not found"));
+        .orElseThrow(MemberException.MemberNotFound::new);
   }
 }

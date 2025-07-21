@@ -37,4 +37,22 @@ public class MemberException extends ApiException {
       super(MemberMessageCode.EMAIL_FORMAT_INVALID);
     }
   }
+
+  public static class MemberIdInvalid extends ApiException {
+    public MemberIdInvalid() {
+      super(MemberMessageCode.MEMBER_ID_INVALID);
+    }
+  }
+
+  public static class MemberIdMismatch extends ApiException {
+    public MemberIdMismatch() {
+      super(MemberMessageCode.MEMBER_ID_MISMATCH);
+    }
+  }
+
+  public static class MemberNotFound extends ApiException {
+    public MemberNotFound() {
+      super(MemberMessageCode.MEMBER_NOT_FOUND);
+    }
+  }
 }

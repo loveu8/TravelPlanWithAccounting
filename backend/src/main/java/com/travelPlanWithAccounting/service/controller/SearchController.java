@@ -11,7 +11,6 @@ import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.dto.setting.SettingResponse;
-import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.service.SearchService;
 import com.travelPlanWithAccounting.service.service.SettingService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +19,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -78,7 +76,6 @@ public class SearchController {
     return searchService.searchNearby(request);
   }
 
-
   @PostMapping("/searchNearbyByLocationCode")
   @Operation(summary = "根據 Location 代碼搜尋附近景點")
   public List<LocationSearch> searchNearbyByLocationCode(@RequestBody SearchRequest request) {
@@ -100,20 +97,8 @@ public class SearchController {
 
   @PostMapping("/saveMemberPoi")
   @Operation(summary = "儲存會員景點")
-  public ResponseEntity<SaveMemberPoiResponse> save(
+  public SaveMemberPoiResponse save(
       @RequestHeader("X-member-id") UUID memberId, @Valid @RequestBody SaveMemberPoiRequest req) {
-    try {
-      SaveMemberPoiResponse resp = searchService.saveMemberPoi(memberId, req);
-      return ResponseEntity.ok(resp);
-    } catch (ApiException ex) {
-      return ResponseEntity.ok(
-          SaveMemberPoiResponse.builder()
-              .code(0)
-              .desc(ex.getDesc())
-              .poiCreated(false)
-              .langInserted(false)
-              .alreadySaved(false)
-              .build());
-    }
+    return searchService.saveMemberPoi(memberId, req);
   }
 }

@@ -17,7 +17,7 @@ import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
 import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
-import com.travelPlanWithAccounting.service.exception.ApiException;
+import com.travelPlanWithAccounting.service.exception.MemberPoiException;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
@@ -235,22 +235,17 @@ public class SearchService {
     memberService.assertActiveMember(authMemberId, req.getMemberId());
 
     // 2) 確認 語言傳遞正確
-    String langCode;
-    try {
-      langCode = langTypeMapper.toCode(req.getLangType());
-    } catch (Exception e) {
-      throw new ApiException("unsupported langType");
-    }
+    String langCode = langTypeMapper.toCode(req.getLangType());
 
     // 3) 查詢API確認存在此地點
     PlaceDetailResponse dto;
     try {
       dto = placeDetailFacade.fetch(req.getPlaceId(), req.getLangType());
     } catch (Exception ex) {
-      throw new ApiException("place not found");
+      throw new MemberPoiException.PlaceNotFound();
     }
     if (dto.getPlaceId() == null || dto.getName() == null) {
-      throw new ApiException("place missing required fields");
+      throw new MemberPoiException.PlaceRequiredMissing();
     }
 
     // 4) 確認儲存
