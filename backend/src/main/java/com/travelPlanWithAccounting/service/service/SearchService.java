@@ -65,7 +65,7 @@ public class SearchService {
 
   // Google 相關服務
   @Autowired private LocationHelper locationHelper;
-  @Autowired private SearchRequestValidator validator;
+  @Autowired private SearchRequestValidator searchRequestValidator;
   @Autowired private GoogleRequestFactory requestFactory;
   @Autowired private GooglePlaceMapper placeMapper;
   @Autowired private PlaceDetailValidator placeDetailValidator;
@@ -130,7 +130,7 @@ public class SearchService {
    */
   public List<LocationSearch> searchNearbyByLocationCode(SearchRequest request) {
     // 驗證
-    validator.validateNearby(request);
+    searchRequestValidator.validateNearby(request);
 
     // 取 Location（內含存在＋經緯度檢查）
     Location loc = locationHelper.getLocationOrThrow(request.getCode());
@@ -163,7 +163,7 @@ public class SearchService {
   public List<LocationSearch> searchTextByLocationCode(TextSearchRequest uiReq) {
 
     // 1) 驗證參數
-    validator.validateText(uiReq);
+    searchRequestValidator.validateText(uiReq);
 
     // 2) 取 Location（含代碼存在 & 經緯度檢查）
     Location loc = locationHelper.getLocationOrThrow(uiReq.getCode());
