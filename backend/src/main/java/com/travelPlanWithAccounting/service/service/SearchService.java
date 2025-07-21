@@ -28,7 +28,6 @@ import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllLocationRepository;
 import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
-import com.travelPlanWithAccounting.service.repository.SearchLocationByCodeRepository;
 import com.travelPlanWithAccounting.service.util.GooglePlaceConstants;
 import com.travelPlanWithAccounting.service.util.JsonHelper;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
@@ -54,8 +53,6 @@ public class SearchService {
   private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
   @Autowired private SearchCountryRepository searchCountryRepository;
-
-  @Autowired private SearchLocationByCodeRepository searchLocationByCodeRepository;
 
   @Autowired private MapService mapService;
 
@@ -122,95 +119,7 @@ public class SearchService {
       locationName.setLangType(langType);
       locationNames.add(locationName);
     }
-
     return locationNames;
-  }
-
-  // ==================== 新增：直接回傳 Location 物件的方法 ====================
-
-  /**
-   * 取得所有國家 (直接回傳 Location 物件)
-   *
-   * @return List<Location>
-   */
-  public List<Location> getAllCountries() {
-    return searchLocationByCodeRepository.findAllCountries();
-  }
-
-  /**
-   * 根據國家代碼取得該國家的所有州省
-   *
-   * @param countryCode 國家代碼
-   * @return List<Location>
-   */
-  public List<Location> getProvincesByCountryCode(String countryCode) {
-    return searchLocationByCodeRepository.findProvincesByCountryCode(countryCode);
-  }
-
-  /**
-   * 根據州省代碼取得該州省的所有城市
-   *
-   * @param provinceCode 州省代碼
-   * @return List<Location>
-   */
-  public List<Location> getCitiesByProvinceCode(String provinceCode) {
-    return searchLocationByCodeRepository.findCitiesByProvinceCode(provinceCode);
-  }
-
-  /**
-   * 根據代碼查詢單一 Location
-   *
-   * @param code Location 代碼
-   * @return Optional<Location>
-   */
-  public Optional<Location> getLocationByCode(String code) {
-    return searchLocationByCodeRepository.findByCode(code);
-  }
-
-  /**
-   * 根據代碼和層級查詢 Location
-   *
-   * @param code Location 代碼
-   * @param level 層級 (1=國家 2=州省 3=城市)
-   * @return Optional<Location>
-   */
-  public Optional<Location> getLocationByCodeAndLevel(String code, Short level) {
-    return searchLocationByCodeRepository.findByCodeAndLevel(code, level);
-  }
-
-  /**
-   * 根據層級查詢所有該層級的 Location
-   *
-   * @param level 層級 (1=國家 2=州省 3=城市)
-   * @return List<Location>
-   */
-  public List<Location> getLocationsByLevel(Short level) {
-    return searchLocationByCodeRepository.findByLevelOrderByOrderIndex(level);
-  }
-
-  /**
-   * 根據經緯度範圍查詢附近的 Location
-   *
-   * @param minLat 最小緯度
-   * @param maxLat 最大緯度
-   * @param minLon 最小經度
-   * @param maxLon 最大經度
-   * @return List<Location>
-   */
-  public List<Location> getLocationsByCoordinates(
-      Double minLat, Double maxLat, Double minLon, Double maxLon) {
-    return searchLocationByCodeRepository.findLocationsByCoordinates(
-        minLat, maxLat, minLon, maxLon);
-  }
-
-  /**
-   * 根據 ISO 類型查詢 Location
-   *
-   * @param isoType ISO 類型 (001: ISO-3166-1, 002: ISO-3166-2)
-   * @return List<Location>
-   */
-  public List<Location> getLocationsByIsoType(String isoType) {
-    return searchLocationByCodeRepository.findByIsoTypeOrderByOrderIndex(isoType);
   }
 
   /**
