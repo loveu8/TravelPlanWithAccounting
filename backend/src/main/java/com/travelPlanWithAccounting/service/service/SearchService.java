@@ -20,6 +20,7 @@ import com.travelPlanWithAccounting.service.entity.PoiI18n;
 import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
 import com.travelPlanWithAccounting.service.exception.ApiException;
+import com.travelPlanWithAccounting.service.exception.SearchRegionsExecption;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
@@ -81,6 +82,8 @@ public class SearchService {
   @Autowired private JsonHelper jsonHelper;
 
   public List<Region> searchRegions(String countryCode, String langType) {
+    validate(countryCode, langType);
+
     List<Object[]> results = searchCountryRepository.findRegionsAndCities(countryCode, langType);
 
     // 使用 Map 按地區聚合城市資料
@@ -116,6 +119,15 @@ public class SearchService {
     List<Region> regions = new ArrayList<>(regionMap.values());
     regions.sort(Comparator.comparing(Region::getOrderIndex));
     return regions;
+  }
+
+  private void validate(String countryCode, String langType) {
+    if (countryCode == null || !(List.of("JP", "TW").contains(countryCode))) {
+      throw new SearchRegionsExecption.CountryError();
+    }
+    if (!List.of("zh-TW", "en-US").contains(langType)) {
+      throw new SearchRegionsExecption.LangTypeError();
+    }
   }
 
   @Autowired private SearchAllCountryRepository searchAllCountryRepository;
