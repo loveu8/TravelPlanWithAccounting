@@ -1,5 +1,6 @@
 package com.travelPlanWithAccounting.service.mapper;
 
+import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.City;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.entity.Location;
@@ -9,9 +10,9 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class RegionAggregator {
+public class InfoAggregator {
 
-  public List<Region> aggregate(List<Object[]> rows) {
+  public List<Region> searchRegions(List<Object[]> rows) {
     Map<UUID, Region> map = new HashMap<>();
 
     for (Object[] r : rows) {
@@ -38,5 +39,20 @@ public class RegionAggregator {
     List<Region> list = new ArrayList<>(map.values());
     list.sort(Comparator.comparing(Region::getOrderIndex));
     return list;
+  }
+
+  public List<Country> searchCountries(List<Object[]> results) {
+    List<Country> countries = new ArrayList<>();
+
+    for (Object[] row : results) {
+      Location location = (Location) row[0];
+      String countryName = (String) row[1];
+
+      Country country = new Country();
+      country.setCode(location.getCode());
+      country.setName(countryName != null ? countryName : location.getCode());
+      countries.add(country);
+    }
+    return countries;
   }
 }

@@ -21,7 +21,7 @@ import com.travelPlanWithAccounting.service.exception.ApiException;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
-import com.travelPlanWithAccounting.service.mapper.RegionAggregator;
+import com.travelPlanWithAccounting.service.mapper.InfoAggregator;
 import com.travelPlanWithAccounting.service.repository.MemberPoiRepository;
 import com.travelPlanWithAccounting.service.repository.PoiI18nRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
@@ -35,8 +35,8 @@ import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
 import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
-import com.travelPlanWithAccounting.service.validator.RegionValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
+import com.travelPlanWithAccounting.service.validator.Validator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -60,8 +60,11 @@ public class SearchService {
   @Autowired private MapService mapService;
 
   // searchRegions
-  @Autowired private RegionValidator regionValidator;
-  @Autowired private RegionAggregator regionAggregator;
+  @Autowired private Validator coommonValidator;
+  @Autowired private InfoAggregator infoAggregator;
+
+  @Autowired private SearchAllLocationRepository searchAllLocationRepository;
+  @Autowired private SearchAllCountryRepository searchAllCountryRepository;
 
   // Google 相關服務
   @Autowired private LocationHelper locationHelper;
@@ -84,35 +87,25 @@ public class SearchService {
   public List<Region> searchRegions(String countryCode, String langType) {
 
     // 1) 驗證資料
-    regionValidator.validate(countryCode, langType);
+    coommonValidator.validate(countryCode, langType);
 
     // 2) 查詢DB
     List<Object[]> results = searchCountryRepository.findRegionsAndCities(countryCode, langType);
 
     // 3) 聚合結果
-    return regionAggregator.aggregate(results);
+    return infoAggregator.searchRegions(results);
   }
-
-  @Autowired private SearchAllCountryRepository searchAllCountryRepository;
 
   public List<Country> searchCountries(String langType) {
+    // 1) 驗證資料
+    coommonValidator.validate(langType);
+
+    // 2) 查詢資料
     List<Object[]> results = searchAllCountryRepository.findCountriesByLangType(langType);
-    List<Country> countries = new ArrayList<>();
 
-    for (Object[] row : results) {
-      Location location = (Location) row[0];
-      String countryName = (String) row[1];
-
-      Country country = new Country();
-      country.setCode(location.getCode());
-      country.setName(countryName != null ? countryName : location.getCode());
-      countries.add(country);
-    }
-
-    return countries;
+    // 3) 聚合結果
+    return infoAggregator.searchCountries(results);
   }
-
-  @Autowired private SearchAllLocationRepository searchAllLocationRepository;
 
   public List<LocationName> searchLocations() {
     List<Object[]> results = searchAllLocationRepository.findAllLocation();
