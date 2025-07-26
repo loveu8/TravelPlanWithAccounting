@@ -19,6 +19,7 @@ import {
   IDialogBodyProps,
   IDialogFooterProps,
 } from "./dialog.types";
+import { cn } from "@/app/lib/utils";
 
 const sizeConfig: Record<"DEFAULT" | "SMALL", SizeConfigType> = {
   DEFAULT: {
@@ -53,13 +54,22 @@ const useDialogContext = () => useContext(DialogContext);
 function DialogContent({
   headerWithClose = false,
   children,
+  ...props
 }: IDialogContentProps) {
   const sizeConfig = getSizeConfig(headerWithClose);
 
   return (
     <DialogContext.Provider value={{ headerWithClose, sizeConfig }}>
-      <Content aria-describedby={undefined} className={sizeConfig.pSizeTW}>
-        <Flex direction="column" gap={sizeConfig.gapSize} py={sizeConfig.pSize}>
+      <Content
+        aria-describedby={undefined}
+        className={cn(sizeConfig.pSizeTW, props.className)}
+      >
+        <Flex
+          direction="column"
+          gap={sizeConfig.gapSize}
+          py={sizeConfig.pSize}
+          className={cn(props.className)}
+        >
           {children}
         </Flex>
       </Content>
