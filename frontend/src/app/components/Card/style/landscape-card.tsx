@@ -16,7 +16,7 @@ export default function LandScapeCard(props: ILandscapeCardProps) {
     location,
     score,
     evaluateCount,
-    isBookmarked = false,
+    isBookmarked,
     handleBookmarkClick,
     handleAddScheduleClick,
   } = props;

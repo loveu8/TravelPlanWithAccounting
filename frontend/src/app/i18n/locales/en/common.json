@@ -8,5 +8,11 @@
     "h1": "Hi, here is CSR page",
     "counter": "Counter: {{count}}",
     "to-ssr-page": "To SSR page"
+  },
+  "home": {
+    "explore-countries": "Explore Countries",
+    "popular-travel-plans": "Popular Travel Plans",
+    "recommend-landscapes": "Recommended Landscapes",
+    "view-more": "View More"
   }
 }

@@ -8,5 +8,11 @@
     "h1": "哈囉, 這是客戶端渲染頁",
     "counter": "次數: {{count}}",
     "to-ssr-page": "至SSR頁面"
+  },
+  "home": {
+    "explore-countries": "探索區域",
+    "popular-travel-plans": "人氣行程",
+    "recommend-landscapes": "推薦景點",
+    "view-more": "查看更多"
   }
 }

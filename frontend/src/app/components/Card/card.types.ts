@@ -85,6 +85,28 @@ interface ILandscapeCardProps extends ICardBaseProps {
 }
 
 /**
+ * LandscapeDetailCard 元件 Props.
+ * @type {Object} ILandscapeDetailCardProps
+ * @extends ILandscapeCardProps 但省略 location 與 handleCardClick
+ * @property {Object} [details] - 景點詳細資訊
+ * @property {string} [details.description] - 描述
+ * @property {string} [details.address] - 地址
+ * @property {string} [details.phone] - 電話
+ * @property {string} [details.website] - 網站
+ * @property {string[]} [details.hours] - 營業時間
+ */
+interface ILandscapeDetailCardProps
+  extends Omit<ILandscapeCardProps, "location" | "handleCardClick"> {
+  details?: {
+    description?: string;
+    address?: string;
+    phone?: string;
+    website?: string;
+    hours?: string[];
+  };
+}
+
+/**
  * MyTravelPlanCard 元件 Props.
  * @type {Object} IMyTravelPlanCardProps
  * @extends ICardBaseProps
@@ -105,5 +127,6 @@ export type {
   ICountryCardProps,
   ITravelPlanCardProps,
   ILandscapeCardProps,
+  ILandscapeDetailCardProps,
   IMyTravelPlanCardProps,
 };
