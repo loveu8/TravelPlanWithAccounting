@@ -9,6 +9,14 @@
     "counter": "次數: {{count}}",
     "to-ssr-page": "至SSR頁面"
   },
+  "common": {
+    "loading": "載入中...",
+    "error": "發生錯誤，請稍後再試",
+    "cancel": "取消",
+    "bookmark": "收藏",
+    "bookmark-already": "已收藏",
+    "schedule-add": "新增至行程"
+  },
   "validation": {
     "required": "請填寫 {{label}}",
     "min-length": "最少 {{min}} 個字元",
@@ -35,8 +43,7 @@
     "nickname": "暱稱",
     "birthday": "生日",
     "email": "電子信箱"
-  }
-},
+  },
   "home": {
     "explore-countries": "探索區域",
     "popular-travel-plans": "人氣行程",

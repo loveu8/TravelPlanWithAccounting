@@ -9,6 +9,14 @@
     "counter": "Counter: {{count}}",
     "to-ssr-page": "To SSR page"
   },
+  "common": {
+    "loading": "loading...",
+    "error": "An error occurred, please try again later",
+    "cancel": "Cancel",
+    "bookmark": "Bookmark",
+    "bookmark-already": "Bookmarked",
+    "schedule-add": "Add to Schedule"
+  },
   "validation": {
     "required": "Please fill in {{label}}.",
     "min-length": "At least {{min}} characters.",
