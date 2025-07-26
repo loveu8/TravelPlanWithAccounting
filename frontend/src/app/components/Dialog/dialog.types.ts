@@ -12,6 +12,7 @@ export type SizeConfigType = {
 
 export interface IDialogContentProps extends ContentProps {
   headerWithClose?: boolean; // 是否需要標題關閉按鈕
+  className?: string; // 額外的 CSS 類別名稱
   children: React.ReactNode; // Dialog 內容的子元素
 }
 

@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import Image from "next/image";
 import { Box, Flex, Grid, Heading, Text } from "@radix-ui/themes";
@@ -9,6 +10,7 @@ import {
   Link2Icon,
   TimerIcon,
 } from "@radix-ui/react-icons";
+import { useT } from "@/app/i18n/client";
 
 import { ILandscapeDetailCardProps } from "../card.types";
 
@@ -59,6 +61,8 @@ export default function ViewLandscapeDetailCard({
   handleAddScheduleClick,
   details = {},
 }: ILandscapeDetailCardProps) {
+  const { t } = useT("common");
+
   return (
     <Grid as="div" gap="4" p="4">
       <Flex
@@ -83,7 +87,11 @@ export default function ViewLandscapeDetailCard({
             <Button
               size="2"
               isMain={false}
-              text="收藏"
+              text={
+                isBookmarked
+                  ? t("common.bookmark-already")
+                  : t("common.bookmark")
+              }
               icon={
                 isBookmarked ? (
                   <BookmarkFilledIcon
@@ -99,7 +107,7 @@ export default function ViewLandscapeDetailCard({
             />
             <Button
               size="2"
-              text="新增至行程"
+              text={t("common.schedule-add")}
               onClick={handleAddScheduleClick}
             />
           </Flex>

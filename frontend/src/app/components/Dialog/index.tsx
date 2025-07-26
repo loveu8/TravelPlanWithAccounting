@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext } from "react";
+import { Cross1Icon } from "@radix-ui/react-icons";
 import {
   Root,
   Trigger,
@@ -8,9 +9,10 @@ import {
   Close,
 } from "@radix-ui/themes/components/dialog";
 import { Flex, Box } from "@radix-ui/themes";
-import Button from "@/app/components/Button";
 
-import { Cross1Icon } from "@radix-ui/react-icons";
+import { useT } from "@/app/i18n/client";
+
+import Button from "@/app/components/Button";
 
 import {
   SizeConfigType,
@@ -19,6 +21,8 @@ import {
   IDialogBodyProps,
   IDialogFooterProps,
 } from "./dialog.types";
+
+import { cn } from "@/app/lib/utils";
 
 const sizeConfig: Record<"DEFAULT" | "SMALL", SizeConfigType> = {
   DEFAULT: {
@@ -53,6 +57,7 @@ const useDialogContext = () => useContext(DialogContext);
 function DialogContent({
   headerWithClose = false,
   children,
+  className,
   ...contentProps
 }: IDialogContentProps) {
   const sizeConfig = getSizeConfig(headerWithClose);
@@ -61,7 +66,7 @@ function DialogContent({
     <DialogContext.Provider value={{ headerWithClose, sizeConfig }}>
       <Content
         aria-describedby={undefined}
-        className={sizeConfig.pSizeTW}
+        className={cn(sizeConfig.pSizeTW, className)}
         {...contentProps}
       >
         <Flex direction="column" gap={sizeConfig.gapSize} py={sizeConfig.pSize}>
@@ -120,6 +125,7 @@ function DialogBody({ className, children }: IDialogBodyProps) {
 
 function DialogFooter({ withCloseBtn, justify, children }: IDialogFooterProps) {
   const { headerWithClose, sizeConfig } = useDialogContext();
+  const { t } = useT("common");
 
   return (
     <Flex
@@ -134,7 +140,7 @@ function DialogFooter({ withCloseBtn, justify, children }: IDialogFooterProps) {
           <Button
             type="button"
             size={sizeConfig.btnSize}
-            text="取消"
+            text={t("common.cancel")}
             isMain={false}
           />
         </Close>
