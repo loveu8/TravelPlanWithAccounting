@@ -19,7 +19,6 @@ import {
   IDialogBodyProps,
   IDialogFooterProps,
 } from "./dialog.types";
-import { cn } from "@/app/lib/utils";
 
 const sizeConfig: Record<"DEFAULT" | "SMALL", SizeConfigType> = {
   DEFAULT: {
@@ -54,7 +53,7 @@ const useDialogContext = () => useContext(DialogContext);
 function DialogContent({
   headerWithClose = false,
   children,
-  ...props
+  ...contentProps
 }: IDialogContentProps) {
   const sizeConfig = getSizeConfig(headerWithClose);
 
@@ -62,14 +61,10 @@ function DialogContent({
     <DialogContext.Provider value={{ headerWithClose, sizeConfig }}>
       <Content
         aria-describedby={undefined}
-        className={cn(sizeConfig.pSizeTW, props.className)}
+        className={sizeConfig.pSizeTW}
+        {...contentProps}
       >
-        <Flex
-          direction="column"
-          gap={sizeConfig.gapSize}
-          py={sizeConfig.pSize}
-          className={cn(props.className)}
-        >
+        <Flex direction="column" gap={sizeConfig.gapSize} py={sizeConfig.pSize}>
           {children}
         </Flex>
       </Content>
@@ -79,13 +74,25 @@ function DialogContent({
 
 function DialogHeader({ title }: IDialogHeaderProps) {
   const { headerWithClose, sizeConfig } = useDialogContext();
+  if (!headerWithClose) {
+    return (
+      <Title
+        size={sizeConfig.titleSize}
+        trim="end"
+        weight={sizeConfig.titleWeight}
+        align="center"
+      >
+        {title}
+      </Title>
+    );
+  }
   return (
     <Flex
       justify="between"
       align="center"
       py="1"
       px={sizeConfig.pSize}
-      className={headerWithClose ? "border-b border-gray-4" : ""}
+      className="border-b border-gray-4"
     >
       <Title
         size={sizeConfig.titleSize}
@@ -94,11 +101,9 @@ function DialogHeader({ title }: IDialogHeaderProps) {
       >
         {title}
       </Title>
-      {headerWithClose && (
-        <Close className="cursor-pointer" aria-label="Close">
-          <Cross1Icon />
-        </Close>
-      )}
+      <Close className="cursor-pointer" aria-label="Close">
+        <Cross1Icon />
+      </Close>
     </Flex>
   );
 }
@@ -126,7 +131,12 @@ function DialogFooter({ withCloseBtn, justify, children }: IDialogFooterProps) {
     >
       {withCloseBtn && (
         <Close>
-          <Button size={sizeConfig.btnSize} text="取消" isMain={false} />
+          <Button
+            type="button"
+            size={sizeConfig.btnSize}
+            text="取消"
+            isMain={false}
+          />
         </Close>
       )}
       {children}

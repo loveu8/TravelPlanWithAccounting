@@ -16,6 +16,7 @@ function DatePicker({
   value,
   onChange,
   calendarOptions = {},
+  required = false,
 }: IDatePickerProps) {
   const inputId = useId();
 
@@ -91,10 +92,12 @@ function DatePicker({
           id={id || inputId}
           type="text"
           name={name}
+          size="2"
           value={inputValue}
           placeholder={formatToken}
           onChange={handleInputChange}
           className="relative"
+          required={required}
         >
           <Popover.Anchor className="absolute left-0 bottom-0 h-[100%]" />
           <TextFieldSlot side="left">
