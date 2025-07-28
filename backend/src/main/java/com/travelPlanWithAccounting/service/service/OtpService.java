@@ -46,122 +46,46 @@ public class OtpService {
   @Value("${otp.resend-interval-seconds:30}")
   private int otpResendIntervalSeconds;
 
-  /**
-   * 產生新的 OTP 驗證碼並快取。<br>
-   * Generates a new OTP code and caches it.
-   *
-   * @param email 用戶電子郵件 (User email)
-   * @return 產生的 OTP 資料物件 (Generated OtpData)
-   */
-  public OtpData generateOtp(String email) {
-    OtpData existingOtp = otpCacheService.getOtpData(email);
-    LocalDateTime now = LocalDateTime.now();
-    if (existingOtp != null
-        && existingOtp.getLastSentTime() != null
-        && existingOtp.getLastSentTime().plusSeconds(otpResendIntervalSeconds).isAfter(now)) {
-      throw new InvalidOtpException.ResendTooFrequently(otpResendIntervalSeconds);
-    }
-    String otpCode = generateRandomOtp();
-    LocalDateTime expiryTime = now.plusMinutes(OTP_EXPIRY_MINUTES);
-    OtpData otpData = new OtpData(otpCode, email, expiryTime);
-    otpData.setLastSentTime(now);
-    log.info("為用戶 {} 產生OTP: {}", email, otpCode);
-    sendOtpNotification(email, otpCode);
-    otpCacheService.updateOtpData(email, otpData);
-    return otpData;
-  }
+  // -------------------- Public APIs --------------------
 
-  /**
-   * 驗證 OTP 驗證碼，並處理過期、嘗試次數等安全邏輯。<br>
-   * Verifies the OTP code, handling expiration and attempt limits.
-   *
-   * @param email 用戶電子郵件 (User email)
-   * @param inputOtp 使用者輸入的 OTP 驗證碼 (User input OTP code)
-   * @return 驗證是否通過 (true: 驗證成功, false: 驗證失敗)
-   */
-  public boolean verifyOtp(String email, String inputOtp) {
-    OtpData otpData = otpCacheService.getOtpData(email);
-    if (otpData == null) {
-      log.warn("找不到用戶 {} 的OTP資料", email);
-      return false;
-    }
-    if (otpData.isExpired()) {
-      log.warn("用戶 {} 的OTP已過期", email);
-      otpCacheService.evictOtp(email);
-      return false;
-    }
-    if (otpData.getAttemptCount() >= MAX_ATTEMPTS) {
-      log.warn("用戶 {} 的OTP嘗試次數已超過限制", email);
-      otpCacheService.evictOtp(email);
-      return false;
-    }
-    otpData.incrementAttemptCount();
-    if (otpData.getOtpCode().equals(inputOtp)) {
-      otpData.setVerified(true);
-      log.info("用戶 {} OTP驗證成功", email);
-      otpCacheService.evictOtp(email);
-      // otpCacheService.markOtpVerified(email); // 已廢除
-      return true;
-    }
-    log.warn("用戶 {} OTP驗證失敗，嘗試次數: {}", email, otpData.getAttemptCount());
-    otpCacheService.updateOtpData(email, otpData);
-    return false;
-  }
-
-  /**
-   * 查詢指定 email 的 OTP 資料。<br>
-   * Gets the OTP data for the given email.
-   *
-   * @param email 用戶電子郵件 (User email)
-   * @return OTP 資料物件，若無則為 null (OtpData or null if not found)
-   */
-  public OtpData getOtpData(String email) {
-    return otpCacheService.getOtpData(email);
-  }
-
-  /**
-   * 產生 OTP 並回傳發送結果 DTO。<br>
-   * Generates OTP and returns send result DTO.
-   *
-   * @param request OTP 請求 DTO (OtpRequest)
-   * @return 發送結果 DTO (OtpSendResponse)
-   */
+  /** 產生 OTP 並回傳發送結果 DTO。 */
   public OtpSendResponse sendOtp(OtpRequest request) {
-    generateOtp(request.getEmail());
-    return new OtpSendResponse(request.getEmail());
+    String email = request.getEmail();
+    OtpPurpose purpose = request.getPurpose();
+    if (purpose == null) {
+      // 保底（不建議），避免 NPE；建議前端必帶 purpose
+      purpose = OtpPurpose.LOGIN;
+    }
+
+    generateOtp(email, purpose);
+    return new OtpSendResponse(email);
   }
 
-  /**
-   * 驗證 OTP 並回傳驗證結果 DTO。<br>
-   * Verifies OTP and returns verify result DTO.
-   *
-   * @param email 用戶電子郵件 (User email)
-   * @param inputOtp 使用者輸入的 OTP 驗證碼 (User input OTP code)
-   * @return 驗證結果 DTO (OtpVerifyResponse)
-   */
+  /** 驗證 OTP 並回傳驗證結果 DTO。 */
   public OtpVerifyResponse verifyOtpResponse(OtpVerificationRequest request) {
-
     String email = request.getEmail();
     String inputOtp = request.getOtpCode();
+    OtpPurpose purpose = request.getPurpose();
+    if (purpose == null) {
+      purpose = OtpPurpose.LOGIN;
+    }
 
-    boolean isValid = verifyOtp(email, inputOtp);
+    boolean isValid = verifyOtp(email, inputOtp, purpose);
     String token = null;
     if (isValid) {
       token = UUID.randomUUID().toString();
-      otpCacheService.putOtpVerifiedToken(token, email);
+      // Verified token 維度也加 purpose
+      otpCacheService.putOtpVerifiedToken(token, email, purpose);
     }
     return new OtpVerifyResponse(isValid, token);
   }
 
-  /**
-   * 查詢 OTP 狀態並回傳狀態 DTO。<br>
-   * Gets OTP status and returns status DTO.
-   *
-   * @param email 用戶電子郵件 (User email)
-   * @return 狀態 DTO (OtpStatusResponse)
-   */
-  public OtpStatusResponse getOtpStatusResponse(String email) {
-    OtpData otpData = getOtpData(email);
+  /** 查詢 OTP 狀態並回傳狀態 DTO（建議加 purpose 版本）。 */
+  public OtpStatusResponse getOtpStatusResponse(String email, OtpPurpose purpose) {
+    if (purpose == null) {
+      purpose = OtpPurpose.LOGIN;
+    }
+    OtpData otpData = getOtpData(email, purpose);
     if (otpData == null) {
       return new OtpStatusResponse(false, null, null, null, null);
     } else {
@@ -174,16 +98,87 @@ public class OtpService {
     }
   }
 
-  /**
-   * 僅用於測試：產生 OTP 但不發送 email，直接回傳 OtpData。<br>
-   * For test only: generate OTP without sending email, return OtpData.<br>
-   *
-   * @param email 用戶電子郵件 (User email)
-   * @return 產生的 OTP 資料物件 (Generated OtpData)
-   */
+  // -------------------- Core Methods (purpose-aware) --------------------
+
+  /** 產生新的 OTP 驗證碼並快取（以 (email, purpose) 為維度）。 */
+  public OtpData generateOtp(String email, OtpPurpose purpose) {
+    OtpData existingOtp = otpCacheService.getOtpData(email, purpose);
+    LocalDateTime now = LocalDateTime.now();
+    if (existingOtp != null
+        && existingOtp.getLastSentTime() != null
+        && existingOtp.getLastSentTime().plusSeconds(otpResendIntervalSeconds).isAfter(now)) {
+      throw new InvalidOtpException.ResendTooFrequently(otpResendIntervalSeconds);
+    }
+
+    String otpCode = generateRandomOtp();
+    LocalDateTime expiryTime = now.plusMinutes(OTP_EXPIRY_MINUTES);
+    OtpData otpData = new OtpData(otpCode, email, expiryTime);
+    otpData.setLastSentTime(now);
+
+    log.info("為用戶 {} 產生 OTP（purpose={}）: {}", email, purpose.name(), otpCode);
+
+    // 依用途切換郵件/模板
+    sendOtpNotification(email, otpCode, purpose);
+
+    // 更新快取（以 (email, purpose) 維度）
+    otpCacheService.updateOtpData(email, purpose, otpData);
+
+    // TODO（之後實作）：寫入 auth_info 審計（code/email/memberId?/action=purpose.actionCode(),
+    // validation=false, expire_at）
+    return otpData;
+  }
+
+  /** 驗證 OTP（以 (email, purpose) 為維度），並處理過期、嘗試次數等安全邏輯。 */
+  public boolean verifyOtp(String email, String inputOtp, OtpPurpose purpose) {
+    OtpData otpData = otpCacheService.getOtpData(email, purpose);
+    if (otpData == null) {
+      log.warn("找不到用戶 {} 的 OTP 資料（purpose={}）", email, purpose.name());
+      return false;
+    }
+    if (otpData.isExpired()) {
+      log.warn("用戶 {} 的 OTP 已過期（purpose={}）", email, purpose.name());
+      otpCacheService.evictOtp(email, purpose);
+      return false;
+    }
+    if (otpData.getAttemptCount() >= MAX_ATTEMPTS) {
+      log.warn("用戶 {} 的 OTP 嘗試次數已超過限制（purpose={}）", email, purpose.name());
+      otpCacheService.evictOtp(email, purpose);
+      return false;
+    }
+
+    otpData.incrementAttemptCount();
+
+    if (otpData.getOtpCode().equals(inputOtp)) {
+      otpData.setVerified(true);
+      log.info("用戶 {} OTP 驗證成功（purpose={}）", email, purpose.name());
+
+      // 驗證成功即移除 OTP（避免重放）
+      otpCacheService.evictOtp(email, purpose);
+
+      // TODO（之後實作）：將對應 auth_info 記錄 validation 設為 true（以 email+action+code & 未過期）
+      return true;
+    }
+
+    log.warn(
+        "用戶 {} OTP 驗證失敗（purpose={}），嘗試次數: {}", email, purpose.name(), otpData.getAttemptCount());
+    otpCacheService.updateOtpData(email, purpose, otpData);
+    return false;
+  }
+
+  /** 以 (email, purpose) 取得 OTP 資料。 */
+  public OtpData getOtpData(String email, OtpPurpose purpose) {
+    return otpCacheService.getOtpData(email, purpose);
+  }
+
+  /** 測試用：產生 OTP 但不發送 email。 */
   public OtpData generateOtpWithoutMail(OtpRequest request) {
     String email = request.getEmail();
-    OtpData existingOtp = otpCacheService.getOtpData(email);
+    OtpPurpose purpose = request.getPurpose();
+    if (purpose == null) {
+      purpose = OtpPurpose.LOGIN;
+    }
+
+    OtpData existingOtp = otpCacheService.getOtpData(email, purpose);
     LocalDateTime now = LocalDateTime.now();
     if (existingOtp != null
         && existingOtp.getLastSentTime() != null
@@ -194,10 +189,13 @@ public class OtpService {
     LocalDateTime expiryTime = now.plusMinutes(OTP_EXPIRY_MINUTES);
     OtpData otpData = new OtpData(otpCode, email, expiryTime);
     otpData.setLastSentTime(now);
-    log.info("[TEST] 為用戶 {} 產生OTP(不發送mail): {}", email, otpCode);
-    otpCacheService.updateOtpData(email, otpData);
+
+    log.info("[TEST] 為用戶 {} 產生 OTP(不發送 mail)（purpose={}）: {}", email, purpose.name(), otpCode);
+    otpCacheService.updateOtpData(email, purpose, otpData);
     return otpData;
   }
+
+  // -------------------- Helpers --------------------
 
   private String generateRandomOtp() {
     StringBuilder otp = new StringBuilder();
@@ -207,8 +205,8 @@ public class OtpService {
     return otp.toString();
   }
 
-  private void sendOtpNotification(String email, String otpCode) {
-    // 實際應用中整合郵件服務
-    emailService.sendOtp(email, otpCode, OtpPurpose.LOGIN);
+  /** 依不同 purpose 寄送對應模板（之後可接入 i18n） */
+  private void sendOtpNotification(String email, String otpCode, OtpPurpose purpose) {
+    emailService.sendOtp(email, otpCode, purpose);
   }
 }

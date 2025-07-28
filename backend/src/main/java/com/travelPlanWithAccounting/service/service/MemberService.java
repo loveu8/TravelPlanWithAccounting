@@ -4,6 +4,7 @@ import com.travelPlanWithAccounting.service.dto.member.MemberRegisterRequest;
 import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
 import com.travelPlanWithAccounting.service.entity.Member;
 import com.travelPlanWithAccounting.service.exception.MemberException;
+import com.travelPlanWithAccounting.service.model.OtpPurpose;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
 import java.util.UUID;
@@ -11,13 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 會員服務，處理會員註冊等相關業務邏輯。<br>
- * Service for member operations, including registration.<br>
- *
- * <p>註冊需經過 OTP 驗證，並檢查 email 是否重複。<br>
- * Registration requires OTP verification and email duplication check.
- */
+/** 會員服務，處理會員註冊、登入等相關業務邏輯。 Registration / Login requires purpose-aware OTP token verification. */
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -25,24 +20,15 @@ public class MemberService {
   private final MemberRepository memberRepository;
   private final OtpCacheService otpCacheService;
 
-  /**
-   * 會員註冊。<br>
-   * Register a new member.<br>
-   *
-   * <p>必須先通過 OTP 驗證並取得驗證 token，註冊時 email、givenName、familyName、nickName、birthday 為可填欄位。<br>
-   * Must pass OTP verification and provide the token. Only required fields are included.
-   *
-   * @param req 會員註冊請求 (Member registration request)
-   * @return 註冊成功的會員資料與預留 JWT 欄位 (Registered member and reserved JWT field)
-   * @throws MemberException.EmailRequired 若 email 未填 (if email is missing)
-   * @throws MemberException.EmailAlreadyExists 若 email 已存在 (if email already exists)
-   * @throws MemberException.OtpTokenInvalid 若 OTP token 驗證失敗 (if OTP token is invalid)
-   */
+  /** 會員註冊。 流程：Email 驗證 → 檢查重複 → 驗證 OTP（purpose=REGISTRATION）→ 建立會員 → 使 OTP token 失效 → 回傳結果 */
   @Transactional
   public MemberResponse register(MemberRegisterRequest req) {
     validateEmail(req.getEmail());
     checkEmailDuplicate(req.getEmail());
-    validateOtpToken(req.getOtpToken(), req.getEmail());
+
+    // 驗證註冊用 OTP（001）
+    validateOtpToken(req.getOtpToken(), req.getEmail(), OtpPurpose.REGISTRATION);
+
     Member member =
         Member.builder()
             .givenName(req.getGivenName())
@@ -53,18 +39,17 @@ public class MemberService {
             .subscribe(false)
             .status(Short.valueOf("1"))
             .build();
+
     Member saved = memberRepository.save(member);
-    otpCacheService.evictOtpVerifiedToken(req.getOtpToken());
-    String jwt = generateJwt(saved);
+
+    // 用過即失效（避免重放）
+    otpCacheService.evictOtpVerifiedToken(req.getOtpToken(), OtpPurpose.REGISTRATION);
+
+    String jwt = generateJwt(saved); // TODO: 後續整合 JwtUtil + RefreshTokenService，回傳 PRD 規格
     return new MemberResponse(saved.getEmail(), jwt);
   }
 
-  /**
-   * 驗證 email 是否為空。<br>
-   * Validate that email is not empty.<br>
-   *
-   * @param email 電子郵件 (email)
-   */
+  /** 驗證 email 是否為空/格式 */
   private void validateEmail(String email) {
     if (email == null || email.isEmpty()) {
       throw new MemberException.EmailRequired();
@@ -74,65 +59,46 @@ public class MemberService {
     }
   }
 
-  /**
-   * 檢查 email 是否已存在。<br>
-   * Check if email already exists.<br>
-   *
-   * @param email 電子郵件 (email)
-   */
+  /** 檢查 email 是否已存在 */
   private void checkEmailDuplicate(String email) {
     if (memberRepository.existsByEmail(email)) {
       throw new MemberException.EmailAlreadyExists();
     }
   }
 
-  /**
-   * 驗證 OTP token 是否有效。<br>
-   * Validate OTP token.<br>
-   *
-   * @param otpToken OTP 驗證 token (OTP verification token)
-   * @param email 電子郵件 (email)
-   */
-  private void validateOtpToken(String otpToken, String email) {
-    String verifiedEmail = otpCacheService.getOtpVerifiedEmailByToken(otpToken);
+  /** 驗證 OTP token（purpose-aware）。 僅當 token 綁定的 email 與傳入 email 相同，且 purpose 一致時才視為有效。 */
+  private void validateOtpToken(String otpToken, String email, OtpPurpose purpose) {
+    String verifiedEmail = otpCacheService.getOtpVerifiedEmailByToken(otpToken, purpose);
     if (verifiedEmail == null || !verifiedEmail.equals(email)) {
       throw new MemberException.OtpTokenInvalid();
     }
   }
 
-  /**
-   * 會員登入。<br>
-   * Login member.<br>
-   *
-   * <p>檢查 email 是否存在。<br>
-   * Check if email exists.
-   *
-   * @param email 電子郵件 (email)
-   * @return 登入成功的會員資料與預留 JWT 欄位 (Logged-in member and reserved JWT field)
-   * @throws MemberException.EmailRequired 若 email 未填 (if email is missing)
-   * @throws MemberException.EmailNotFound 若 email 不存在 (if email not found)
-   */
+  /** 會員登入。 流程：Email 驗證 → 驗證 OTP（purpose=LOGIN）→ 查會員 → 使 OTP token 失效 → 回傳結果 */
   @Transactional(readOnly = true)
   public MemberResponse login(String email, String otpToken) {
     validateEmail(email);
-    validateOtpToken(otpToken, email);
+
+    // 驗證登入用 OTP（002）
+    validateOtpToken(otpToken, email, OtpPurpose.LOGIN);
+
     Member member =
         memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
-    String jwt = generateJwt(member);
+
+    // 用過即失效（避免重放）
+    otpCacheService.evictOtpVerifiedToken(otpToken, OtpPurpose.LOGIN);
+
+    String jwt = generateJwt(member); // TODO: 後續整合 JwtUtil + RefreshTokenService，回傳 PRD 規格
     return new MemberResponse(member.getEmail(), jwt);
   }
 
   // 範例 JWT 產生方法（請依實際專案替換）
   private String generateJwt(Member member) {
-    // TODO: 串接 JWT 工具類別
+    // TODO: 串接 JWT 工具類別（之後回傳 AuthEnvelope + cookies）
     return "mock-jwt-token";
   }
 
-  /**
-   * 驗證：body.memberId (若不為 null) 必須與 authMemberId 相同；會員必須存在且為 active。
-   *
-   * @return Member (active)
-   */
+  /** 驗證：body.memberId (若不為 null) 必須與 authMemberId 相同；會員必須存在且為 active。 */
   public Member assertActiveMember(UUID authMemberId, String bodyMemberIdOpt) {
     if (bodyMemberIdOpt != null) {
       UUID bodyId;
@@ -148,5 +114,16 @@ public class MemberService {
     return memberRepository
         .findStatusById(authMemberId)
         .orElseThrow(MemberException.MemberNotFound::new);
+  }
+
+  // ---------------- Backward-compatible Helper（可留可移除） ----------------
+
+  /**
+   * @deprecated 舊版不帶 purpose 的驗證，預設視為 LOGIN。 為降低改動面積暫留；新程式請改用帶 purpose 的 validateOtpToken。
+   */
+  @Deprecated
+  @SuppressWarnings("unused")
+  private void validateOtpToken(String otpToken, String email) {
+    validateOtpToken(otpToken, email, OtpPurpose.LOGIN);
   }
 }
