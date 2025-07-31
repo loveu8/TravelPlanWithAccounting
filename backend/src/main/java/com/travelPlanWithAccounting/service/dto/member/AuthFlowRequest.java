@@ -19,6 +19,9 @@ public class AuthFlowRequest {
   @Schema(description = "BFF 產生的 clientId（預留給 RT 管理）")
   private String clientId;
 
+  private String ip; // optional（若由後端取，可不帶）
+  private String ua; // optional
+
   // ---- 註冊（purpose=REGISTRATION）時可用欄位（登入可不填）----
   private String givenName;
   private String familyName;

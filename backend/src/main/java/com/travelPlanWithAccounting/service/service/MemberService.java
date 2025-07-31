@@ -1,104 +1,89 @@
 package com.travelPlanWithAccounting.service.service;
 
+import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
+import com.travelPlanWithAccounting.service.dto.auth.VerifyTokenResponse;
 import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
+import com.travelPlanWithAccounting.service.dto.member.VerifyTokenRequest;
 import com.travelPlanWithAccounting.service.entity.Member;
+import com.travelPlanWithAccounting.service.entity.RefreshToken;
 import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.model.OtpPurpose;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
+import com.travelPlanWithAccounting.service.repository.RefreshTokenRepository;
+import com.travelPlanWithAccounting.service.security.JwtUtil;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
+import com.travelPlanWithAccounting.service.util.TokenUtil;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 會員服務：整併 preAuthFlow（判斷 + 寄送 OTP）與 authFlow（驗證 OTP 後完成登入/註冊）。 回傳沿用 MemberResponse；未來切 PRD cookies
- * 結構時，只需改此處回傳。
- */
 @Service
 @RequiredArgsConstructor
 public class MemberService {
 
   private final MemberRepository memberRepository;
-  private final OtpService otpService; // purpose-aware，且已寫入/核銷 auth_info
+  private final OtpService otpService; // 你已有
+  private final RefreshTokenService refreshTokenService;
+  private final JwtUtil jwtUtil;
+  private final RefreshTokenRepository refreshTokenRepository;
 
-  // ---------- preAuthFlow：判斷 purpose 並立即寄送 OTP ----------
-
+  /** 判斷 purpose 並發送 OTP */
   @Transactional
-  public PreAuthFlowResponse preAuthFlow(String email) {
+  public PreAuthFlowResponse preAuthFlow(PreAuthFlowRequest req) {
+    String email = req.getEmail();
+    validateEmail(email);
+    boolean exists = memberRepository.existsByEmail(email);
+    OtpPurpose purpose = exists ? OtpPurpose.LOGIN : OtpPurpose.REGISTRATION;
+    otpService.generateOtp(email, purpose); // 會寫 auth_info + 寄信
+    return new PreAuthFlowResponse(email, exists, purpose.name(), purpose.actionCode());
+  }
+
+  /** 驗證 OTP → 登入或註冊 → 回 cookies envelope（AT/RT） */
+  @Transactional
+  public AuthResponse authFlow(AuthFlowRequest req) {
+    String email = req.getEmail();
     validateEmail(email);
 
     boolean exists = memberRepository.existsByEmail(email);
     OtpPurpose purpose = exists ? OtpPurpose.LOGIN : OtpPurpose.REGISTRATION;
 
-    // 直接觸發 OTP 寄送（依用途）；OtpService 會記錄 auth_info(validation=false)
-    otpService.generateOtp(email, purpose);
-
-    return new PreAuthFlowResponse(email, exists, purpose, purpose.actionCode());
-  }
-
-  // ---------- authFlow：驗證 OTP，完成登入或註冊 ----------
-
-  @Transactional
-  public MemberResponse authFlow(AuthFlowRequest req) {
-    validateEmail(req.getEmail());
-
-    String email = req.getEmail();
-    boolean exists = memberRepository.existsByEmail(email);
-    OtpPurpose purpose = exists ? OtpPurpose.LOGIN : OtpPurpose.REGISTRATION;
-
-    // 驗證 OTP；成功會核銷 cache 與將 auth_info.validation=true
     boolean ok = otpService.verifyOtp(email, req.getOtpCode(), purpose);
-    if (!ok) {
-      throw new MemberException.OtpTokenInvalid(); // 可細分為 OTP_INVALID/EXPIRED 等
-    }
+    if (!ok) throw new MemberException.OtpTokenInvalid();
 
-    if (exists) {
-      // ---- 登入 ----
-      Member member =
-          memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
-      String jwt = generateJwt(member); // TODO：切換 JwtUtil + RefreshTokenService 後改回傳 PRD envelope
-      return new MemberResponse(member.getEmail(), jwt);
+    Member member =
+        exists
+            ? memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new)
+            : memberRepository.save(
+                Member.builder()
+                    .email(email)
+                    .status(Short.valueOf("1"))
+                    .subscribe(false)
+                    .givenName(req.getGivenName())
+                    .familyName(req.getFamilyName())
+                    .nickName(req.getNickName())
+                    .birthday(req.getBirthday())
+                    .build());
 
-    } else {
-      // ---- 註冊 ----（double-check 避免 race）
-      checkEmailDuplicate(email);
+    String clientId =
+        (req.getClientId() == null || req.getClientId().isBlank()) ? "web" : req.getClientId();
 
-      Member member =
-          Member.builder()
-              .givenName(req.getGivenName())
-              .familyName(req.getFamilyName())
-              .nickName(req.getNickName())
-              .birthday(req.getBirthday())
-              .email(email)
-              .subscribe(false)
-              .status(Short.valueOf("1"))
-              .build();
-
-      Member saved = memberRepository.save(member);
-      String jwt = generateJwt(saved); // TODO：改回傳 PRD envelope（含 cookies）
-      return new MemberResponse(saved.getEmail(), jwt);
-    }
+    return refreshTokenService.issueForMember(member.getId(), clientId, req.getIp(), req.getUa());
   }
-
-  // ---------- 私有工具 ----------
 
   private void validateEmail(String email) {
     if (email == null || email.isEmpty()) throw new MemberException.EmailRequired();
     if (!EmailValidatorUtil.isValid(email)) throw new MemberException.EmailFormatInvalid();
   }
 
-  private void checkEmailDuplicate(String email) {
-    if (memberRepository.existsByEmail(email)) throw new MemberException.EmailAlreadyExists();
-  }
-
-  // 範例 JWT 產生（之後換 JwtUtil + RefreshTokenService + 回傳 AuthEnvelope）
-  private String generateJwt(Member member) {
-    return "mock-jwt-token";
-  }
-
+  // 可選：提供保留的 login/register 舊 API 呼叫 authFlow 包裝（略）
   /** 仍保留原有方法（若其他地方共用） */
   public Member assertActiveMember(UUID authMemberId, String bodyMemberIdOpt) {
     if (bodyMemberIdOpt != null) {
@@ -113,5 +98,86 @@ public class MemberService {
     return memberRepository
         .findStatusById(authMemberId)
         .orElseThrow(MemberException.MemberNotFound::new);
+  }
+
+  @Transactional(readOnly = true)
+  public VerifyTokenResponse verifyToken(VerifyTokenRequest req) {
+    switch (req.getTokenType()) {
+      case ACCESS:
+        try {
+          Jws<Claims> jws = jwtUtil.verify(req.getToken());
+          Claims c = jws.getPayload(); // 0.12.x: getPayload()
+          UUID sub = UUID.fromString(c.getSubject());
+          String role = c.get("role", String.class);
+          Long exp = c.getExpiration().toInstant().getEpochSecond();
+          return VerifyTokenResponse.builder()
+              .valid(true)
+              .tokenType("ACCESS")
+              .sub(sub)
+              .role(role)
+              .exp(exp)
+              .build();
+        } catch (Exception e) {
+          return VerifyTokenResponse.builder()
+              .valid(false)
+              .tokenType("ACCESS")
+              .reason("JWT_INVALID: " + e.getClass().getSimpleName())
+              .build();
+        }
+
+      case REFRESH:
+        String clientId =
+            (req.getClientId() == null || req.getClientId().isBlank()) ? "web" : req.getClientId();
+
+        String hash = TokenUtil.sha256Base64Url(req.getToken());
+        Optional<RefreshToken> opt = refreshTokenRepository.findByTokenHash(hash);
+        if (opt.isEmpty()) {
+          return VerifyTokenResponse.builder()
+              .valid(false)
+              .tokenType("REFRESH")
+              .reason("NOT_FOUND")
+              .build();
+        }
+        RefreshToken rt = opt.get();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+        if (rt.isRevoked())
+          return VerifyTokenResponse.builder()
+              .valid(false)
+              .tokenType("REFRESH")
+              .reason("REVOKED")
+              .build();
+        if (rt.isUsed())
+          return VerifyTokenResponse.builder()
+              .valid(false)
+              .tokenType("REFRESH")
+              .reason("USED")
+              .build();
+        if (rt.getExpiresAt().isBefore(now))
+          return VerifyTokenResponse.builder()
+              .valid(false)
+              .tokenType("REFRESH")
+              .reason("EXPIRED")
+              .build();
+        if (!rt.getClientId().equals(clientId))
+          return VerifyTokenResponse.builder()
+              .valid(false)
+              .tokenType("REFRESH")
+              .reason("CLIENT_MISMATCH")
+              .build();
+
+        return VerifyTokenResponse.builder()
+            .valid(true)
+            .tokenType("REFRESH")
+            .sub(rt.getOwnerId())
+            .build();
+
+      default:
+        return VerifyTokenResponse.builder()
+            .valid(false)
+            .tokenType(String.valueOf(req.getTokenType()))
+            .reason("UNSUPPORTED_TYPE")
+            .build();
+    }
   }
 }
