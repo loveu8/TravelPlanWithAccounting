@@ -75,6 +75,7 @@ sequenceDiagram
   - 如果是新用戶（purpose=REGISTRATION），會自動註冊並登入
   - 如果是現有用戶（purpose=LOGIN），會直接登入
   - 註冊時需要填寫 `givenName`、`familyName`、`nickName`、`birthday` 等資料
+  - access_token cookie保留15分鐘，refresh_token cookie保留14天
 - **回應**：
 ```json
 {
@@ -83,11 +84,11 @@ sequenceDiagram
   "cookies": {
     "access_token": {
       "code": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "time": 3600
+      "time": 900
     },
     "refresh_token": {
       "code": "rt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "time": 2592000
+      "time": 1209600
     }
   }
 }
@@ -145,12 +146,13 @@ sequenceDiagram
 ```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 3600
+  "expiresIn": 900
 }
 ```
 - **說明**：
   - `accessToken`: 新的 Access Token (JWT)
-  - `expiresIn`: Access Token 的有效期（秒數）
+  - `expiresIn`: Access Token 的有效期（秒數) ，cookie保留15分鐘
+  
 
 ### 5. 登出
 - **API**：`POST /api/auth/logout`
