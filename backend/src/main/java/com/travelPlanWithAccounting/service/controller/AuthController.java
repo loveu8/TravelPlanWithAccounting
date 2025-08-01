@@ -1,8 +1,8 @@
 package com.travelPlanWithAccounting.service.controller;
 
+import com.travelPlanWithAccounting.service.dto.auth.AccessTokenResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthLogoutByRtRequest;
 import com.travelPlanWithAccounting.service.dto.auth.AuthRefreshRequest;
-import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
 import com.travelPlanWithAccounting.service.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,24 +21,15 @@ public class AuthController {
   private final RefreshTokenService refreshTokenService;
 
   @PostMapping("/refresh")
-  @Operation(summary = "Refresh Token Rotation（MEM）- body 版")
-  public AuthResponse refresh(@Valid @RequestBody AuthRefreshRequest body, HttpServletRequest req) {
+  @Operation(summary = "用 Refresh-Token 換新 Access-Token（MEM）")
+  public AccessTokenResponse refresh(
+      @Valid @RequestBody AuthRefreshRequest body, HttpServletRequest req) {
 
-    String clientId =
-        (body.getClientId() == null || body.getClientId().isBlank()) ? "web" : body.getClientId();
+    String ip = firstNonBlank(body.getIp(), req.getHeader("X-Forwarded-For"));
+    if (ip == null || ip.isBlank()) ip = req.getRemoteAddr();
+    String ua = firstNonBlank(body.getUa(), req.getHeader("User-Agent"));
 
-    // IP / UA：若 body 沒帶，就從 request 取得（支援經 Proxy）
-    String ip =
-        (body.getIp() != null && !body.getIp().isBlank())
-            ? body.getIp()
-            : firstNonBlank(req.getHeader("X-Forwarded-For"), req.getRemoteAddr());
-
-    String ua =
-        (body.getUa() != null && !body.getUa().isBlank())
-            ? body.getUa()
-            : req.getHeader("User-Agent");
-
-    return refreshTokenService.rotateForMember(body.getRefreshToken(), clientId, ip, ua);
+    return refreshTokenService.refreshAccessToken(body.getRefreshToken(), ip, ua);
   }
 
   @PostMapping("/logout")

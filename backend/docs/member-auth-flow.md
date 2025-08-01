@@ -1,7 +1,5 @@
 # 會員註冊與登入流程說明
 
-> ⚠️ **目前 JWT 欄位為範例值，尚未串接實際 JWT 產生，未來將補上完整登入驗證機制。**
-
 ## 流程圖
 
 ```mermaid
@@ -23,7 +21,7 @@ sequenceDiagram
     BE-->>FE: Token 驗證結果
     Note over FE,BE: Access Token 過期時
     FE->>BE: 刷新 Token (POST /api/auth/refresh)
-    BE-->>FE: 新的 Access Token 和 Refresh Token
+    BE-->>FE: 新的 Access Token
     FE->>BE: 登出 (POST /api/auth/logout)
     BE-->>FE: 登出成功
 ```
@@ -83,11 +81,11 @@ sequenceDiagram
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "role": "001",
   "cookies": {
-    "accessToken": {
+    "access_token": {
       "code": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "time": 3600
     },
-    "refreshToken": {
+    "refresh_token": {
       "code": "rt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "time": 2592000
     }
@@ -98,8 +96,8 @@ sequenceDiagram
   - `id`: 會員 ID
   - `role`: 身分代碼（001=MEMBER）
   - `cookies`: 要由 BFF 寫入 Cookie 的 token 資訊
-    - `accessToken`: JWT Token，有效期 1 小時
-    - `refreshToken`: Refresh Token，有效期 30 天
+    - `access_token`: JWT Token，有效期 1 小時
+    - `refresh_token`: Refresh Token，有效期 30 天
 
 ### 3. 驗證 Token
 - **API**：`POST /api/members/verify-token`
@@ -131,7 +129,7 @@ sequenceDiagram
   - `role`: 身分代碼（ACCESS Token 才有）
   - `exp`: 過期時間（epoch second，ACCESS Token 才有）
 
-### 4. 刷新 Token
+### 4. 刷新 Access Token
 - **API**：`POST /api/auth/refresh`
 - **Body 範例**：
 ```json
@@ -142,8 +140,17 @@ sequenceDiagram
   "ua": "Mozilla/5.0..."
 }
 ```
-- **說明**：當 Access Token 過期時，使用 Refresh Token 取得新的 Access Token 和 Refresh Token
-- **回應**：同 auth-flow 的回應格式
+- **說明**：當 Access Token 過期時，使用 Refresh Token 取得新的 Access Token。Refresh Token 會繼續沿用，不會產生新的 Refresh Token。
+- **回應**：
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 3600
+}
+```
+- **說明**：
+  - `accessToken`: 新的 Access Token (JWT)
+  - `expiresIn`: Access Token 的有效期（秒數）
 
 ### 5. 登出
 - **API**：`POST /api/auth/logout`
@@ -153,7 +160,7 @@ sequenceDiagram
   "refreshToken": "rt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
-- **說明**：使用 Refresh Token 進行登出，撤銷相關的 token
+- **說明**：使用 Refresh Token 進行登出，撤銷該用戶在相同平台（clientId）的所有 Refresh Token
 - **回應**：
 ```json
 {
@@ -168,7 +175,8 @@ sequenceDiagram
 - **OTP 驗證碼**：每次驗證碼有效 10 分鐘，最多嘗試 3 次。
 - **Access Token**：JWT Token，有效期 1 小時，用於存取受保護的資源。
 - **Refresh Token**：用於刷新 Access Token，有效期 30 天。
-- **Token Rotation**：每次刷新都會產生新的 Access Token 和 Refresh Token，舊的 Refresh Token 會被撤銷。
+- **Token 刷新策略**：刷新時只產生新的 Access Token，Refresh Token 繼續沿用，不會進行 Token Rotation。
+- **登出機制**：登出時會撤銷該用戶在相同平台的所有 Refresh Token，確保安全性。
 - **錯誤處理**：API 會回傳友善訊息，請依照訊息提示操作。
 - **測試用 API**：開發環境可用 `/api/auth/otps-test` 直接取得驗證碼。
 
@@ -179,13 +187,15 @@ sequenceDiagram
 - 註冊後是否自動登入？
   - 是，註冊成功即回傳 Access Token 和 Refresh Token，前端可直接登入。
 - Refresh Token 可以重複使用嗎？
-  - 每次刷新都會產生新的 Refresh Token，舊的會被撤銷，確保安全性。
+  - 是的，Refresh Token 可以重複使用來刷新 Access Token，直到過期或被撤銷。
 - 忘記驗證碼怎麼辦？
   - 可重新發送 OTP，舊驗證碼會失效。
 - Access Token 過期怎麼辦？
-  - 使用 Refresh Token 呼叫 `/api/auth/refresh` 取得新的 token。
+  - 使用 Refresh Token 呼叫 `/api/auth/refresh` 取得新的 Access Token。
 - 如何判斷用戶是登入還是註冊？
   - 呼叫 `/api/members/pre-auth-flow` 後，系統會回傳 `exists` 和 `purpose` 欄位。
+- 刷新 Token 時會產生新的 Refresh Token 嗎？
+  - 不會，只會產生新的 Access Token，Refresh Token 繼續沿用。
 
 ---
 
@@ -195,6 +205,7 @@ sequenceDiagram
 2. **Refresh Token**：存放在 HttpOnly Cookie 中，確保安全性
 3. **自動刷新**：在 Access Token 即將過期前自動刷新
 4. **登出清理**：登出時清除所有相關的 token
+5. **錯誤處理**：當 Refresh Token 無效時，重新導向到登入頁面
 
 ---
 

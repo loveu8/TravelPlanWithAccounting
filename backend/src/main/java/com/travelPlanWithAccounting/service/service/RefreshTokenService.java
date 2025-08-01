@@ -1,5 +1,6 @@
 package com.travelPlanWithAccounting.service.service;
 
+import com.travelPlanWithAccounting.service.dto.auth.AccessTokenResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse.TokenNode;
 import com.travelPlanWithAccounting.service.entity.RefreshToken;
@@ -157,5 +158,33 @@ public class RefreshTokenService {
       db.setRevokedAt(OffsetDateTime.now(ZoneOffset.UTC));
       refreshTokenRepository.save(db);
     }
+  }
+
+  @Transactional
+  public AccessTokenResponse refreshAccessToken(String rtPlain, String ip, String ua) {
+
+    String hash = TokenUtil.sha256Base64Url(rtPlain);
+    RefreshToken db =
+        refreshTokenRepository
+            .findByTokenHash(hash)
+            .orElseThrow(() -> new IllegalArgumentException("RT not found"));
+
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+    if (db.isRevoked() || db.getExpiresAt().isBefore(now)) {
+      throw new IllegalStateException("RT invalid (revoked / expired)");
+    }
+
+    /* 若想做 reuse-detection，可在此檢查 db.isUsed() → revoke ××× */
+    // db.setLastUsedAt(now);            // 你可以加一個字段記錄
+    db.setUpdatedAt(now);
+    db.setUpdatedBy(db.getOwnerId()); // optional：誰刷新就寫誰
+    refreshTokenRepository.save(db);
+
+    /* 簽新的 Access-Token，Refresh-Token 繼續沿用 */
+    String newAt =
+        jwtUtil.signAccessToken(
+            db.getOwnerId(), OwnerTypeCode.MEMBER, UUID.randomUUID().toString());
+
+    return new AccessTokenResponse(newAt, jwtUtil.accessTtlSeconds());
   }
 }
