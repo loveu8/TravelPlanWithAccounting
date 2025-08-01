@@ -36,7 +36,7 @@ sequenceDiagram
 ```json
 {
   "email": "user@example.com",
-  "clientId": "web"
+  "clientId": "web" // 選填,暫時保留欄位
 }
 ```
 - **說明**：系統會自動判斷該 email 是否已註冊，並發送對應的 OTP 驗證碼。
@@ -61,7 +61,7 @@ sequenceDiagram
 {
   "email": "user@example.com",
   "otpCode": "123456",
-  "clientId": "web",
+  "clientId": "web", // 選填,暫時保留欄位
   "ip": "192.168.1.1",
   "ua": "Mozilla/5.0...",
   "givenName": "小明",
@@ -107,7 +107,7 @@ sequenceDiagram
 {
   "tokenType": "ACCESS",
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "clientId": "web"
+  "clientId": "web" // 選填,暫時保留欄位
 }
 ```
 - **說明**：驗證 Access Token 或 Refresh Token 的有效性
@@ -136,7 +136,7 @@ sequenceDiagram
 ```json
 {
   "refreshToken": "rt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "clientId": "web",
+  "clientId": "web", // 選填,暫時保留欄位
   "ip": "192.168.1.1",
   "ua": "Mozilla/5.0..."
 }
