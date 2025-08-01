@@ -1,7 +1,7 @@
 package com.travelPlanWithAccounting.service.model;
 
 public enum OwnerTypeCode {
-  MEM("001"),
+  MEMBER("001"),
   GUEST("002");
 
   private final String code;

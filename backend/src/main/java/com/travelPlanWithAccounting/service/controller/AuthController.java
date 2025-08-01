@@ -3,6 +3,7 @@ package com.travelPlanWithAccounting.service.controller;
 import com.travelPlanWithAccounting.service.dto.auth.AuthLogoutByRtRequest;
 import com.travelPlanWithAccounting.service.dto.auth.AuthRefreshRequest;
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
+import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
 import com.travelPlanWithAccounting.service.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,10 +42,10 @@ public class AuthController {
   }
 
   @PostMapping("/logout")
-  @Operation(summary = "登出：由 refreshToken 判斷目前平台並撤銷（MEM）")
-  public void logout(@Valid @RequestBody AuthLogoutByRtRequest body) {
-    // 以這顆 RT 找出 ownerId + clientId，撤銷該平台全部 RT
-    refreshTokenService.logoutByRefreshToken(body.getRefreshToken());
+  @Operation(summary = "登出：由 refreshToken 判斷平台並撤銷（MEM）")
+  public SimpleResult logout(@Valid @RequestBody AuthLogoutByRtRequest body) {
+    boolean ok = refreshTokenService.logoutByRefreshToken(body.getRefreshToken());
+    return new SimpleResult(ok);
   }
 
   private static String firstNonBlank(String a, String b) {

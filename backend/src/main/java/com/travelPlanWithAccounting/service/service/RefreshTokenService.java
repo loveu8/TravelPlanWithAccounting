@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** 會員的 RT 發放 / 輪轉 / 撤銷 */
+/** 會員 Refresh-Token 發放 / 旋轉 / 撤銷（目前「不」檢查 clientId） */
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -25,33 +25,32 @@ public class RefreshTokenService {
   private final RefreshTokenRepository refreshTokenRepository;
   private final JwtUtil jwtUtil;
 
-  @Value("${auth.refresh.mem-ttl-seconds:1209600}") // 14d
+  @Value("${auth.refresh.mem-ttl-seconds:1209600}") // 14 d
   private long memRtTtlSeconds;
 
-  @Value("${auth.refresh.max-per-client:5}")
-  private int maxPerClient;
+  // ---------- 發放 ----------
 
-  /**
-   * 發放：回「單層」 AuthResponse（access_token / refresh_token）
-   */
+  /** 發放一組 AT / RT，不驗 clientId，但仍會寫入資料庫方便日後擴充。 */
   @Transactional
-  public AuthResponse issueForMember(UUID memberId, String clientId, String ip, String ua) {
+  public AuthResponse issueForMember(
+      UUID memberId,
+      String clientId, // 仍保留欄位（預設 "web"）
+      String ip,
+      String ua) {
 
-    // 1) 產生 RT 明文 + 雜湊（只存雜湊）
+    /* 1) 產生 RT 明文 + 雜湊（只存雜湊） */
     String rtPlain = TokenUtil.randomRefreshToken();
     String rtHash = TokenUtil.sha256Base64Url(rtPlain);
 
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
     OffsetDateTime exp = now.plusSeconds(memRtTtlSeconds);
 
-    // TODO（可選）：控制單 clientId 上限 maxPerClient，超過則撤銷最舊一顆
-
-    // 2) 儲存 RT row
-    RefreshToken row =
+    /* 2) 寫入 refresh_token table（clientId 先存起來，暫不使用） */
+    refreshTokenRepository.save(
         RefreshToken.builder()
             .tokenHash(rtHash)
             .ownerId(memberId)
-            .ownerType(OwnerTypeCode.MEM.code()) // "001"
+            .ownerType(OwnerTypeCode.MEMBER.code()) // "001"
             .clientId(clientId)
             .issuedAt(now)
             .expiresAt(exp)
@@ -59,100 +58,101 @@ public class RefreshTokenService {
             .revoked(false)
             .ip(ip)
             .ua(ua)
-            .build();
-    refreshTokenRepository.save(row);
+            .build());
 
-    // 3) 簽 Access Token（RS256）
+    /* 3) Access-Token */
     String jti = UUID.randomUUID().toString();
-    String at = jwtUtil.signAccessToken(memberId, OwnerTypeCode.MEM, jti);
+    String at = jwtUtil.signAccessToken(memberId, OwnerTypeCode.MEMBER, jti);
 
-    // 4) 組回傳（單層 data -> 由全域回包器再包外層 data）
+    /* 4) 回傳單層 AuthResponse */
     Map<String, TokenNode> cookies = new HashMap<>();
-    cookies.put("access_token", TokenNode.builder()
-        .code(at)
-        .time(jwtUtil.accessTtlSeconds())
-        .build());
-    cookies.put("refresh_token", TokenNode.builder()
-        .code(rtPlain)
-        .time(memRtTtlSeconds)
-        .build());
+    cookies.put("access_token", new TokenNode(at, jwtUtil.accessTtlSeconds()));
+    cookies.put("refresh_token", new TokenNode(rtPlain, memRtTtlSeconds));
 
-    return AuthResponse.builder()
-        .id(memberId)
-        .role(OwnerTypeCode.MEM.code()) // "001"
-        .cookies(cookies)
-        .build();
+    return new AuthResponse(memberId, OwnerTypeCode.MEMBER.code(), cookies);
   }
 
+  // ---------- 旋轉 ----------
+
   /**
-   * 輪轉：驗舊 RT → 發新 AT/RT；若偵測 reuse，依需求可撤銷該 clientId 全部 RT（簡化版：直接丟 401/IllegalStateException）
+   * Rotate：只靠 refreshToken 定位資料列，不再比對 clientId。<br>
+   * *流程*：<br>
+   * ① 找到資料列 → ② 檢查 revoked / used / expired → ③ 將舊 RT 標記 used → ④ 發新 AT/RT
    */
   @Transactional
-  public AuthResponse rotateForMember(String oldRtPlain, String clientId, String ip, String ua) {
+  public AuthResponse rotateForMember(
+      String oldRtPlain,
+      String clientIdIgnored, // 預留，不再驗證
+      String ip,
+      String ua) {
+
     String oldHash = TokenUtil.sha256Base64Url(oldRtPlain);
     RefreshToken db =
         refreshTokenRepository
             .findByTokenHash(oldHash)
             .orElseThrow(() -> new IllegalArgumentException("RT not found"));
 
-    // 驗狀態
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-    if (db.isRevoked() || db.isUsed() || db.getExpiresAt().isBefore(now)) {
-      throw new IllegalStateException("RT invalid (revoked/used/expired)");
-    }
-    if (!db.getClientId().equals(clientId)) {
-      throw new IllegalStateException("Client mismatch");
-    }
+    if (db.isRevoked() || db.isUsed() || db.getExpiresAt().isBefore(now))
+      throw new IllegalStateException("RT invalid (revoked / used / expired)");
 
-    // 標記舊 RT 已使用（Rotation）
+    /* 只標記 used，不檢查 clientId */
     db.setUsed(true);
     refreshTokenRepository.save(db);
 
-    // 發新一組（邏輯與 issueForMember 相同）
-    return issueForMember(db.getOwnerId(), clientId, ip, ua);
+    /* 用 DB 紀錄的 clientId 再發一組（之後若要重新啟用 clientId 驗證只需加回檢查） */
+    return issueForMember(db.getOwnerId(), db.getClientId(), ip, ua);
   }
 
-  /** 撤銷（登出）：撤銷該 member 在 clientId 下的所有 RT */
+  // ---------- 撤銷 ----------
+
+  /** 依 memberId + clientId 撤銷（保留原功能，暫不在前端使用） */
   @Transactional
   public void revokeAllForMember(UUID memberId, String clientId) {
     var list =
         refreshTokenRepository.findAllByOwnerIdAndClientIdAndRevokedFalse(memberId, clientId);
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-    for (var rt : list) {
-      rt.setRevoked(true);
-      rt.setRevokedAt(now);
-    }
+    list.forEach(
+        rt -> {
+          rt.setRevoked(true);
+          rt.setRevokedAt(now);
+        });
     refreshTokenRepository.saveAll(list);
   }
 
-  /** 登出（建議）：用 refreshToken 找到 ownerId + clientId，撤銷該平台的所有 RT。 */
   @Transactional
-  public void logoutByRefreshToken(String rtPlain) {
+  public boolean logoutByRefreshToken(String rtPlain) {
     String hash = TokenUtil.sha256Base64Url(rtPlain);
-    var db = refreshTokenRepository.findByTokenHash(hash).orElse(null);
+    RefreshToken first = refreshTokenRepository.findByTokenHash(hash).orElse(null);
 
-    // 不回應是否存在，避免資訊洩漏：若查無則直接 return 視為 idempotent 成功
-    if (db == null) return;
+    // 查無資料直接回 false（你也可以選擇回 true -> 冪等）
+    if (first == null) return false;
+
+    UUID memberId = first.getOwnerId(); // ＝ updated_by 欄位值
+    String clientId = first.getClientId(); // 保持相同平台
 
     var list =
-        refreshTokenRepository.findAllByOwnerIdAndClientIdAndRevokedFalse(
-            db.getOwnerId(), db.getClientId());
+        refreshTokenRepository.findAllByOwnerIdAndClientIdAndRevokedFalse(memberId, clientId);
 
-    var now = OffsetDateTime.now(ZoneOffset.UTC);
-    for (var rt : list) {
-      rt.setRevoked(true);
-      rt.setRevokedAt(now);
-    }
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+    list.forEach(
+        rt -> {
+          rt.setRevoked(true);
+          rt.setRevokedAt(now);
+          rt.setUpdatedBy(memberId); // ★ 這行：寫 updated_by
+          rt.setUpdatedAt(now); // 若你想同步 updated_at
+        });
+
     refreshTokenRepository.saveAll(list);
+    return true;
   }
 
-  /** 登出（只撤銷當前這一顆 RT）：若你想精準撤銷單顆，可改呼叫這個。 */
+  /** 若只想撤銷這一顆 RT，可呼叫此法（現階段前端未用到） */
   @Transactional
   public void logoutOnlyThisRefreshToken(String rtPlain) {
     String hash = TokenUtil.sha256Base64Url(rtPlain);
-    var db = refreshTokenRepository.findByTokenHash(hash).orElse(null);
-    if (db == null) return; // 同上，做成冪等
-    if (!db.isRevoked()) {
+    RefreshToken db = refreshTokenRepository.findByTokenHash(hash).orElse(null);
+    if (db != null && !db.isRevoked()) {
       db.setRevoked(true);
       db.setRevokedAt(OffsetDateTime.now(ZoneOffset.UTC));
       refreshTokenRepository.save(db);
