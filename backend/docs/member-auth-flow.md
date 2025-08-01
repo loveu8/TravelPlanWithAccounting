@@ -12,83 +12,152 @@ sequenceDiagram
     participant Mail as 信箱
 
     User->>FE: 輸入 Email
-    FE->>BE: 發送 OTP 請求 (POST /api/auth/otps)
+    FE->>BE: 預驗證流程 (POST /api/members/pre-auth-flow)
     BE->>Mail: 寄送驗證碼
     Mail-->>User: 收到驗證碼
-    User->>FE: 輸入驗證碼
-    FE->>BE: 驗證 OTP (POST /api/auth/otps/verification)
-    BE-->>FE: 驗證成功，取得驗證 token
-    User->>FE: 填寫註冊資料 (Email、姓名等)
-    FE->>BE: 註冊 (POST /api/members/register，帶驗證 token)
-    BE-->>FE: 註冊成功，自動登入並回傳會員資料與 JWT
-    User->>FE: 輸入 Email、驗證 token
-    FE->>BE: 登入 (POST /api/members/login，帶驗證 token)
-    BE-->>FE: 登入成功，回傳會員資料與 JWT
+    User->>FE: 輸入驗證碼 + 註冊資料（如需要）
+    FE->>BE: 驗證並登入/註冊 (POST /api/members/auth-flow)
+    BE-->>FE: 回傳 Access Token 和 Refresh Token
+    User->>FE: 使用 Access Token 存取資源
+    FE->>BE: 驗證 Token (POST /api/members/verify-token)
+    BE-->>FE: Token 驗證結果
+    Note over FE,BE: Access Token 過期時
+    FE->>BE: 刷新 Token (POST /api/auth/refresh)
+    BE-->>FE: 新的 Access Token 和 Refresh Token
+    FE->>BE: 登出 (POST /api/auth/logout)
+    BE-->>FE: 登出成功
 ```
 
 ---
 
 ## API 操作步驟
 
-### 1. 發送 OTP 驗證碼
-- **API**：`POST /api/auth/otps`
-- **Body 範例**：
-```json
-{
-  "email": "user@example.com"
-}
-```
-- **說明**：輸入 email，系統會寄送驗證碼到信箱。
-
-### 2. 驗證 OTP 驗證碼
-- **API**：`POST /api/auth/otps/verification`
+### 1. 預驗證流程 - 判斷登入/註冊並發送 OTP
+- **API**：`POST /api/members/pre-auth-flow`
 - **Body 範例**：
 ```json
 {
   "email": "user@example.com",
-  "otp": "123456"
+  "clientId": "web"
 }
 ```
-- **說明**：輸入收到的驗證碼，驗證成功會取得驗證 token。
+- **說明**：系統會自動判斷該 email 是否已註冊，並發送對應的 OTP 驗證碼。
+- **回應**：
+```json
+{
+  "email": "user@example.com",
+  "exists": false,
+  "purpose": "REGISTRATION",
+  "actionCode": "001"
+}
+```
+- **說明**：
+  - `exists`: 帳號是否已存在
+  - `purpose`: 系統判定的用途（REGISTRATION 或 LOGIN）
+  - `actionCode`: PRD action code（REGISTRATION=001, LOGIN=002）
 
-### 3. 註冊會員
-- **API**：`POST /api/members/register`
+### 2. 驗證 OTP 並完成登入/註冊
+- **API**：`POST /api/members/auth-flow`
 - **Body 範例**：
 ```json
 {
   "email": "user@example.com",
-  "otpToken": "驗證成功取得的 token",
+  "otpCode": "123456",
+  "clientId": "web",
+  "ip": "192.168.1.1",
+  "ua": "Mozilla/5.0...",
   "givenName": "小明",
   "familyName": "王",
   "nickName": "明明",
   "birthday": "2000-01-01"
 }
 ```
-- **說明**：填寫註冊資料，需帶上驗證 token。
+- **說明**：
+  - 驗證 OTP 驗證碼
+  - 如果是新用戶（purpose=REGISTRATION），會自動註冊並登入
+  - 如果是現有用戶（purpose=LOGIN），會直接登入
+  - 註冊時需要填寫 `givenName`、`familyName`、`nickName`、`birthday` 等資料
 - **回應**：
 ```json
 {
-  "email": "user@example.com",
-  "jwt": "jwt-token"
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "role": "001",
+  "cookies": {
+    "accessToken": {
+      "code": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "time": 3600
+    },
+    "refreshToken": {
+      "code": "rt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "time": 2592000
+    }
+  }
 }
 ```
-- **說明**：註冊成功即自動登入，回傳 JWT。
+- **說明**：
+  - `id`: 會員 ID
+  - `role`: 身分代碼（001=MEMBER）
+  - `cookies`: 要由 BFF 寫入 Cookie 的 token 資訊
+    - `accessToken`: JWT Token，有效期 1 小時
+    - `refreshToken`: Refresh Token，有效期 30 天
 
-### 4. 會員登入
-- **API**：`POST /api/members/login`
+### 3. 驗證 Token
+- **API**：`POST /api/members/verify-token`
 - **Body 範例**：
 ```json
 {
-  "email": "user@example.com",
-  "otpToken": "驗證成功取得的 token"
+  "tokenType": "ACCESS",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "clientId": "web"
 }
 ```
-- **說明**：登入時必須同時帶入 email 與驗證 token，系統會再次驗證 OTP 是否通過。
+- **說明**：驗證 Access Token 或 Refresh Token 的有效性
 - **回應**：
 ```json
 {
-  "email": "user@example.com",
-  "jwt": "jwt-token"
+  "valid": true,
+  "tokenType": "ACCESS",
+  "reason": null,
+  "sub": "550e8400-e29b-41d4-a716-446655440000",
+  "role": "001",
+  "exp": 1703123456
+}
+```
+- **說明**：
+  - `valid`: Token 是否有效
+  - `tokenType`: Token 類型（ACCESS 或 REFRESH）
+  - `reason`: 無效原因（可為 null）
+  - `sub`: Token 的 subject（會員 ID）
+  - `role`: 身分代碼（ACCESS Token 才有）
+  - `exp`: 過期時間（epoch second，ACCESS Token 才有）
+
+### 4. 刷新 Token
+- **API**：`POST /api/auth/refresh`
+- **Body 範例**：
+```json
+{
+  "refreshToken": "rt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "clientId": "web",
+  "ip": "192.168.1.1",
+  "ua": "Mozilla/5.0..."
+}
+```
+- **說明**：當 Access Token 過期時，使用 Refresh Token 取得新的 Access Token 和 Refresh Token
+- **回應**：同 auth-flow 的回應格式
+
+### 5. 登出
+- **API**：`POST /api/auth/logout`
+- **Body 範例**：
+```json
+{
+  "refreshToken": "rt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+- **說明**：使用 Refresh Token 進行登出，撤銷相關的 token
+- **回應**：
+```json
+{
+  "ok": true
 }
 ```
 
@@ -97,7 +166,9 @@ sequenceDiagram
 ## 其他補充
 
 - **OTP 驗證碼**：每次驗證碼有效 10 分鐘，最多嘗試 3 次。
-- **驗證 token**：驗證 OTP 成功後取得，註冊與登入皆需帶入。
+- **Access Token**：JWT Token，有效期 1 小時，用於存取受保護的資源。
+- **Refresh Token**：用於刷新 Access Token，有效期 30 天。
+- **Token Rotation**：每次刷新都會產生新的 Access Token 和 Refresh Token，舊的 Refresh Token 會被撤銷。
 - **錯誤處理**：API 會回傳友善訊息，請依照訊息提示操作。
 - **測試用 API**：開發環境可用 `/api/auth/otps-test` 直接取得驗證碼。
 
@@ -106,11 +177,24 @@ sequenceDiagram
 ## 常見問題
 
 - 註冊後是否自動登入？
-  - 是，註冊成功即回傳 JWT，前端可直接登入。
-- 驗證 token 可以重複使用嗎？
-  - 建議每次註冊/登入都重新驗證 OTP，token 有時效性。
+  - 是，註冊成功即回傳 Access Token 和 Refresh Token，前端可直接登入。
+- Refresh Token 可以重複使用嗎？
+  - 每次刷新都會產生新的 Refresh Token，舊的會被撤銷，確保安全性。
 - 忘記驗證碼怎麼辦？
   - 可重新發送 OTP，舊驗證碼會失效。
+- Access Token 過期怎麼辦？
+  - 使用 Refresh Token 呼叫 `/api/auth/refresh` 取得新的 token。
+- 如何判斷用戶是登入還是註冊？
+  - 呼叫 `/api/members/pre-auth-flow` 後，系統會回傳 `exists` 和 `purpose` 欄位。
+
+---
+
+## Token 管理最佳實踐
+
+1. **Access Token**：存放在記憶體中，用於 API 請求
+2. **Refresh Token**：存放在 HttpOnly Cookie 中，確保安全性
+3. **自動刷新**：在 Access Token 即將過期前自動刷新
+4. **登出清理**：登出時清除所有相關的 token
 
 ---
 
