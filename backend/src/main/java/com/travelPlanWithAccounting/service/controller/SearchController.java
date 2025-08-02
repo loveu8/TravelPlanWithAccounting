@@ -11,6 +11,7 @@ import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.dto.setting.SettingResponse;
+import com.travelPlanWithAccounting.service.security.JwtUtil;
 import com.travelPlanWithAccounting.service.service.SearchService;
 import com.travelPlanWithAccounting.service.service.SettingService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +37,7 @@ public class SearchController {
 
   @Autowired private SearchService searchService;
   @Autowired private SettingService settingService;
+  @Autowired private JwtUtil jwtUtil;
 
   // ==================== 設定相關 API ====================
 
@@ -96,9 +99,21 @@ public class SearchController {
   }
 
   @PostMapping("/saveMemberPoi")
-  @Operation(summary = "儲存會員景點")
-  public SaveMemberPoiResponse save(
-      @RequestHeader("X-member-id") UUID memberId, @Valid @RequestBody SaveMemberPoiRequest req) {
-    return searchService.saveMemberPoi(memberId, req);
+  @Operation(summary = "儲存會員景點（優先取 Access-Token 的 sub）")
+  public SaveMemberPoiResponse saveMemberPoi(
+      @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth,
+      @Valid @RequestBody SaveMemberPoiRequest req) {
+
+    UUID authMemberId = null;
+    if (auth != null && auth.startsWith("Bearer ")) {
+      try {
+        var jws = jwtUtil.verify(auth.substring(7));
+        authMemberId = UUID.fromString(jws.getPayload().getSubject());
+      } catch (Exception ignored) {
+        /* token 壞掉時當作沒帶 */
+      }
+    }
+
+    return searchService.saveMemberPoi(authMemberId, req);
   }
 }

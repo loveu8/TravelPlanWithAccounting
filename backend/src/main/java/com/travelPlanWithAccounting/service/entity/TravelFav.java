@@ -1,7 +1,5 @@
 package com.travelPlanWithAccounting.service.entity;
 
-import org.hibernate.annotations.DynamicUpdate;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -13,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
 @Valid
@@ -29,7 +28,7 @@ public class TravelFav extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "travel_id", nullable = false)
-    private TravelMain travelMain;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "travel_main_id", nullable = false)
+  private TravelMain travelMain;
 }

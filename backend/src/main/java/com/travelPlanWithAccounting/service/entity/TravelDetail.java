@@ -40,11 +40,8 @@ public class TravelDetail implements Serializable {
   @Column(name = "travel_date_id", nullable = false)
   private UUID travelDateId; // 不建立雙向關聯
 
-  @Column(name = "extend_id", nullable = false)
-  private UUID extendId; // 不建立雙向關聯
-
-  @Column(name = "type", nullable = false, length = 3)
-  private String type;
+  @Column(name = "poi_id", nullable = false)
+  private UUID poiId; // 不建立雙向關聯
 
   @Column(name = "start_time", nullable = false)
   private LocalTime startTime;

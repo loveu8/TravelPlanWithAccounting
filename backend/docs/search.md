@@ -307,15 +307,16 @@ sequenceDiagram
 
 - **API**: `POST /api/search/saveMemberPoi`
 - **描述**: 儲存會員指定的景點到個人收藏，支援多語系資料儲存
+- **認證**: 需要 Bearer Token 驗證（透過 Authorization header）
 - **請求參數**:
   - **標頭**:
-    | 標頭        | 型別   | 必填 | 說明              |
-    |-------------|--------|------|-------------------|
-    | `X-member-id`| UUID  | 是   | 會員 ID           |
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+    | `Authorization`   | String | 是   | Bearer Token 格式      |
   - **請求體**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
-    | `memberId`| UUID   | 是   | 會員 ID                     |
+    | `memberId`| UUID   | 否   | 會員 ID (方便測試API用)      |
     | `placeId` | String | 是   | Google Place 的唯一識別碼   |
     | `langType`| String | 是   | 語言類型                   |
   - **請求體範例**:
@@ -326,6 +327,11 @@ sequenceDiagram
       "langType": "zh-TW"
     }
     ```
+- **認證流程**:
+  1. 系統會從 `Authorization` header 中提取 Bearer Token
+  2. 驗證 Token 的有效性
+  3. 從 Token 的 `sub` 欄位取得會員 ID
+  4. 如果 Token 無效或過期，會回傳 401 未授權錯誤
 - **回應**: SaveMemberPoiResponse
 - **回應範例**:
   ```json
@@ -341,6 +347,7 @@ sequenceDiagram
 - **常見錯誤**:
   | 錯誤代碼                    | 說明                 | 解決方法                  |
   |-----------------------------|----------------------|---------------------------|
+  | `401 Unauthorized`          | Token 無效或過期     | 重新登入取得有效 Token    |
   | `unsupported langType`      | 不支援的語言類型     | 檢查 `langType` 是否正確  |
   | `place not found`           | 找不到指定景點       | 確認 `placeId` 是否有效   |
   | `place missing required fields` | 景點缺少必要欄位 | 選擇其他景點              |
@@ -482,7 +489,7 @@ const saveResult = await fetch('/api/search/saveMemberPoi', {
   method: 'POST',
   headers: { 
     'Content-Type': 'application/json',
-    'X-member-id': '550e8400-e29b-41d4-a716-446655440000'
+    'Authorization': 'Bearer ' + accessToken // 需要有效的 Bearer Token
   },
   body: JSON.stringify({
     memberId: '550e8400-e29b-41d4-a716-446655440000',
@@ -523,5 +530,7 @@ API 會回傳標準 HTTP 狀態碼：
    - 國家/地區/城市資料來自本地資料庫
    - 附近景點資料來自 Google Places API
 7. **會員景點儲存**:
-   - 需要有效的 `X-member-id` header
+   - 需要有效的 Bearer Token（透過 Authorization header）
+   - 系統會自動從 Token 中提取會員 ID
    - 支援重複儲存檢查
+   - 如果 Token 無效會回傳 401 錯誤
