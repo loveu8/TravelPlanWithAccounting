@@ -316,7 +316,7 @@ sequenceDiagram
   - **請求體**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
-    | `memberId`| UUID   | 是   | 會員 ID                     |
+    | `memberId`| UUID   | 否   | 會員 ID (方便測試API用)      |
     | `placeId` | String | 是   | Google Place 的唯一識別碼   |
     | `langType`| String | 是   | 語言類型                   |
   - **請求體範例**:
