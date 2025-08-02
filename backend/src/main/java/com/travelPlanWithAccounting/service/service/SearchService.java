@@ -17,6 +17,7 @@ import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
 import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
+import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.exception.MemberPoiException;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
@@ -230,9 +231,23 @@ public class SearchService {
   }
 
   @Transactional
-  public SaveMemberPoiResponse saveMemberPoi(UUID authMemberId, SaveMemberPoiRequest req) {
-    // 1) 確認會員存在
-    memberService.assertActiveMember(authMemberId, req.getMemberId());
+  public SaveMemberPoiResponse saveMemberPoi(UUID tokenMemberId, SaveMemberPoiRequest req) {
+
+    /* 1) 取最終 memberId：先用 Access-Token，沒有才用 body */
+    UUID memberId =
+        tokenMemberId != null
+            ? tokenMemberId
+            : Optional.ofNullable(req.getMemberId())
+                .filter(s -> !s.isBlank())
+                .map(UUID::fromString)
+                .orElse(null);
+
+    if (memberId == null) {
+      throw new MemberException.MemberNotFound(); // ← 請在 MemberException 新增 (或沿用現有)
+    }
+
+    /* 1.1) 只驗證「存在 + active」，不再比對 body */
+    memberService.assertActiveMember(memberId);
 
     // 2) 確認 語言傳遞正確
     String langCode = langTypeMapper.toCode(req.getLangType());
@@ -249,7 +264,7 @@ public class SearchService {
     }
 
     // 4) 確認儲存
-    TxResult tx = doSaveTx(authMemberId, dto, langCode);
+    TxResult tx = doSaveTx(memberId, dto, langCode);
 
     // 5) 背景處理其他語系
     enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), req.getLangType());

@@ -85,18 +85,10 @@ public class MemberService {
 
   // 可選：提供保留的 login/register 舊 API 呼叫 authFlow 包裝（略）
   /** 仍保留原有方法（若其他地方共用） */
-  public Member assertActiveMember(UUID authMemberId, String bodyMemberIdOpt) {
-    if (bodyMemberIdOpt != null) {
-      UUID bodyId;
-      try {
-        bodyId = UUID.fromString(bodyMemberIdOpt);
-      } catch (Exception ex) {
-        throw new MemberException.MemberIdInvalid();
-      }
-      if (!bodyId.equals(authMemberId)) throw new MemberException.MemberIdMismatch();
-    }
+  @Transactional(readOnly = true)
+  public Member assertActiveMember(UUID memberId) {
     return memberRepository
-        .findStatusById(authMemberId)
+        .findStatusById(memberId) // 只查一次 DB
         .orElseThrow(MemberException.MemberNotFound::new);
   }
 
