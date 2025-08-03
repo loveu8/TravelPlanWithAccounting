@@ -66,12 +66,12 @@ export default function Header() {
   const { t } = useT("common");
 
   return (
-    <header className="mx-auto px-36">
+    <header className="mx-auto px-36 bg-white">
       <div className="flex justify-between items-center">
         <div>
           <Image src="/img/logo.png" alt="logo" width={110} height={44} />
         </div>
-        <div className="flex gap-13 items-center py-[19px]">
+        <div className="flex gap-13 items-center py-[19px] text-black">
           <Navigation />
           <LoginSignup>
             <Button
