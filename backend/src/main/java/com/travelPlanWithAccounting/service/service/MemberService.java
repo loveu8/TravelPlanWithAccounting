@@ -148,8 +148,11 @@ public class MemberService {
     if (member.getStatus() == null || member.getStatus() != 1) {
       throw new MemberException.MemberNotActive();
     }
-    Locale locale =
-        Locale.forLanguageTag(req.getLangType() == null ? "zh-TW" : req.getLangType());
+    String reqLang = req.getLangType();
+    Locale locale = Locale.forLanguageTag(reqLang == null ? "zh-TW" : reqLang);
+    if (locale.getLanguage().isEmpty()) {
+      locale = Locale.forLanguageTag("zh-TW");
+    }
     Locale prevLocale = LocaleContextHolder.getLocale();
     LocaleContextHolder.setLocale(locale);
     try {
@@ -170,6 +173,8 @@ public class MemberService {
                 .map(Setting::getCodeName)
                 .orElse(member.getLangType());
         member.setLangType(code);
+      } else if (member.getLangType() == null) {
+        member.setLangType("001");
       }
 
       memberRepository.save(member);
@@ -195,11 +200,12 @@ public class MemberService {
   }
 
   private MemberProfileResponse toProfileResponse(Member member) {
+    String code = member.getLangType() == null ? "001" : member.getLangType();
     String langType =
         settingRepository
-            .findByCategoryAndCodeName("LANG_TYPE", member.getLangType())
+            .findByCategoryAndCodeName("LANG_TYPE", code)
             .map(Setting::getName)
-            .orElse(member.getLangType());
+            .orElse(code);
     return new MemberProfileResponse(
         member.getGivenName(),
         member.getFamilyName(),
