@@ -82,6 +82,23 @@ public class ApiException extends RuntimeException {
   }
 
   /**
+   * 使用指定的 {@link MessageCode} 與自訂資料建立新的 {@code ApiException}。<br>
+   * Constructs a new {@code ApiException} with the specified {@link MessageCode} and custom data.
+   *
+   * @param messageCode 描述錯誤內容的訊息代碼 / The message code describing the error
+   * @param data 與錯誤相關的資料 / Additional data related to the error
+   */
+  public ApiException(MessageCode messageCode, Object data) {
+    super(messageCode.getMessage());
+    this.messageCode = messageCode;
+    this.args = null;
+    this.httpStatus = messageCode.getHttpStatus();
+    this.originalException = null;
+    this.data = data;
+    this.meta = null;
+  }
+
+  /**
    * 使用指定的 {@link MessageCode} 與參數陣列建立新的 {@code ApiException}。<br>
    * Constructs a new {@code ApiException} with the specified {@link MessageCode} and arguments.
    *
@@ -95,6 +112,25 @@ public class ApiException extends RuntimeException {
     this.httpStatus = messageCode.getHttpStatus();
     this.originalException = null;
     this.data = null;
+    this.meta = null;
+  }
+
+  /**
+   * 使用指定的 {@link MessageCode}、自訂資料與參數陣列建立新的 {@code ApiException}。<br>
+   * Constructs a new {@code ApiException} with the specified {@link MessageCode}, custom data and
+   * arguments.
+   *
+   * @param messageCode 描述錯誤內容的訊息代碼 / The message code describing the error
+   * @param data 與錯誤相關的資料 / Additional data related to the error
+   * @param args 用於訊息模板參數替換的資料 / Arguments used for message formatting
+   */
+  public ApiException(MessageCode messageCode, Object data, Object[] args) {
+    super(messageCode.getMessage(args));
+    this.messageCode = messageCode;
+    this.args = args;
+    this.httpStatus = messageCode.getHttpStatus();
+    this.originalException = null;
+    this.data = data;
     this.meta = null;
   }
 

@@ -2,6 +2,7 @@ package com.travelPlanWithAccounting.service.exception;
 
 import com.travelPlanWithAccounting.service.dto.system.ApiException;
 import com.travelPlanWithAccounting.service.message.MemberMessageCode;
+import java.util.Map;
 
 public class MemberException extends ApiException {
   public MemberException(MemberMessageCode code) {
@@ -75,8 +76,8 @@ public class MemberException extends ApiException {
   }
 
   public static class ProfileFieldsInvalid extends ApiException {
-    public ProfileFieldsInvalid(String msg) {
-      super(MemberMessageCode.PROFILE_FIELDS_INVALID, new Object[] {msg});
+    public ProfileFieldsInvalid(Map<String, String> fieldErrors) {
+      super(MemberMessageCode.PROFILE_FIELDS_INVALID, fieldErrors);
     }
   }
 }

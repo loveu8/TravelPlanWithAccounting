@@ -20,8 +20,10 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -156,9 +158,9 @@ public class MemberService {
     Locale prevLocale = LocaleContextHolder.getLocale();
     LocaleContextHolder.setLocale(locale);
     try {
-      String errorMsg = validateProfile(req, locale);
-      if (!errorMsg.isEmpty()) {
-        throw new MemberException.ProfileFieldsInvalid(errorMsg);
+      Map<String, String> fieldErrors = validateProfile(req, locale);
+      if (!fieldErrors.isEmpty()) {
+        throw new MemberException.ProfileFieldsInvalid(fieldErrors);
       }
 
       if (req.getGivenName() != null) member.setGivenName(req.getGivenName());
@@ -216,34 +218,55 @@ public class MemberService {
         member.getEmail());
   }
 
-  private String validateProfile(MemberProfileUpdateRequest req, Locale locale) {
-    List<String> errors = new ArrayList<>();
+  private Map<String, String> validateProfile(MemberProfileUpdateRequest req, Locale locale) {
+    Map<String, String> errors = new LinkedHashMap<>();
     Pattern namePattern = Pattern.compile("^[\\p{L}0-9\\s]+$");
+
     if (req.getGivenName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
       if (req.getGivenName().length() > 30)
-        errors.add(messageSource.getMessage("member.profile.givenName.length", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.givenName.length", null, locale));
       if (!namePattern.matcher(req.getGivenName()).matches())
-        errors.add(messageSource.getMessage("member.profile.givenName.invalid", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.givenName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("givenName", String.join("; ", fieldErrors));
     }
+
     if (req.getFamilyName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
       if (req.getFamilyName().length() > 30)
-        errors.add(messageSource.getMessage("member.profile.familyName.length", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.familyName.length", null, locale));
       if (!namePattern.matcher(req.getFamilyName()).matches())
-        errors.add(messageSource.getMessage("member.profile.familyName.invalid", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.familyName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("familyName", String.join("; ", fieldErrors));
     }
+
     if (req.getNickName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
       if (req.getNickName().length() > 30)
-        errors.add(messageSource.getMessage("member.profile.nickName.length", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.nickName.length", null, locale));
       if (!namePattern.matcher(req.getNickName()).matches())
-        errors.add(messageSource.getMessage("member.profile.nickName.invalid", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.nickName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("nickName", String.join("; ", fieldErrors));
     }
+
     if (req.getLangType() != null) {
+      List<String> fieldErrors = new ArrayList<>();
       if (req.getLangType().length() > 10) {
-        errors.add(messageSource.getMessage("member.profile.langType.length", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.langType.length", null, locale));
       } else if (settingRepository.findByCategoryAndName("LANG_TYPE", req.getLangType()).isEmpty()) {
-        errors.add(messageSource.getMessage("member.profile.langType.invalid", null, locale));
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.langType.invalid", null, locale));
       }
+      if (!fieldErrors.isEmpty()) errors.put("langType", String.join("; ", fieldErrors));
     }
-    return String.join("; ", errors);
+
+    return errors;
   }
 }
