@@ -212,21 +212,21 @@ public class MemberService {
 
   private String validateProfile(MemberProfileUpdateRequest req, Locale locale) {
     List<String> errors = new ArrayList<>();
-    Pattern namePattern = Pattern.compile("^[\\p{L}0-9\\s_-]{0,255}$");
+    Pattern namePattern = Pattern.compile("^[\\p{L}0-9\\s]+$");
     if (req.getGivenName() != null) {
-      if (req.getGivenName().length() > 255)
+      if (req.getGivenName().length() > 30)
         errors.add(messageSource.getMessage("member.profile.givenName.length", null, locale));
       if (!namePattern.matcher(req.getGivenName()).matches())
         errors.add(messageSource.getMessage("member.profile.givenName.invalid", null, locale));
     }
     if (req.getFamilyName() != null) {
-      if (req.getFamilyName().length() > 255)
+      if (req.getFamilyName().length() > 30)
         errors.add(messageSource.getMessage("member.profile.familyName.length", null, locale));
       if (!namePattern.matcher(req.getFamilyName()).matches())
         errors.add(messageSource.getMessage("member.profile.familyName.invalid", null, locale));
     }
     if (req.getNickName() != null) {
-      if (req.getNickName().length() > 255)
+      if (req.getNickName().length() > 30)
         errors.add(messageSource.getMessage("member.profile.nickName.length", null, locale));
       if (!namePattern.matcher(req.getNickName()).matches())
         errors.add(messageSource.getMessage("member.profile.nickName.invalid", null, locale));
