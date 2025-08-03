@@ -55,4 +55,28 @@ public class MemberException extends ApiException {
       super(MemberMessageCode.MEMBER_NOT_FOUND);
     }
   }
+
+  public static class AccessTokenExpired extends ApiException {
+    public AccessTokenExpired() {
+      super(MemberMessageCode.ACCESS_TOKEN_EXPIRED);
+    }
+  }
+
+  public static class AccessTokenInvalid extends ApiException {
+    public AccessTokenInvalid() {
+      super(MemberMessageCode.ACCESS_TOKEN_INVALID);
+    }
+  }
+
+  public static class MemberNotActive extends ApiException {
+    public MemberNotActive() {
+      super(MemberMessageCode.MEMBER_NOT_ACTIVE);
+    }
+  }
+
+  public static class ProfileFieldsInvalid extends ApiException {
+    public ProfileFieldsInvalid(String msg) {
+      super(MemberMessageCode.PROFILE_FIELDS_INVALID, new Object[] {msg});
+    }
+  }
 }
