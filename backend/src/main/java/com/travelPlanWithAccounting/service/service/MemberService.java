@@ -74,19 +74,26 @@ public class MemberService {
       throw new MemberException.OtpTokenInvalid();
     }
 
-    Member member =
-        exists
-            ? memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new)
-            : memberRepository.save(
-                Member.builder()
-                    .email(email)
-                    .status(Short.valueOf("1"))
-                    .subscribe(false)
-                    .givenName(req.getGivenName())
-                    .familyName(req.getFamilyName())
-                    .nickName(req.getNickName())
-                    .birthday(req.getBirthday())
-                    .build());
+    Member member;
+    if (exists) {
+      member =
+          memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
+    } else {
+      member =
+          Member.builder()
+              .email(email)
+              .status(Short.valueOf("1"))
+              .subscribe(false)
+              .build();
+      MemberProfileUpdateRequest profileReq = new MemberProfileUpdateRequest();
+      profileReq.setGivenName(req.getGivenName());
+      profileReq.setFamilyName(req.getFamilyName());
+      profileReq.setNickName(req.getNickName());
+      profileReq.setBirthday(req.getBirthday());
+      profileReq.setLangType(req.getLangType());
+      validateAndApplyProfile(member, profileReq);
+      memberRepository.save(member);
+    }
 
     String clientId = resolveClientId(req.getClientId());
     return refreshTokenService.issueForMember(member.getId(), clientId, req.getIp(), req.getUa());
@@ -150,6 +157,12 @@ public class MemberService {
     if (member.getStatus() == null || member.getStatus() != 1) {
       throw new MemberException.MemberNotActive();
     }
+    validateAndApplyProfile(member, req);
+    memberRepository.save(member);
+    return toProfileResponse(member);
+  }
+
+  private void validateAndApplyProfile(Member member, MemberProfileUpdateRequest req) {
     String reqLang = req.getLangType();
     Locale locale = Locale.forLanguageTag(reqLang == null ? "zh-TW" : reqLang);
     if (locale.getLanguage().isEmpty()) {
@@ -178,9 +191,6 @@ public class MemberService {
       } else if (member.getLangType() == null) {
         member.setLangType("001");
       }
-
-      memberRepository.save(member);
-      return toProfileResponse(member);
     } finally {
       LocaleContextHolder.setLocale(prevLocale);
     }

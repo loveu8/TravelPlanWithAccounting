@@ -67,14 +67,15 @@ sequenceDiagram
   "givenName": "小明",
   "familyName": "王",
   "nickName": "明明",
-  "birthday": "2000-01-01"
+  "birthday": "2000-01-01",
+  "langType": "zh-TW"
 }
 ```
 - **說明**：
   - 驗證 OTP 驗證碼
   - 如果是新用戶（purpose=REGISTRATION），會自動註冊並登入
   - 如果是現有用戶（purpose=LOGIN），會直接登入
-  - 註冊時需要填寫 `givenName`、`familyName`、`nickName`、`birthday` 等資料
+  - 註冊時可填寫 `givenName`、`familyName`、`nickName`、`birthday`、`langType` 等資料（`langType` 預設 zh-TW）
   - access_token cookie保留15分鐘，refresh_token cookie保留14天
 - **回應**：
 ```json
@@ -99,6 +100,23 @@ sequenceDiagram
   - `cookies`: 要由 BFF 寫入 Cookie 的 token 資訊
     - `access_token`: JWT Token，有效期 1 小時
     - `refresh_token`: Refresh Token，有效期 30 天
+
+- **錯誤範例（欄位驗證失敗）**：
+```json
+{
+  "data": null,
+  "meta": null,
+  "error": {
+    "code": "400106",
+    "message": "會員資料欄位錯誤",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "details": {
+      "givenName": "given_name 長度不可超過30",
+      "langType": "不支援的語系"
+    }
+  }
+}
+```
 
 ### 3. 驗證 Token
 - **API**：`POST /api/auth/verify-token`

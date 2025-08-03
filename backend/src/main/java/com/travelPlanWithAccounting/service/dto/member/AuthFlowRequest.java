@@ -27,4 +27,6 @@ public class AuthFlowRequest {
   private String familyName;
   private String nickName;
   private java.time.LocalDate birthday;
+  @Schema(description = "語系類型", example = "zh-TW")
+  private String langType;
 }
