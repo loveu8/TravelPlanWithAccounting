@@ -197,7 +197,7 @@ public class RefreshTokenService {
 
   // ---------- 驗證 ----------
 
-  @Transactional(readOnly = true)
+  @Transactional
   public VerifyTokenResponse verifyToken(VerifyTokenRequest req) {
     String tokenTypeStr =
         req != null && req.getTokenType() != null ? String.valueOf(req.getTokenType()) : null;
