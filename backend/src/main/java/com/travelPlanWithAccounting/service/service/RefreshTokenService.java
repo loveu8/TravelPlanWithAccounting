@@ -4,6 +4,7 @@ import com.travelPlanWithAccounting.service.dto.auth.AccessTokenResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse.TokenNode;
 import com.travelPlanWithAccounting.service.entity.RefreshToken;
+import com.travelPlanWithAccounting.service.exception.RefreshTokenException;
 import com.travelPlanWithAccounting.service.model.OwnerTypeCode;
 import com.travelPlanWithAccounting.service.repository.RefreshTokenRepository;
 import com.travelPlanWithAccounting.service.security.JwtUtil;
@@ -91,11 +92,12 @@ public class RefreshTokenService {
     RefreshToken db =
         refreshTokenRepository
             .findByTokenHash(oldHash)
-            .orElseThrow(() -> new IllegalArgumentException("RT not found"));
+            .orElseThrow(RefreshTokenException.NotFound::new);
 
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-    if (db.isRevoked() || db.isUsed() || db.getExpiresAt().isBefore(now))
-      throw new IllegalStateException("RT invalid (revoked / used / expired)");
+    if (db.isRevoked() || db.isUsed() || db.getExpiresAt().isBefore(now)) {
+      throw new RefreshTokenException.Invalid();
+    }
 
     /* 只標記 used，不檢查 clientId */
     db.setUsed(true);
@@ -167,11 +169,11 @@ public class RefreshTokenService {
     RefreshToken db =
         refreshTokenRepository
             .findByTokenHash(hash)
-            .orElseThrow(() -> new IllegalArgumentException("RT not found"));
+            .orElseThrow(RefreshTokenException.NotFound::new);
 
     OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
     if (db.isRevoked() || db.getExpiresAt().isBefore(now)) {
-      throw new IllegalStateException("RT invalid (revoked / expired)");
+      throw new RefreshTokenException.Invalid();
     }
 
     /* 若想做 reuse-detection，可在此檢查 db.isUsed() → revoke ××× */
