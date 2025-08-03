@@ -43,11 +43,13 @@ public class OtpController {
     return otpService.verifyOtpResponse(request);
   }
 
-  @GetMapping("/{email}/status")
-  @Operation(summary = "查詢 OTP 狀態", description = "以 Query String 指定 purpose；未傳則預設為 LOGIN。")
+  @GetMapping("/{token}/status")
+  @Operation(
+      summary = "查詢 OTP 狀態",
+      description = "以 Path Variable 提供 token，Query String 指定 purpose；未傳則預設為 LOGIN。")
   public OtpStatusResponse getOtpStatus(
-      @PathVariable String email,
+      @PathVariable String token,
       @RequestParam(name = "purpose", required = false) OtpPurpose purpose) {
-    return otpService.getOtpStatusResponse(email, purpose);
+    return otpService.getOtpStatusResponse(token, purpose);
   }
 }

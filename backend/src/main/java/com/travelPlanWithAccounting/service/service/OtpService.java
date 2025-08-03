@@ -92,19 +92,31 @@ public class OtpService {
             .orElseThrow(InvalidOtpException.NotFound::new);
 
     String email = authInfo.getEmail();
-    OtpData otpData = otpCacheService.getOtpData(email, purpose);
+    OtpData otpData = otpCacheService.getOtpData(token, purpose);
     if (otpData == null) {
-      log.warn("找不到用戶 {} 的 OTP 資料（purpose={}）", email, purpose.name());
+      log.warn(
+          "找不到用戶 {} 的 OTP 資料（purpose={}，token={})",
+          email,
+          purpose.name(),
+          token);
       throw new InvalidOtpException.NotFound();
     }
     if (otpData.isExpired()) {
-      log.warn("用戶 {} 的 OTP 已過期（purpose={}）", email, purpose.name());
-      otpCacheService.evictOtp(email, purpose);
+      log.warn(
+          "用戶 {} 的 OTP 已過期（purpose={}，token={})",
+          email,
+          purpose.name(),
+          token);
+      otpCacheService.evictOtp(token, purpose);
       throw new InvalidOtpException.Expired();
     }
     if (otpData.getAttemptCount() >= MAX_ATTEMPTS) {
-      log.warn("用戶 {} 的 OTP 嘗試次數已超過限制（purpose={}）", email, purpose.name());
-      otpCacheService.evictOtp(email, purpose);
+      log.warn(
+          "用戶 {} 的 OTP 嘗試次數已超過限制（purpose={}，token={})",
+          email,
+          purpose.name(),
+          token);
+      otpCacheService.evictOtp(token, purpose);
       throw new InvalidOtpException.MaxAttemptsExceeded();
     }
 
@@ -112,18 +124,22 @@ public class OtpService {
 
     if (!otpData.getOtpCode().equals(inputOtp)) {
       log.warn(
-          "用戶 {} OTP 驗證失敗（purpose={}），嘗試次數: {}", email, purpose.name(), otpData.getAttemptCount());
-      otpCacheService.updateOtpData(email, purpose, otpData);
+          "用戶 {} OTP 驗證失敗（purpose={}，token={}），嘗試次數: {}",
+          email,
+          purpose.name(),
+          token,
+          otpData.getAttemptCount());
+      otpCacheService.updateOtpData(token, purpose, otpData);
       throw new InvalidOtpException();
     }
 
     // 成功：核銷 cache
     otpData.setVerified(true);
-    otpCacheService.evictOtp(email, purpose);
+    otpCacheService.evictOtp(token, purpose);
 
     authInfoRepository.markValidated(authInfo.getId());
 
-    log.info("用戶 {} OTP 驗證成功（purpose={}），auth_info 已核銷", email, purpose.name());
+    log.info("用戶 {} OTP 驗證成功（purpose={}，token={})，auth_info 已核銷", email, purpose.name(), token);
     return authInfo;
   }
 
@@ -150,10 +166,10 @@ public class OtpService {
     }
   }
 
-  public OtpStatusResponse getOtpStatusResponse(String email, OtpPurpose purpose) {
-    validateEmail(email);
+  public OtpStatusResponse getOtpStatusResponse(String token, OtpPurpose purpose) {
+    if (token == null || token.isBlank()) throw new InvalidOtpException();
     if (purpose == null) purpose = OtpPurpose.LOGIN;
-    OtpData otpData = otpCacheService.getOtpData(email, purpose);
+    OtpData otpData = otpCacheService.getOtpData(token, purpose);
     if (otpData == null) {
       return new OtpStatusResponse(false, null, null, null, null);
     }
@@ -168,13 +184,7 @@ public class OtpService {
   // ------- Helpers -------
 
   private OtpData createOtp(String email, OtpPurpose purpose) {
-    OtpData existingOtp = otpCacheService.getOtpData(email, purpose);
     LocalDateTime now = LocalDateTime.now();
-    if (existingOtp != null
-        && existingOtp.getLastSentTime() != null
-        && existingOtp.getLastSentTime().plusSeconds(otpResendIntervalSeconds).isAfter(now)) {
-      throw new InvalidOtpException.ResendTooFrequently(otpResendIntervalSeconds);
-    }
 
     // 產生 OTP 並先寫入 auth_info 取得 token
     String otpCode = generateRandomOtp();
@@ -195,7 +205,7 @@ public class OtpService {
     // 更新快取
     OtpData otpData = new OtpData(otpCode, email, expiryTime, row.getId());
     otpData.setLastSentTime(now);
-    otpCacheService.updateOtpData(email, purpose, otpData);
+    otpCacheService.updateOtpData(row.getId().toString(), purpose, otpData);
 
     return otpData;
   }
