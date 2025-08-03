@@ -17,7 +17,7 @@ sequenceDiagram
     FE->>BE: 驗證並登入/註冊 (POST /api/members/auth-flow)
     BE-->>FE: 回傳 Access Token 和 Refresh Token
     User->>FE: 使用 Access Token 存取資源
-    FE->>BE: 驗證 Token (POST /api/members/verify-token)
+    FE->>BE: 驗證 Token (POST /api/auth/verify-token)
     BE-->>FE: Token 驗證結果
     Note over FE,BE: Access Token 過期時
     FE->>BE: 刷新 Token (POST /api/auth/refresh)
@@ -101,7 +101,7 @@ sequenceDiagram
     - `refresh_token`: Refresh Token，有效期 30 天
 
 ### 3. 驗證 Token
-- **API**：`POST /api/members/verify-token`
+- **API**：`POST /api/auth/verify-token`
 - **Body 範例**：
 ```json
 {
