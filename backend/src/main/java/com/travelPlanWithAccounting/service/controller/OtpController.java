@@ -38,7 +38,7 @@ public class OtpController {
   @PostMapping("/verification")
   @Operation(
       summary = "驗證 OTP 驗證碼",
-      description = "Body 需包含 email、otpCode 與 purpose，purpose 必須與發送時一致。")
+      description = "Body 需包含 token、otpCode 與 purpose，purpose 必須與發送時一致。")
   public OtpVerifyResponse verifyOtp(@Valid @RequestBody OtpVerificationRequest request) {
     return otpService.verifyOtpResponse(request);
   }
