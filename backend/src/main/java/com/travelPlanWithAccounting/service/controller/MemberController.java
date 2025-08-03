@@ -1,17 +1,13 @@
 package com.travelPlanWithAccounting.service.controller;
 
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
-import com.travelPlanWithAccounting.service.dto.auth.VerifyTokenResponse;
 import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
-import com.travelPlanWithAccounting.service.dto.member.VerifyTokenRequest;
 import com.travelPlanWithAccounting.service.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -34,12 +30,4 @@ public class MemberController {
     return memberService.authFlow(req);
   }
 
-  @PostMapping(
-      value = "/verify-token",
-      consumes = MediaType.APPLICATION_JSON_VALUE,
-      produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "驗證 Token（ACCESS/REFRESH）")
-  public VerifyTokenResponse verifyToken(@Valid @RequestBody VerifyTokenRequest req) {
-    return memberService.verifyToken(req);
-  }
 }

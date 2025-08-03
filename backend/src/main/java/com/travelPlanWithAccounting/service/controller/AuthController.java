@@ -4,6 +4,8 @@ import com.travelPlanWithAccounting.service.dto.auth.AccessTokenResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthLogoutByRtRequest;
 import com.travelPlanWithAccounting.service.dto.auth.AuthRefreshRequest;
 import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
+import com.travelPlanWithAccounting.service.dto.auth.VerifyTokenRequest;
+import com.travelPlanWithAccounting.service.dto.auth.VerifyTokenResponse;
 import com.travelPlanWithAccounting.service.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,5 +33,11 @@ public class AuthController {
   public SimpleResult logout(@Valid @RequestBody AuthLogoutByRtRequest body) {
     boolean ok = refreshTokenService.logoutByRefreshToken(body.getRefreshToken());
     return new SimpleResult(ok);
+  }
+
+  @PostMapping("/verify-token")
+  @Operation(summary = "驗證 Token（ACCESS/REFRESH）")
+  public VerifyTokenResponse verifyToken(@Valid @RequestBody VerifyTokenRequest req) {
+    return refreshTokenService.verifyToken(req);
   }
 }
