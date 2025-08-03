@@ -3,17 +3,22 @@ package com.travelPlanWithAccounting.service.service;
 import com.travelPlanWithAccounting.service.dto.auth.AccessTokenResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse.TokenNode;
+import com.travelPlanWithAccounting.service.dto.auth.VerifyTokenRequest;
+import com.travelPlanWithAccounting.service.dto.auth.VerifyTokenResponse;
 import com.travelPlanWithAccounting.service.entity.RefreshToken;
 import com.travelPlanWithAccounting.service.exception.RefreshTokenException;
 import com.travelPlanWithAccounting.service.model.OwnerTypeCode;
 import com.travelPlanWithAccounting.service.repository.RefreshTokenRepository;
 import com.travelPlanWithAccounting.service.security.JwtUtil;
 import com.travelPlanWithAccounting.service.util.TokenUtil;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import jakarta.transaction.Transactional;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -188,5 +193,93 @@ public class RefreshTokenService {
             db.getOwnerId(), OwnerTypeCode.MEMBER, UUID.randomUUID().toString());
 
     return new AccessTokenResponse(newAt, jwtUtil.accessTtlSeconds());
+  }
+
+  // ---------- 驗證 ----------
+
+  @Transactional(readOnly = true)
+  public VerifyTokenResponse verifyToken(VerifyTokenRequest req) {
+    String tokenTypeStr =
+        req != null && req.getTokenType() != null ? String.valueOf(req.getTokenType()) : null;
+    if (req == null
+        || req.getTokenType() == null
+        || req.getToken() == null
+        || req.getToken().isBlank()) {
+      return VerifyTokenResponse.builder()
+          .valid(false)
+          .tokenType(tokenTypeStr)
+          .reason("REQ_INVALID")
+          .build();
+    }
+    return switch (req.getTokenType()) {
+      case ACCESS -> verifyAccessToken(req.getToken());
+      case REFRESH -> verifyRefreshToken(req.getToken(), req.getClientId());
+      default ->
+          VerifyTokenResponse.builder()
+              .valid(false)
+              .tokenType(String.valueOf(req.getTokenType()))
+              .reason("UNSUPPORTED_TYPE")
+              .build();
+    };
+  }
+
+  private VerifyTokenResponse verifyAccessToken(String token) {
+    try {
+      Jws<Claims> jws = jwtUtil.verify(token);
+      Claims c = jws.getPayload();
+      return VerifyTokenResponse.builder()
+          .valid(true)
+          .tokenType("ACCESS")
+          .sub(UUID.fromString(c.getSubject()))
+          .role(c.get("role", String.class))
+          .exp(c.getExpiration().toInstant().getEpochSecond())
+          .build();
+    } catch (Exception e) {
+      return VerifyTokenResponse.builder()
+          .valid(false)
+          .tokenType("ACCESS")
+          .reason("JWT_INVALID: " + e.getClass().getSimpleName())
+          .build();
+    }
+  }
+
+  private VerifyTokenResponse verifyRefreshToken(String token, String clientId) {
+    String hash = TokenUtil.sha256Base64Url(token);
+    Optional<RefreshToken> opt = refreshTokenRepository.findByTokenHash(hash);
+    if (opt.isEmpty()) {
+      return VerifyTokenResponse.builder()
+          .valid(false)
+          .tokenType("REFRESH")
+          .reason("NOT_FOUND")
+          .build();
+    }
+    RefreshToken rt = opt.get();
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+    if (rt.isRevoked())
+      return VerifyTokenResponse.builder()
+          .valid(false)
+          .tokenType("REFRESH")
+          .reason("REVOKED")
+          .build();
+    if (rt.isUsed())
+      return VerifyTokenResponse.builder().valid(false).tokenType("REFRESH").reason("USED").build();
+    if (rt.getExpiresAt().isBefore(now))
+      return VerifyTokenResponse.builder()
+          .valid(false)
+          .tokenType("REFRESH")
+          .reason("EXPIRED")
+          .build();
+    if (clientId != null && !clientId.isBlank() && !rt.getClientId().equals(clientId))
+      return VerifyTokenResponse.builder()
+          .valid(false)
+          .tokenType("REFRESH")
+          .reason("CLIENT_MISMATCH")
+          .build();
+    return VerifyTokenResponse.builder()
+        .valid(true)
+        .tokenType("REFRESH")
+        .sub(rt.getOwnerId())
+        .build();
   }
 }
