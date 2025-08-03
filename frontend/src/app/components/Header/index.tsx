@@ -2,13 +2,13 @@
 // TODO: 串接 API
 
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { GlobeIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import Image from "next/image";
 import { useT } from "@/app/i18n/client";
 import LoginSignup from "@/app/[lng]/login-process";
 import Button from "@/app/components/Button";
+import { useRouter, useParams } from "next/navigation";
 
 function Navigation() {
   const { t } = useT("common");
@@ -22,9 +22,12 @@ function Navigation() {
 }
 
 function LanguageSelector() {
-  const { i18n } = useTranslation();
   const { t } = useT("common");
   const [isOpen, setIsOpen] = useState(false);
+
+  const router = useRouter();
+  const params = useParams();
+  const currentLang = params?.lng as string;
 
   const languages = [
     { value: "zh", label: t("lang.zh") },
@@ -32,7 +35,15 @@ function LanguageSelector() {
   ];
 
   const handleLanguageChange = (value: string) => {
-    i18n.changeLanguage(value);
+    // if currentLang is same as the selected language, do nothing
+    if (value === currentLang) {
+      setIsOpen(false);
+      return;
+    }
+    const currentPath = window.location.pathname;
+    const pathWithoutLang = currentPath.replace(`/${currentLang}`, "");
+
+    router.push(`/${value}${pathWithoutLang}`);
     setIsOpen(false);
   };
 
