@@ -2,6 +2,7 @@ package com.travelPlanWithAccounting.service.repository;
 
 import com.travelPlanWithAccounting.service.entity.Setting;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +28,8 @@ public interface SettingRepository extends JpaRepository<Setting, UUID> {
    */
   @Query("SELECT s FROM Setting s WHERE s.category = 'LANG_TYPE' ORDER BY s.createdAt")
   List<Setting> findAllLanguageTypes();
+
+  Optional<Setting> findByCategoryAndName(String category, String name);
+
+  Optional<Setting> findByCategoryAndCodeName(String category, String codeName);
 }

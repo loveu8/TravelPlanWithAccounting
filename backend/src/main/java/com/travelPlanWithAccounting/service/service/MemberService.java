@@ -2,17 +2,32 @@ package com.travelPlanWithAccounting.service.service;
 
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
 import com.travelPlanWithAccounting.service.entity.Member;
+import com.travelPlanWithAccounting.service.entity.Setting;
 import com.travelPlanWithAccounting.service.exception.InvalidOtpException;
 import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.model.OtpPurpose;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
+import com.travelPlanWithAccounting.service.repository.SettingRepository;
 import com.travelPlanWithAccounting.service.service.RefreshTokenService;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
+import com.travelPlanWithAccounting.service.security.JwtUtil;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +44,9 @@ public class MemberService {
   private final MemberRepository memberRepository;
   private final OtpService otpService;
   private final RefreshTokenService refreshTokenService;
+  private final JwtUtil jwtUtil;
+  private final SettingRepository settingRepository;
+  private final MessageSource messageSource;
 
   /** 判斷 purpose 並發送 OTP */
   @Transactional
@@ -102,5 +120,153 @@ public class MemberService {
     return memberRepository
         .findStatusById(memberId)
         .orElseThrow(MemberException.MemberNotFound::new);
+  }
+
+  /* ==================== 新增會員資料相關 API ==================== */
+
+  /**
+   * 查詢會員資料。
+   */
+  @Transactional(readOnly = true)
+  public MemberProfileResponse getProfile(String authHeader) {
+    UUID memberId = resolveMemberId(authHeader);
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    return toProfileResponse(member);
+  }
+
+  /**
+   * 修改會員資料。
+   */
+  @Transactional
+  public MemberProfileResponse updateProfile(
+      String authHeader, MemberProfileUpdateRequest req) {
+    UUID memberId = resolveMemberId(authHeader);
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    String reqLang = req.getLangType();
+    Locale locale = Locale.forLanguageTag(reqLang == null ? "zh-TW" : reqLang);
+    if (locale.getLanguage().isEmpty()) {
+      locale = Locale.forLanguageTag("zh-TW");
+    }
+    Locale prevLocale = LocaleContextHolder.getLocale();
+    LocaleContextHolder.setLocale(locale);
+    try {
+      Map<String, String> fieldErrors = validateProfile(req, locale);
+      if (!fieldErrors.isEmpty()) {
+        throw new MemberException.ProfileFieldsInvalid(fieldErrors);
+      }
+
+      if (req.getGivenName() != null) member.setGivenName(req.getGivenName());
+      if (req.getFamilyName() != null) member.setFamilyName(req.getFamilyName());
+      if (req.getNickName() != null) member.setNickName(req.getNickName());
+      if (req.getBirthday() != null) member.setBirthday(req.getBirthday());
+      if (req.getSubscribe() != null) member.setSubscribe(req.getSubscribe());
+      if (req.getLangType() != null) {
+        String code =
+            settingRepository
+                .findByCategoryAndName("LANG_TYPE", req.getLangType())
+                .map(Setting::getCodeName)
+                .orElse(member.getLangType());
+        member.setLangType(code);
+      } else if (member.getLangType() == null) {
+        member.setLangType("001");
+      }
+
+      memberRepository.save(member);
+      return toProfileResponse(member);
+    } finally {
+      LocaleContextHolder.setLocale(prevLocale);
+    }
+  }
+
+  private UUID resolveMemberId(String authHeader) {
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+      throw new MemberException.AccessTokenInvalid();
+    }
+    String token = authHeader.substring(7);
+    try {
+      var jws = jwtUtil.verify(token);
+      return UUID.fromString(jws.getPayload().getSubject());
+    } catch (ExpiredJwtException ex) {
+      throw new MemberException.AccessTokenExpired();
+    } catch (JwtException | IllegalArgumentException ex) {
+      throw new MemberException.AccessTokenInvalid();
+    }
+  }
+
+  private MemberProfileResponse toProfileResponse(Member member) {
+    String code = member.getLangType() == null ? "001" : member.getLangType();
+    String langType =
+        settingRepository
+            .findByCategoryAndCodeName("LANG_TYPE", code)
+            .map(Setting::getName)
+            .orElse(code);
+    return new MemberProfileResponse(
+        member.getGivenName(),
+        member.getFamilyName(),
+        member.getNickName(),
+        member.getBirthday(),
+        member.getSubscribe(),
+        langType,
+        member.getEmail());
+  }
+
+  private Map<String, String> validateProfile(MemberProfileUpdateRequest req, Locale locale) {
+    Map<String, String> errors = new LinkedHashMap<>();
+    Pattern namePattern = Pattern.compile("^[\\p{L}0-9\\s]+$");
+
+    if (req.getGivenName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
+      if (req.getGivenName().length() > 30)
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.givenName.length", null, locale));
+      if (!namePattern.matcher(req.getGivenName()).matches())
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.givenName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("givenName", String.join("; ", fieldErrors));
+    }
+
+    if (req.getFamilyName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
+      if (req.getFamilyName().length() > 30)
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.familyName.length", null, locale));
+      if (!namePattern.matcher(req.getFamilyName()).matches())
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.familyName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("familyName", String.join("; ", fieldErrors));
+    }
+
+    if (req.getNickName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
+      if (req.getNickName().length() > 30)
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.nickName.length", null, locale));
+      if (!namePattern.matcher(req.getNickName()).matches())
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.nickName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("nickName", String.join("; ", fieldErrors));
+    }
+
+    if (req.getLangType() != null) {
+      List<String> fieldErrors = new ArrayList<>();
+      if (req.getLangType().length() > 10) {
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.langType.length", null, locale));
+      } else if (settingRepository.findByCategoryAndName("LANG_TYPE", req.getLangType()).isEmpty()) {
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.langType.invalid", null, locale));
+      }
+      if (!fieldErrors.isEmpty()) errors.put("langType", String.join("; ", fieldErrors));
+    }
+
+    return errors;
   }
 }
