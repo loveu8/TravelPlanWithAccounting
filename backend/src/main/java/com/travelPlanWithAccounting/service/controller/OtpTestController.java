@@ -61,7 +61,8 @@ public class OtpTestController {
         purpose,
         purpose.actionCode(),
         otpData.getOtpCode(),
-        otpData.getExpiryTime());
+        otpData.getExpiryTime(),
+        otpData.getToken());
   }
 
   // ---- 僅供 dev 回傳 JSON 的資料結構 ----
@@ -73,5 +74,6 @@ public class OtpTestController {
     private String actionCode;
     private String otpCode; // dev/本機調試才回；勿在 prod 使用
     private LocalDateTime expireAt; // local time；DB 寫入為 UTC
+    private java.util.UUID token;
   }
 }

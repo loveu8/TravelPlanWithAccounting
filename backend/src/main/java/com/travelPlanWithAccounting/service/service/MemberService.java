@@ -6,11 +6,13 @@ import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
 import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
+import com.travelPlanWithAccounting.service.entity.AuthInfo;
 import com.travelPlanWithAccounting.service.entity.Member;
 import com.travelPlanWithAccounting.service.entity.Setting;
 import com.travelPlanWithAccounting.service.exception.InvalidOtpException;
 import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.model.OtpPurpose;
+import com.travelPlanWithAccounting.service.model.OtpData;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.repository.SettingRepository;
 import com.travelPlanWithAccounting.service.service.RefreshTokenService;
@@ -55,8 +57,8 @@ public class MemberService {
     String email = req.getEmail();
     boolean exists = memberRepository.existsByEmail(email);
     OtpPurpose purpose = exists ? OtpPurpose.LOGIN : OtpPurpose.REGISTRATION;
-    otpService.generateOtp(email, purpose);
-    return new PreAuthFlowResponse(email, exists, purpose.name(), purpose.actionCode());
+    OtpData otpData = otpService.generateOtp(email, purpose);
+    return new PreAuthFlowResponse(email, exists, purpose.name(), purpose.actionCode(), otpData.getToken().toString());
   }
 
   /** 驗證 OTP → 登入或註冊 → 回 cookies envelope（AT/RT） */
@@ -68,14 +70,17 @@ public class MemberService {
     boolean exists = memberRepository.existsByEmail(email);
     OtpPurpose purpose = exists ? OtpPurpose.LOGIN : OtpPurpose.REGISTRATION;
 
-    try {
-      otpService.verifyOtp(email, req.getOtpCode(), purpose);
-    } catch (InvalidOtpException ex) {
-      throw new MemberException.OtpTokenInvalid();
-    }
-
+    AuthInfo authInfo;
     Member member;
     if (exists) {
+      try {
+        authInfo = otpService.verifyOtp(req.getToken(), req.getOtpCode(), purpose);
+      } catch (InvalidOtpException ex) {
+        throw new MemberException.OtpTokenInvalid();
+      }
+      if (!authInfo.getEmail().equals(email)) {
+        throw new MemberException.OtpTokenInvalid();
+      }
       member =
           memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
     } else {
@@ -92,9 +97,17 @@ public class MemberService {
       profileReq.setBirthday(req.getBirthday());
       profileReq.setLangType(req.getLangType());
       validateAndApplyProfile(member, profileReq);
+      try {
+        authInfo = otpService.verifyOtp(req.getToken(), req.getOtpCode(), purpose);
+      } catch (InvalidOtpException ex) {
+        throw new MemberException.OtpTokenInvalid();
+      }
+      if (!authInfo.getEmail().equals(email)) {
+        throw new MemberException.OtpTokenInvalid();
+      }
       memberRepository.save(member);
     }
-
+    
     String clientId = resolveClientId(req.getClientId());
     return refreshTokenService.issueForMember(member.getId(), clientId, req.getIp(), req.getUa());
   }
@@ -116,7 +129,10 @@ public class MemberService {
   private void validateAuthReq(AuthFlowRequest req) {
     if (req == null) throw new MemberException.EmailRequired();
     validateEmail(req.getEmail());
-    if (req.getOtpCode() == null || req.getOtpCode().isBlank()) {
+    if (req.getOtpCode() == null
+        || req.getOtpCode().isBlank()
+        || req.getToken() == null
+        || req.getToken().isBlank()) {
       throw new MemberException.OtpTokenInvalid();
     }
   }

@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OtpSendResponse {
   private String email;
+  private String token;
 }

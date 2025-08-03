@@ -16,6 +16,10 @@ public class AuthFlowRequest {
   @Schema(description = "使用者輸入的 OTP 驗證碼（由 preAuthFlow 寄出）")
   private String otpCode;
 
+  @NotBlank
+  @Schema(description = "預先發送 OTP 時取得的 token")
+  private String token;
+
   @Schema(description = "BFF 產生的 clientId（預留給 RT 管理）")
   private String clientId;
 

@@ -1,15 +1,13 @@
 package com.travelPlanWithAccounting.service.model;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 /** 驗證 OTP 的請求物件 */
 public class OtpVerificationRequest {
 
-  @NotBlank(message = "電子郵件不能為空")
-  @Email(message = "請輸入有效的電子郵件格式")
-  private String email;
+  @NotBlank(message = "token 不能為空")
+  private String token;
 
   @NotBlank(message = "OTP 驗證碼不能為空")
   private String otpCode;
@@ -18,12 +16,12 @@ public class OtpVerificationRequest {
   @NotNull(message = "purpose 不能為空")
   private OtpPurpose purpose;
 
-  public String getEmail() {
-    return email;
+  public String getToken() {
+    return token;
   }
 
-  public void setEmail(String email) {
-    this.email = email;
+  public void setToken(String token) {
+    this.token = token;
   }
 
   public String getOtpCode() {
