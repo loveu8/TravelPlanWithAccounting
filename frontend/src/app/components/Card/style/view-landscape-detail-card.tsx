@@ -34,7 +34,13 @@ function LandscapeDetailItem({
   item: string | string[];
 }) {
   return (
-    <Grid as="div" align="start" gap="2" columns="auto 1fr">
+    <Grid
+      as="div"
+      align="start"
+      gap="2"
+      columns="auto 1fr"
+      className="text-gray-12"
+    >
       {ICONS[iconType as keyof typeof ICONS]}
       {Array.isArray(item) ? (
         <Box as="div">

@@ -9,6 +9,7 @@ import {
 } from "@/app/components/Card";
 import CardSection from "./card-section";
 import ViewLandscapeDetailModal from "./view-landscape-detail-modal";
+import AddScheduleModal from "./add-schedule-modal";
 
 import { useT } from "@/app/i18n/client";
 
@@ -54,6 +55,17 @@ export default function Home({ params }: { params: Promise<{ lng: string }> }) {
   const { t } = useT("common");
 
   const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(true);
+  const [isAddScheduleModalOpen, setIsAddScheduleModalOpen] = useState(false);
+
+  const handleAddScheduleClick = () => {
+    // TODO: 取得個人所有的行程表API
+    toggleDetailAndScheduleModals();
+  };
+
+  const toggleDetailAndScheduleModals = () => {
+    setIsViewDetailModalOpen((pre) => !pre);
+    setIsAddScheduleModalOpen((pre) => !pre);
+  };
 
   return (
     <>
@@ -94,6 +106,10 @@ export default function Home({ params }: { params: Promise<{ lng: string }> }) {
         buttonText={`${t("home.view-more")}${t("home.recommend-landscapes")}`}
         viewMoreUrl={`/${lng}/landscapes-list`}
       />
+      <AddScheduleModal
+        open={isAddScheduleModalOpen}
+        onOpenChange={setIsAddScheduleModalOpen}
+      />
       <ViewLandscapeDetailModal
         open={isViewDetailModalOpen}
         onOpenChange={setIsViewDetailModalOpen}
@@ -104,7 +120,7 @@ export default function Home({ params }: { params: Promise<{ lng: string }> }) {
         evaluateCount={100}
         isBookmarked={true}
         handleBookmarkClick={() => {}}
-        handleAddScheduleClick={() => {}}
+        handleAddScheduleClick={handleAddScheduleClick}
         details={{
           description:
             "著名主題公園的東京分支，以遊樂設施、現場表演和古裝人物聞名",
