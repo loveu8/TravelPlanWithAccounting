@@ -2,12 +2,15 @@ package com.travelPlanWithAccounting.service.controller;
 
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
 import com.travelPlanWithAccounting.service.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,6 +31,21 @@ public class MemberController {
   @Operation(summary = "驗證 OTP -> 登入/註冊 -> 回 AT/RT（只回一層 data）")
   public AuthResponse authFlow(@RequestBody AuthFlowRequest req) {
     return memberService.authFlow(req);
+  }
+
+  @GetMapping("/profile")
+  @Operation(summary = "查詢會員資料")
+  public MemberProfileResponse getProfile(
+      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth) {
+    return memberService.getProfile(auth);
+  }
+
+  @PostMapping("/profile")
+  @Operation(summary = "修改會員資料")
+  public MemberProfileResponse updateProfile(
+      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth,
+      @RequestBody MemberProfileUpdateRequest req) {
+    return memberService.updateProfile(auth, req);
   }
 
 }

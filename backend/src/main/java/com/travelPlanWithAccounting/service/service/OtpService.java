@@ -74,24 +74,49 @@ public class OtpService {
 
   /** 驗證 OTP：檢查 cache、處理嘗試次數與過期，成功時核銷 cache 與 auth_info。 */
   @Transactional
-  public boolean verifyOtp(String email, String inputOtp, OtpPurpose purpose) {
-    validateEmail(email);
-    if (inputOtp == null || inputOtp.isBlank() || purpose == null) {
+  public AuthInfo verifyOtp(String token, String inputOtp, OtpPurpose purpose) {
+    if (token == null || token.isBlank() || inputOtp == null || inputOtp.isBlank() || purpose == null) {
       throw new InvalidOtpException();
     }
-    OtpData otpData = otpCacheService.getOtpData(email, purpose);
+    UUID id;
+    try {
+      id = UUID.fromString(token);
+    } catch (IllegalArgumentException e) {
+      throw new InvalidOtpException();
+    }
+
+    OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
+    AuthInfo authInfo =
+        authInfoRepository
+            .findByIdAndCodeAndActionAndExpireAtAfter(id, inputOtp, purpose.actionCode(), nowUtc)
+            .orElseThrow(InvalidOtpException.NotFound::new);
+
+    String email = authInfo.getEmail();
+    OtpData otpData = otpCacheService.getOtpData(token, purpose);
     if (otpData == null) {
-      log.warn("找不到用戶 {} 的 OTP 資料（purpose={}）", email, purpose.name());
+      log.warn(
+          "找不到用戶 {} 的 OTP 資料（purpose={}，token={})",
+          email,
+          purpose.name(),
+          token);
       throw new InvalidOtpException.NotFound();
     }
     if (otpData.isExpired()) {
-      log.warn("用戶 {} 的 OTP 已過期（purpose={}）", email, purpose.name());
-      otpCacheService.evictOtp(email, purpose);
+      log.warn(
+          "用戶 {} 的 OTP 已過期（purpose={}，token={})",
+          email,
+          purpose.name(),
+          token);
+      otpCacheService.evictOtp(token, purpose);
       throw new InvalidOtpException.Expired();
     }
     if (otpData.getAttemptCount() >= MAX_ATTEMPTS) {
-      log.warn("用戶 {} 的 OTP 嘗試次數已超過限制（purpose={}）", email, purpose.name());
-      otpCacheService.evictOtp(email, purpose);
+      log.warn(
+          "用戶 {} 的 OTP 嘗試次數已超過限制（purpose={}，token={})",
+          email,
+          purpose.name(),
+          token);
+      otpCacheService.evictOtp(token, purpose);
       throw new InvalidOtpException.MaxAttemptsExceeded();
     }
 
@@ -99,24 +124,23 @@ public class OtpService {
 
     if (!otpData.getOtpCode().equals(inputOtp)) {
       log.warn(
-          "用戶 {} OTP 驗證失敗（purpose={}），嘗試次數: {}", email, purpose.name(), otpData.getAttemptCount());
-      otpCacheService.updateOtpData(email, purpose, otpData);
+          "用戶 {} OTP 驗證失敗（purpose={}，token={}），嘗試次數: {}",
+          email,
+          purpose.name(),
+          token,
+          otpData.getAttemptCount());
+      otpCacheService.updateOtpData(token, purpose, otpData);
       throw new InvalidOtpException();
     }
 
     // 成功：核銷 cache
     otpData.setVerified(true);
-    otpCacheService.evictOtp(email, purpose);
+    otpCacheService.evictOtp(token, purpose);
 
-    // 標記 auth_info.validation = true
-    OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
-    authInfoRepository
-        .findFirstByEmailAndCodeAndActionAndExpireAtAfterOrderByCreatedAtDesc(
-            email, inputOtp, purpose.actionCode(), nowUtc)
-        .ifPresent(ai -> authInfoRepository.markValidated(ai.getId()));
+    authInfoRepository.markValidated(authInfo.getId());
 
-    log.info("用戶 {} OTP 驗證成功（purpose={}），auth_info 已核銷", email, purpose.name());
-    return true;
+    log.info("用戶 {} OTP 驗證成功（purpose={}，token={})，auth_info 已核銷", email, purpose.name(), token);
+    return authInfo;
   }
 
   // ------- 相容用 DTO APIs（若仍有地方直接呼叫 OtpController） -------
@@ -125,30 +149,27 @@ public class OtpService {
     validateOtpRequest(request);
     String email = request.getEmail();
     OtpPurpose purpose = request.getPurpose();
-    generateOtp(email, purpose);
-    return new OtpSendResponse(email);
+    OtpData otpData = generateOtp(email, purpose);
+    return new OtpSendResponse(email, otpData.getToken().toString());
   }
 
   public OtpVerifyResponse verifyOtpResponse(OtpVerificationRequest request) {
     validateOtpVerificationRequest(request);
-    String email = request.getEmail();
+    String token = request.getToken();
     String inputOtp = request.getOtpCode();
     OtpPurpose purpose = request.getPurpose();
     try {
-      verifyOtp(email, inputOtp, purpose);
-      String token = UUID.randomUUID().toString();
-      // 若舊流程還需要 token，沿用 cache；新流程（authFlow）不再用 token
-      otpCacheService.putOtpVerifiedToken(token, email, purpose);
+      verifyOtp(token, inputOtp, purpose);
       return new OtpVerifyResponse(true, token);
     } catch (InvalidOtpException ex) {
       return new OtpVerifyResponse(false, null);
     }
   }
 
-  public OtpStatusResponse getOtpStatusResponse(String email, OtpPurpose purpose) {
-    validateEmail(email);
+  public OtpStatusResponse getOtpStatusResponse(String token, OtpPurpose purpose) {
+    if (token == null || token.isBlank()) throw new InvalidOtpException();
     if (purpose == null) purpose = OtpPurpose.LOGIN;
-    OtpData otpData = otpCacheService.getOtpData(email, purpose);
+    OtpData otpData = otpCacheService.getOtpData(token, purpose);
     if (otpData == null) {
       return new OtpStatusResponse(false, null, null, null, null);
     }
@@ -163,27 +184,16 @@ public class OtpService {
   // ------- Helpers -------
 
   private OtpData createOtp(String email, OtpPurpose purpose) {
-    OtpData existingOtp = otpCacheService.getOtpData(email, purpose);
     LocalDateTime now = LocalDateTime.now();
-    if (existingOtp != null
-        && existingOtp.getLastSentTime() != null
-        && existingOtp.getLastSentTime().plusSeconds(otpResendIntervalSeconds).isAfter(now)) {
-      throw new InvalidOtpException.ResendTooFrequently(otpResendIntervalSeconds);
-    }
 
-    // 產生並寫入快取
+    // 產生 OTP 並先寫入 auth_info 取得 token
     String otpCode = generateRandomOtp();
     LocalDateTime expiryTime = now.plusMinutes(OTP_EXPIRY_MINUTES);
-    OtpData otpData = new OtpData(otpCode, email, expiryTime);
-    otpData.setLastSentTime(now);
-    otpCacheService.updateOtpData(email, purpose, otpData);
-
-    // 寫入 auth_info（UTC）
     OffsetDateTime expiryAtUtc = expiryTime.atOffset(ZoneOffset.UTC);
     Member member = memberRepository.findByEmail(email).orElse(null);
     AuthInfo row =
         AuthInfo.builder()
-            .code(otpCode) // 之後可改成 hash 存放
+            .code(otpCode)
             .email(email)
             .member(member)
             .action(purpose.actionCode())
@@ -191,6 +201,11 @@ public class OtpService {
             .expireAt(expiryAtUtc)
             .build();
     authInfoRepository.save(row);
+
+    // 更新快取
+    OtpData otpData = new OtpData(otpCode, email, expiryTime, row.getId());
+    otpData.setLastSentTime(now);
+    otpCacheService.updateOtpData(row.getId().toString(), purpose, otpData);
 
     return otpData;
   }
@@ -227,7 +242,9 @@ public class OtpService {
 
   private void validateOtpVerificationRequest(OtpVerificationRequest request) {
     if (request == null) throw new MemberException.EmailRequired();
-    validateEmail(request.getEmail());
+    if (request.getToken() == null || request.getToken().isBlank()) {
+      throw new InvalidOtpException();
+    }
     if (request.getOtpCode() == null || request.getOtpCode().isBlank()) {
       throw new InvalidOtpException();
     }

@@ -18,4 +18,7 @@ public class PreAuthFlowResponse {
 
   @Schema(description = "PRD action code（REGISTRATION=001, LOGIN=002）")
   private String actionCode; // 001|002
+
+  @Schema(description = "otp 驗證所需的 token")
+  private String token;
 }
