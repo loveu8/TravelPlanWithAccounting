@@ -6,6 +6,12 @@ import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
 import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
+import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyRequest;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyResponse;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeOtpRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeResponse;
 import com.travelPlanWithAccounting.service.entity.AuthInfo;
 import com.travelPlanWithAccounting.service.entity.Member;
 import com.travelPlanWithAccounting.service.entity.Setting;
@@ -15,11 +21,14 @@ import com.travelPlanWithAccounting.service.model.OtpPurpose;
 import com.travelPlanWithAccounting.service.model.OtpData;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.repository.SettingRepository;
+import com.travelPlanWithAccounting.service.repository.AuthInfoRepository;
 import com.travelPlanWithAccounting.service.service.RefreshTokenService;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
 import com.travelPlanWithAccounting.service.security.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,6 +57,7 @@ public class MemberService {
   private final RefreshTokenService refreshTokenService;
   private final JwtUtil jwtUtil;
   private final SettingRepository settingRepository;
+  private final AuthInfoRepository authInfoRepository;
   private final MessageSource messageSource;
 
   /** 判斷 purpose 並發送 OTP */
@@ -110,6 +120,125 @@ public class MemberService {
     
     String clientId = resolveClientId(req.getClientId());
     return refreshTokenService.issueForMember(member.getId(), clientId, req.getIp(), req.getUa());
+  }
+
+  /** 發送舊信箱 OTP */
+  @Transactional
+  public OtpTokenResponse sendIdentityOtp(String authHeader) {
+    UUID memberId = resolveMemberId(authHeader);
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    OtpData otpData = otpService.generateOtp(member.getEmail(), OtpPurpose.IDENTITY_VERIFICATION);
+    return new OtpTokenResponse(
+        otpData.getToken().toString(), otpData.getExpiryTime().atOffset(ZoneOffset.UTC));
+  }
+
+  /** 驗證舊信箱 OTP，回傳 identity token */
+  @Transactional
+  public IdentityOtpVerifyResponse verifyIdentityOtp(
+      String authHeader, IdentityOtpVerifyRequest req) {
+    UUID memberId = resolveMemberId(authHeader);
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    AuthInfo authInfo;
+    try {
+      authInfo =
+          otpService.verifyOtp(
+              req.getOtpToken(), req.getOtpCode(), OtpPurpose.IDENTITY_VERIFICATION);
+    } catch (InvalidOtpException ex) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    if (!authInfo.getMemberId().equals(member.getId())) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    OffsetDateTime expireAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(10);
+    authInfo.setExpireAt(expireAt);
+    authInfoRepository.save(authInfo);
+    return new IdentityOtpVerifyResponse(req.getOtpToken(), expireAt);
+  }
+
+  /** 發送新信箱 OTP */
+  @Transactional
+  public OtpTokenResponse sendEmailChangeOtp(
+      String authHeader, EmailChangeOtpRequest req) {
+    UUID memberId = resolveMemberId(authHeader);
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    validateEmail(req.getEmail());
+    if (memberRepository.existsByEmail(req.getEmail())) {
+      throw new MemberException.EmailAlreadyExists();
+    }
+    UUID identityId;
+    try {
+      identityId = UUID.fromString(req.getIdentityOtpToken());
+    } catch (IllegalArgumentException e) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
+    AuthInfo identityAuth =
+        authInfoRepository
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
+            .orElseThrow(MemberException.OtpTokenInvalid::new);
+    if (!identityAuth.getMemberId().equals(member.getId())) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    OtpData otpData = otpService.generateOtp(req.getEmail(), OtpPurpose.EMAIL_CHANGE);
+    return new OtpTokenResponse(
+        otpData.getToken().toString(), otpData.getExpiryTime().atOffset(ZoneOffset.UTC));
+  }
+
+  /** 更新信箱 */
+  @Transactional
+  public EmailChangeResponse changeEmail(String authHeader, EmailChangeRequest req) {
+    UUID memberId = resolveMemberId(authHeader);
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    UUID identityId;
+    try {
+      identityId = UUID.fromString(req.getIdentityOtpToken());
+    } catch (IllegalArgumentException e) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
+    AuthInfo identityAuth =
+        authInfoRepository
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
+            .orElseThrow(MemberException.OtpTokenInvalid::new);
+    if (!identityAuth.getMemberId().equals(member.getId())) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    AuthInfo emailAuth;
+    try {
+      emailAuth =
+          otpService.verifyOtp(req.getOtpToken(), req.getOtpCode(), OtpPurpose.EMAIL_CHANGE);
+    } catch (InvalidOtpException ex) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    String newEmail = emailAuth.getEmail();
+    if (memberRepository.existsByEmail(newEmail)) {
+      throw new MemberException.EmailAlreadyExists();
+    }
+    member.setEmail(newEmail);
+    memberRepository.save(member);
+    identityAuth.setExpireAt(nowUtc);
+    emailAuth.setExpireAt(nowUtc);
+    authInfoRepository.save(identityAuth);
+    authInfoRepository.save(emailAuth);
+    return new EmailChangeResponse(true);
   }
 
   private String resolveClientId(String clientId) {
