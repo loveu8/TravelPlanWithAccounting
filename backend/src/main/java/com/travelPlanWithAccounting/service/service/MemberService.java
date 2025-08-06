@@ -2,39 +2,38 @@ package com.travelPlanWithAccounting.service.service;
 
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
-import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
-import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
-import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
-import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
-import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyRequest;
-import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyResponse;
 import com.travelPlanWithAccounting.service.dto.member.EmailChangeOtpRequest;
 import com.travelPlanWithAccounting.service.dto.member.EmailChangeRequest;
 import com.travelPlanWithAccounting.service.dto.member.EmailChangeResponse;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyRequest;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
+import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
 import com.travelPlanWithAccounting.service.entity.AuthInfo;
 import com.travelPlanWithAccounting.service.entity.Member;
 import com.travelPlanWithAccounting.service.entity.Setting;
 import com.travelPlanWithAccounting.service.exception.InvalidOtpException;
 import com.travelPlanWithAccounting.service.exception.MemberException;
-import com.travelPlanWithAccounting.service.model.OtpPurpose;
 import com.travelPlanWithAccounting.service.model.OtpData;
+import com.travelPlanWithAccounting.service.model.OtpPurpose;
+import com.travelPlanWithAccounting.service.repository.AuthInfoRepository;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.repository.SettingRepository;
-import com.travelPlanWithAccounting.service.repository.AuthInfoRepository;
-import com.travelPlanWithAccounting.service.service.RefreshTokenService;
-import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
 import com.travelPlanWithAccounting.service.security.JwtUtil;
+import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.UUID;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -161,7 +160,7 @@ public class MemberService {
     authInfo.setValidation(true);
     authInfo.setExpireAt(expireAt);
     authInfoRepository.save(authInfo);
-    return new IdentityOtpVerifyResponse(req.getOtpToken(), expireAt);
+    return new IdentityOtpVerifyResponse(req.getOtpToken(), expireAt, true);
   }
 
   /** 發送新信箱 OTP */
@@ -418,7 +417,9 @@ public class MemberService {
       if (req.getLangType().length() > 10) {
         fieldErrors.add(
             messageSource.getMessage("member.profile.langType.length", null, locale));
-      } else if (settingRepository.findByCategoryAndName("LANG_TYPE", req.getLangType()).isEmpty()) {
+      } else if (settingRepository
+          .findByCategoryAndName("LANG_TYPE", req.getLangType())
+          .isEmpty()) {
         fieldErrors.add(
             messageSource.getMessage("member.profile.langType.invalid", null, locale));
       }

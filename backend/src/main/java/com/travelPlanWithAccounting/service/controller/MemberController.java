@@ -2,16 +2,16 @@ package com.travelPlanWithAccounting.service.controller;
 
 import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
 import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
-import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
-import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
-import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
-import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
-import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyRequest;
-import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyResponse;
 import com.travelPlanWithAccounting.service.dto.member.EmailChangeOtpRequest;
 import com.travelPlanWithAccounting.service.dto.member.EmailChangeRequest;
 import com.travelPlanWithAccounting.service.dto.member.EmailChangeResponse;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyRequest;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
+import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
 import com.travelPlanWithAccounting.service.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,14 +55,13 @@ public class MemberController {
   }
 
   @PostMapping("/email/identity-otp")
-  @Operation(summary = "發送舊信箱 OTP")
-  public OtpTokenResponse sendIdentityOtp(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth) {
+  @Operation(summary = "發送信箱 OTP")
+  public OtpTokenResponse sendIdentityOtp(@RequestHeader(HttpHeaders.AUTHORIZATION) String auth) {
     return memberService.sendIdentityOtp(auth);
   }
 
   @PostMapping("/email/identity-otp/verify")
-  @Operation(summary = "驗證舊信箱 OTP")
+  @Operation(summary = "驗證信箱 OTP")
   public IdentityOtpVerifyResponse verifyIdentityOtp(
       @RequestHeader(HttpHeaders.AUTHORIZATION) String auth,
       @RequestBody IdentityOtpVerifyRequest req) {

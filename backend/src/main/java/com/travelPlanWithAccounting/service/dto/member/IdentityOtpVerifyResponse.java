@@ -15,5 +15,8 @@ public class IdentityOtpVerifyResponse {
 
   @Schema(description = "token expiration time")
   private OffsetDateTime expireAt;
+
+  @Schema(description = "operation success")
+  private boolean success;
 }
 
