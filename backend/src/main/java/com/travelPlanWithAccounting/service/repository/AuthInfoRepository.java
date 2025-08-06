@@ -18,6 +18,8 @@ public interface AuthInfoRepository extends JpaRepository<AuthInfo, UUID> {
   Optional<AuthInfo> findByIdAndActionAndValidationTrueAndExpireAtAfter(
       UUID id, String action, OffsetDateTime now);
 
+  Optional<AuthInfo> findByIdAndActionAndValidationTrue(UUID id, String action);
+
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("update AuthInfo a set a.validation = true where a.id = :id")
   int markValidated(@Param("id") UUID id);
