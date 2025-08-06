@@ -158,6 +158,7 @@ public class MemberService {
       throw new MemberException.OtpTokenInvalid();
     }
     OffsetDateTime expireAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(10);
+    authInfo.setValidation(true);
     authInfo.setExpireAt(expireAt);
     authInfoRepository.save(authInfo);
     return new IdentityOtpVerifyResponse(req.getOtpToken(), expireAt);
@@ -186,10 +187,11 @@ public class MemberService {
     OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
     AuthInfo identityAuth =
         authInfoRepository
-            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
-                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
+            .findByIdAndActionAndValidationTrue(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode())
             .orElseThrow(MemberException.OtpTokenInvalid::new);
-    if (!identityAuth.getMemberId().equals(member.getId())) {
+    if (!identityAuth.getMemberId().equals(member.getId())
+        || identityAuth.getExpireAt().isBefore(nowUtc)) {
       throw new MemberException.OtpTokenInvalid();
     }
     OtpData otpData = otpService.generateOtp(req.getEmail(), OtpPurpose.EMAIL_CHANGE);
@@ -215,10 +217,11 @@ public class MemberService {
     OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
     AuthInfo identityAuth =
         authInfoRepository
-            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
-                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
+            .findByIdAndActionAndValidationTrue(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode())
             .orElseThrow(MemberException.OtpTokenInvalid::new);
-    if (!identityAuth.getMemberId().equals(member.getId())) {
+    if (!identityAuth.getMemberId().equals(member.getId())
+        || identityAuth.getExpireAt().isBefore(nowUtc)) {
       throw new MemberException.OtpTokenInvalid();
     }
     AuthInfo emailAuth;
