@@ -92,6 +92,91 @@ Content-Type: application/json
   - 回傳更新後的完整會員資料
   - 所有欄位都會回傳，包括未修改的欄位
 
+### 3. 發送信箱 OTP (Send Email OTP)
+- **API**：`POST /api/members/email/identity-otp`
+- **Headers**：
+```
+Authorization: Bearer {accessToken}
+```
+- **說明 (Description)**：發送驗證信箱的 OTP。
+- **回應 (Response)**：
+```json
+{
+  "otpToken": "xxxxxx",
+  "expireAt": "2024-06-01T12:00:00Z"
+}
+```
+
+### 4. 驗證信箱 OTP (Verify Email OTP)
+- **API**：`POST /api/members/email/identity-otp/verify`
+- **Headers**：
+```
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+- **Body 範例 (Example)**：
+```json
+{
+  "otp": "123456",
+  "otpToken": "xxxxxx"
+}
+```
+- **說明 (Description)**：驗證信箱 OTP 是否正確。
+- **回應 (Response)**：
+```json
+{
+  "identityOtpToken": "xxxxxx",
+  "expireAt": "2024-06-01T12:00:00Z",
+  "success": true
+}
+```
+
+### 5. 發送新信箱 OTP (Send New Email OTP)
+- **API**：`POST /api/members/email/change-otp`
+- **Headers**：
+```
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+- **Body 範例 (Example)**：
+```json
+{
+  "identityOtpToken": "xxxxxx",
+  "email": "new@example.com"
+}
+```
+- **說明 (Description)**：發送 OTP 到新信箱，用於更換信箱驗證。
+- **回應 (Response)**：
+```json
+{
+  "otpToken": "xxxxxx",
+  "expireAt": "2024-06-01T12:00:00Z"
+}
+```
+
+### 6. 更新信箱 (Change Email)
+- **API**：`POST /api/members/email`
+- **Headers**：
+```
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+- **Body 範例 (Example)**：
+```json
+{
+  "identityOtpToken": "xxxxxx",
+  "otpToken": "xxxxxx",
+  "otpCode": "123456"
+}
+```
+- **說明 (Description)**：驗證新信箱 OTP 後，更新會員信箱。
+- **回應 (Response)**：
+```json
+{
+  "success": true
+}
+```
+
 ---
 
 ## 錯誤處理
