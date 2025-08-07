@@ -156,11 +156,7 @@ public class MemberService {
     if (!authInfo.getMemberId().equals(member.getId())) {
       throw new MemberException.OtpTokenInvalid();
     }
-    OffsetDateTime expireAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(10);
-    authInfo.setValidation(true);
-    authInfo.setExpireAt(expireAt);
-    authInfoRepository.save(authInfo);
-    return new IdentityOtpVerifyResponse(req.getOtpToken(), expireAt, true);
+    return new IdentityOtpVerifyResponse(req.getOtpToken(), authInfo.getExpireAt(), true);
   }
 
   /** 發送新信箱 OTP */
@@ -186,11 +182,12 @@ public class MemberService {
     OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
     AuthInfo identityAuth =
         authInfoRepository
-            .findByIdAndActionAndValidationTrue(
-                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode())
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
             .orElseThrow(MemberException.OtpTokenInvalid::new);
     if (!identityAuth.getMemberId().equals(member.getId())
-        || identityAuth.getExpireAt().isBefore(nowUtc)) {
+        || identityAuth.getUpdatedAt() == null
+        || !identityAuth.getUpdatedAt().plusMinutes(10).isAfter(nowUtc)) {
       throw new MemberException.OtpTokenInvalid();
     }
     OtpData otpData = otpService.generateOtp(req.getEmail(), OtpPurpose.EMAIL_CHANGE);
@@ -216,11 +213,12 @@ public class MemberService {
     OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
     AuthInfo identityAuth =
         authInfoRepository
-            .findByIdAndActionAndValidationTrue(
-                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode())
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
             .orElseThrow(MemberException.OtpTokenInvalid::new);
     if (!identityAuth.getMemberId().equals(member.getId())
-        || identityAuth.getExpireAt().isBefore(nowUtc)) {
+        || identityAuth.getUpdatedAt() == null
+        || !identityAuth.getUpdatedAt().plusMinutes(10).isAfter(nowUtc)) {
       throw new MemberException.OtpTokenInvalid();
     }
     AuthInfo emailAuth;
