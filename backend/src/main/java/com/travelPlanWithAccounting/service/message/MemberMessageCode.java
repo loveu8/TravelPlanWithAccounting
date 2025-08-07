@@ -16,6 +16,7 @@ public enum MemberMessageCode implements MessageCode {
   MEMBER_ID_INVALID("400104", HttpStatus.BAD_REQUEST),
   MEMBER_ID_MISMATCH("400105", HttpStatus.BAD_REQUEST),
   PROFILE_FIELDS_INVALID("400106", HttpStatus.BAD_REQUEST),
+  MEMBER_VERIFY_EXPIRED("400107", HttpStatus.BAD_REQUEST),
 
   /* ---------- 401 UNAUTHORIZED ---------- */
   ACCESS_TOKEN_EXPIRED("401101", HttpStatus.UNAUTHORIZED),
