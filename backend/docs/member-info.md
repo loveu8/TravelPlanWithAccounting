@@ -130,6 +130,7 @@ Content-Type: application/json
   "success": true
 }
 ```
+- **備註**：驗證成功後 `validation` 會設為 `true`，並以 `updated_at` 記錄驗證時間，`expireAt` 不會延長；後續流程需在驗證後 10 分鐘內完成。
 
 ### 5. 發送新信箱 OTP (Send New Email OTP)
 - **API**：`POST /api/members/email/change-otp`
@@ -146,6 +147,7 @@ Content-Type: application/json
 }
 ```
 - **說明 (Description)**：發送 OTP 到新信箱，用於更換信箱驗證。
+- **驗證條件**：需附上舊信箱的 `identityOtpToken`，且該 token 已驗證、`updated_at + 10 分鐘 > 現在` 並且仍在 `expireAt` 之前。
 - **回應 (Response)**：
 ```json
 {
@@ -169,7 +171,11 @@ Content-Type: application/json
   "otpCode": "123456"
 }
 ```
-- **說明 (Description)**：驗證新信箱 OTP 後，更新會員信箱。
+- **說明 (Description)**：驗證舊信箱與新信箱的 OTP 後更新會員信箱。
+- **驗證條件**：
+  - 舊信箱 OTP：`validation = true`、`updated_at + 10 分鐘 > 現在`、`expireAt > 現在`
+  - 新信箱 OTP：`validation = true`、`expireAt > 現在`
+- 成功後會立即讓上述兩個 OTP token 失效。
 - **回應 (Response)**：
 ```json
 {

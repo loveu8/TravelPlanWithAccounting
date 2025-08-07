@@ -80,4 +80,10 @@ public class MemberException extends ApiException {
       super(MemberMessageCode.PROFILE_FIELDS_INVALID, fieldErrors);
     }
   }
+
+  public static class MemberVerifyExpired extends ApiException {
+    public MemberVerifyExpired() {
+      super(MemberMessageCode.MEMBER_VERIFY_EXPIRED);
+    }
+  }
 }

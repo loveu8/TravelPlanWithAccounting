@@ -156,17 +156,16 @@ public class MemberService {
     if (!authInfo.getMemberId().equals(member.getId())) {
       throw new MemberException.OtpTokenInvalid();
     }
-    OffsetDateTime expireAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(10);
+    OffsetDateTime updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
     authInfo.setValidation(true);
-    authInfo.setExpireAt(expireAt);
+    authInfo.setUpdatedAt(updatedAt);
     authInfoRepository.save(authInfo);
-    return new IdentityOtpVerifyResponse(req.getOtpToken(), expireAt, true);
+    return new IdentityOtpVerifyResponse(req.getOtpToken(), authInfo.getExpireAt(), true);
   }
 
   /** 發送新信箱 OTP */
   @Transactional
-  public OtpTokenResponse sendEmailChangeOtp(
-      String authHeader, EmailChangeOtpRequest req) {
+  public OtpTokenResponse sendEmailChangeOtp(String authHeader, EmailChangeOtpRequest req) {
     UUID memberId = resolveMemberId(authHeader);
     Member member =
         memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
@@ -186,12 +185,13 @@ public class MemberService {
     OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
     AuthInfo identityAuth =
         authInfoRepository
-            .findByIdAndActionAndValidationTrue(
-                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode())
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
             .orElseThrow(MemberException.OtpTokenInvalid::new);
     if (!identityAuth.getMemberId().equals(member.getId())
-        || identityAuth.getExpireAt().isBefore(nowUtc)) {
-      throw new MemberException.OtpTokenInvalid();
+        || identityAuth.getUpdatedAt() == null
+        || !identityAuth.getUpdatedAt().plusMinutes(10).isAfter(nowUtc)) {
+      throw new MemberException.MemberVerifyExpired();
     }
     OtpData otpData = otpService.generateOtp(req.getEmail(), OtpPurpose.EMAIL_CHANGE);
     return new OtpTokenResponse(
@@ -216,12 +216,13 @@ public class MemberService {
     OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
     AuthInfo identityAuth =
         authInfoRepository
-            .findByIdAndActionAndValidationTrue(
-                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode())
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
             .orElseThrow(MemberException.OtpTokenInvalid::new);
     if (!identityAuth.getMemberId().equals(member.getId())
-        || identityAuth.getExpireAt().isBefore(nowUtc)) {
-      throw new MemberException.OtpTokenInvalid();
+        || identityAuth.getUpdatedAt() == null
+        || !identityAuth.getUpdatedAt().plusMinutes(10).isAfter(nowUtc)) {
+      throw new MemberException.MemberVerifyExpired();
     }
     AuthInfo emailAuth;
     try {
