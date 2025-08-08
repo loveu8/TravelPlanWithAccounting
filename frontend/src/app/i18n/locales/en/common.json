@@ -9,6 +9,10 @@
     "counter": "Counter: {{count}}",
     "to-ssr-page": "To SSR page"
   },
+  "lang": {
+    "zh": "繁體中文",
+    "en": "English"
+  },
   "validation": {
     "required": "Please fill in {{label}}.",
     "min-length": "At least {{min}} characters.",
@@ -35,5 +39,11 @@
     "nickname": "Nickname",
     "birthday": "Birthday",
     "email": "Email"
+  },
+  "header": {
+    "my-travel-plan": "My Travel Plan",
+    "explore": "Explore",
+    "login": "Login",
+    "language": "Language"
   }
 }
