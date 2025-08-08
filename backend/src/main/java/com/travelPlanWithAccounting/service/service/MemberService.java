@@ -93,12 +93,7 @@ public class MemberService {
       member =
           memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
     } else {
-      member =
-          Member.builder()
-              .email(email)
-              .status(Short.valueOf("1"))
-              .subscribe(false)
-              .build();
+      member = Member.builder().email(email).status(Short.valueOf("1")).subscribe(true).build();
       MemberProfileUpdateRequest profileReq = new MemberProfileUpdateRequest();
       profileReq.setGivenName(req.getGivenName());
       profileReq.setFamilyName(req.getFamilyName());
