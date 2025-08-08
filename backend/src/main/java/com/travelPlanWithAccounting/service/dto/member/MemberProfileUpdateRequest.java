@@ -26,8 +26,5 @@ public class MemberProfileUpdateRequest implements Serializable {
 
   @Schema(description = "是否訂閱")
   private Boolean subscribe;
-
-  @Schema(description = "語系類型", example = "zh-TW")
-  private String langType;
 }
 

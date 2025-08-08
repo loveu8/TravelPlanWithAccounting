@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 public class GoogleRequestFactory {
 
   /* NearbySearch builder */
-  public NearbySearchRequest buildNearby(Location loc, SearchRequest ui) {
+  public NearbySearchRequest buildNearby(Location loc, SearchRequest ui, String langType) {
     NearbySearchRequest req = new NearbySearchRequest();
-    req.setLanguageCode(ui.getLangType());
+    req.setLanguageCode(langType);
     req.setMaxResultCount(
         ui.getMaxResultCount() != null ? ui.getMaxResultCount() : MIN_RESULT_COUNT);
     req.setRankPreference(ui.getRankPreference() != null ? ui.getRankPreference() : RANK_DISTANCE);
@@ -35,7 +35,9 @@ public class GoogleRequestFactory {
 
   /** TextSearch builder */
   public com.travelPlanWithAccounting.service.dto.google.TextSearchRequest buildText(
-      Location loc, com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest ui) {
+      Location loc,
+      com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest ui,
+      String langType) {
 
     // 1. 建立 Google 版 Request
     com.travelPlanWithAccounting.service.dto.google.TextSearchRequest req =
@@ -43,7 +45,7 @@ public class GoogleRequestFactory {
 
     // 2. 基本參數
     req.setTextQuery(ui.getTextQuery());
-    req.setLanguageCode(ui.getLangType());
+    req.setLanguageCode(langType);
     req.setMaxResultCount(
         ui.getMaxResultCount() != null ? ui.getMaxResultCount() : MIN_RESULT_COUNT);
     req.setRankPreference(ui.getRankPreference() != null ? ui.getRankPreference() : RANK_RELEVANCE);

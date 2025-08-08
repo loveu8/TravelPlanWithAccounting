@@ -129,7 +129,8 @@ public class SearchService {
    * @param request 包含 Location 代碼的搜尋請求
    * @return List<LocationSearch>
    */
-  public List<LocationSearch> searchNearbyByLocationCode(SearchRequest request) {
+  public List<LocationSearch> searchNearbyByLocationCode(
+      SearchRequest request, String langType) {
     // 驗證
     searchRequestValidator.validateNearby(request);
 
@@ -138,7 +139,7 @@ public class SearchService {
 
     // 組 Google Request
     com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest googleReq =
-        requestFactory.buildNearby(loc, request);
+        requestFactory.buildNearby(loc, request, langType);
 
     // 呼叫 API
     JsonNode json = mapService.searchNearby(googleReq, GooglePlaceConstants.FIELD_MASK);
@@ -161,7 +162,8 @@ public class SearchService {
    * @param request 包含 Location 代碼和搜尋文字的請求
    * @return List<LocationSearch>
    */
-  public List<LocationSearch> searchTextByLocationCode(TextSearchRequest uiReq) {
+  public List<LocationSearch> searchTextByLocationCode(
+      TextSearchRequest uiReq, String langType) {
 
     // 1) 驗證參數
     searchRequestValidator.validateText(uiReq);
@@ -171,7 +173,7 @@ public class SearchService {
 
     // 3) 組 Google TextSearchRequest（UI → Google DTO）
     com.travelPlanWithAccounting.service.dto.google.TextSearchRequest googleReq =
-        requestFactory.buildText(loc, uiReq);
+        requestFactory.buildText(loc, uiReq, langType);
 
     // 4) 呼叫 API
     JsonNode json = mapService.searchText(googleReq, GooglePlaceConstants.FIELD_MASK);
@@ -231,7 +233,8 @@ public class SearchService {
   }
 
   @Transactional
-  public SaveMemberPoiResponse saveMemberPoi(UUID tokenMemberId, SaveMemberPoiRequest req) {
+  public SaveMemberPoiResponse saveMemberPoi(
+      UUID tokenMemberId, SaveMemberPoiRequest req, String langType) {
 
     /* 1) 取最終 memberId：先用 Access-Token，沒有才用 body */
     UUID memberId =
@@ -250,12 +253,12 @@ public class SearchService {
     memberService.assertActiveMember(memberId);
 
     // 2) 確認 語言傳遞正確
-    String langCode = langTypeMapper.toCode(req.getLangType());
+    String langCode = langTypeMapper.toCode(langType);
 
     // 3) 查詢API確認存在此地點
     PlaceDetailResponse dto;
     try {
-      dto = placeDetailFacade.fetch(req.getPlaceId(), req.getLangType());
+      dto = placeDetailFacade.fetch(req.getPlaceId(), langType);
     } catch (Exception ex) {
       throw new MemberPoiException.PlaceNotFound();
     }
@@ -267,7 +270,7 @@ public class SearchService {
     TxResult tx = doSaveTx(memberId, dto, langCode);
 
     // 5) 背景處理其他語系
-    enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), req.getLangType());
+    enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), langType);
 
     return SaveMemberPoiResponse.builder()
         .code(1)

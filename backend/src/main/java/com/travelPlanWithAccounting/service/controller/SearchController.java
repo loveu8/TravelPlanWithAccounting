@@ -55,16 +55,19 @@ public class SearchController {
 
   // ==================== 原有的搜尋 API ====================
 
-  @GetMapping("/countries/{langType}")
+  @GetMapping("/countries")
   @Operation(summary = "取得國家列表 (DTO 格式)")
-  public List<Country> searchCountries(@PathVariable String langType) {
+  public List<Country> searchCountries(
+      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType) {
     return searchService.searchCountries(langType);
   }
 
   @PostMapping("/regions")
   @Operation(summary = "取得地區和城市 (DTO 格式)")
-  public List<Region> searchRegions(@RequestBody SearchRequest request) {
-    return searchService.searchRegions(request.getCode(), request.getLangType());
+  public List<Region> searchRegions(
+      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
+      @RequestBody SearchRequest request) {
+    return searchService.searchRegions(request.getCode(), langType);
   }
 
   @GetMapping("/allLocations")
@@ -81,20 +84,25 @@ public class SearchController {
 
   @PostMapping("/searchNearbyByLocationCode")
   @Operation(summary = "根據 Location 代碼搜尋附近景點")
-  public List<LocationSearch> searchNearbyByLocationCode(@RequestBody SearchRequest request) {
-    return searchService.searchNearbyByLocationCode(request);
+  public List<LocationSearch> searchNearbyByLocationCode(
+      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
+      @RequestBody SearchRequest request) {
+    return searchService.searchNearbyByLocationCode(request, langType);
   }
 
   @PostMapping("/searchTextByLocationCode")
   @Operation(summary = "根據 Location 代碼和文字查詢搜尋景點")
-  public List<LocationSearch> searchTextByLocationCode(@RequestBody TextSearchRequest request) {
-    return searchService.searchTextByLocationCode(request);
+  public List<LocationSearch> searchTextByLocationCode(
+      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
+      @RequestBody TextSearchRequest request) {
+    return searchService.searchTextByLocationCode(request, langType);
   }
 
   @GetMapping("/placeDetails")
   @Operation(summary = "取得地點詳細資訊 (含照片)")
   public PlaceDetailResponse getPlaceDetails(
-      @RequestParam String placeId, @RequestParam(defaultValue = "zh-TW") String langType) {
+      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
+      @RequestParam String placeId) {
     return searchService.getPlaceDetailById(placeId, langType);
   }
 
@@ -102,6 +110,7 @@ public class SearchController {
   @Operation(summary = "儲存會員景點（優先取 Access-Token 的 sub）")
   public SaveMemberPoiResponse saveMemberPoi(
       @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth,
+      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
       @Valid @RequestBody SaveMemberPoiRequest req) {
 
     UUID authMemberId = null;
@@ -114,6 +123,6 @@ public class SearchController {
       }
     }
 
-    return searchService.saveMemberPoi(authMemberId, req);
+    return searchService.saveMemberPoi(authMemberId, req, langType);
   }
 }
