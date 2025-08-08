@@ -8,9 +8,11 @@ import com.travelPlanWithAccounting.service.repository.PoiI18nRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.util.JsonHelper;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,34 +39,40 @@ public class PoiLanguageEnrichmentListener {
   }
 
   private void enrich(UUID poiId, String placeId, String targetLang) {
-    PlaceDetailResponse dto = placeDetailFacade.fetch(placeId, targetLang);
-    if (dto == null || dto.getPlaceId() == null) return;
+    Locale prev = LocaleContextHolder.getLocale();
+    LocaleContextHolder.setLocale(Locale.forLanguageTag(targetLang));
+    try {
+      PlaceDetailResponse dto = placeDetailFacade.fetch(placeId);
+      if (dto == null || dto.getPlaceId() == null) return;
 
-    String langCode = langTypeMapper.toCode(targetLang);
+      String langCode = langTypeMapper.toCode(targetLang);
 
-    Poi poi = poiRepository.getReferenceById(poiId);
+      Poi poi = poiRepository.getReferenceById(poiId);
 
-    PoiI18n i18n =
-        poiI18nRepository.findByPoi_IdAndLangType(poiId, langCode).orElseGet(PoiI18n::new);
+      PoiI18n i18n =
+          poiI18nRepository.findByPoi_IdAndLangType(poiId, langCode).orElseGet(PoiI18n::new);
 
-    i18n.setPoi(poi);
-    i18n.setLangType(langCode);
-    i18n.setName(dto.getName());
-    i18n.setDescription(dto.getDescription());
-    i18n.setAddress(dto.getAddress());
-    i18n.setCityName(dto.getCity());
-    i18n.setCountryName(dto.getCountry());
+      i18n.setPoi(poi);
+      i18n.setLangType(langCode);
+      i18n.setName(dto.getName());
+      i18n.setDescription(dto.getDescription());
+      i18n.setAddress(dto.getAddress());
+      i18n.setCityName(dto.getCity());
+      i18n.setCountryName(dto.getCountry());
 
-    JsonNode hours = dto.getRegularHoursRaw();
-    JsonNode weekday =
-        (hours != null && hours.has("weekdayDescriptions"))
-            ? hours.get("weekdayDescriptions")
-            : null;
-    i18n.setWeekdayDescriptions(jsonHelper.serialize(weekday));
+      JsonNode hours = dto.getRegularHoursRaw();
+      JsonNode weekday =
+          (hours != null && hours.has("weekdayDescriptions"))
+              ? hours.get("weekdayDescriptions")
+              : null;
+      i18n.setWeekdayDescriptions(jsonHelper.serialize(weekday));
 
-    i18n.setInfosRaw(jsonHelper.serialize(dto.getRawJson()));
+      i18n.setInfosRaw(jsonHelper.serialize(dto.getRawJson()));
 
-    poiI18nRepository.save(i18n);
+      poiI18nRepository.save(i18n);
+    } finally {
+      LocaleContextHolder.setLocale(prev);
+    }
   }
 }
 

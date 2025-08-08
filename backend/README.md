@@ -57,13 +57,13 @@
 
 - **支援語言**：
   - zh-TW（繁體中文）
-  - en（英文）
+  - en-US（英文）
 - **設定方式**：
   - 在 API 請求 Header 加入 `Accept-Language`，如：
     - `Accept-Language: zh-TW`
-    - `Accept-Language: en`
+    - `Accept-Language: en-US`
 - **預設語言**：
-  - 若未指定或語言不支援，預設回傳英文訊息。
+  - 若未指定或語言不支援，預設回傳繁體中文訊息。
 
 API 回應錯誤時，會根據語系自動顯示對應語言的友善訊息。
 

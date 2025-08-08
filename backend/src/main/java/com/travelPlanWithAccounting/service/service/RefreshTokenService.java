@@ -17,14 +17,11 @@ import jakarta.transaction.Transactional;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
 /** 會員 Refresh-Token 發放 / 旋轉 / 撤銷（目前「不」檢查 clientId） */
@@ -34,8 +31,6 @@ public class RefreshTokenService {
 
   private final RefreshTokenRepository refreshTokenRepository;
   private final JwtUtil jwtUtil;
-
-  private static final Set<Locale> SUPPORTED_LOCALES = Set.of(Locale.TAIWAN, Locale.US);
 
   @Value("${auth.refresh.mem-ttl-seconds:1209600}") // 14 d
   private long memRtTtlSeconds;
@@ -134,8 +129,7 @@ public class RefreshTokenService {
   }
 
   @Transactional
-  public boolean logoutByRefreshToken(String rtPlain, String lang) {
-    setLocale(lang);
+  public boolean logoutByRefreshToken(String rtPlain) {
     String hash = TokenUtil.sha256Base64Url(rtPlain);
     RefreshToken first = refreshTokenRepository.findByTokenHash(hash).orElse(null);
 
@@ -174,8 +168,7 @@ public class RefreshTokenService {
   }
 
   @Transactional
-  public AccessTokenResponse refreshAccessToken(String rtPlain, String ip, String ua, String lang) {
-    setLocale(lang);
+  public AccessTokenResponse refreshAccessToken(String rtPlain, String ip, String ua) {
 
     String hash = TokenUtil.sha256Base64Url(rtPlain);
     RefreshToken db =
@@ -205,8 +198,7 @@ public class RefreshTokenService {
   // ---------- 驗證 ----------
 
   @Transactional
-  public VerifyTokenResponse verifyToken(VerifyTokenRequest req, String lang) {
-    setLocale(lang);
+  public VerifyTokenResponse verifyToken(VerifyTokenRequest req) {
     String tokenTypeStr =
         req != null && req.getTokenType() != null ? String.valueOf(req.getTokenType()) : null;
     if (req == null
@@ -291,16 +283,5 @@ public class RefreshTokenService {
         .build();
   }
 
-  private void setLocale(String lang) {
-    Locale locale;
-    if (lang == null || lang.isBlank()) {
-      locale = Locale.TAIWAN;
-    } else {
-      locale = Locale.forLanguageTag(lang);
-      if (!SUPPORTED_LOCALES.contains(locale)) {
-        locale = Locale.TAIWAN;
-      }
-    }
-    LocaleContextHolder.setLocale(locale);
-  }
+  // Locale is handled globally by LocaleAspect
 }

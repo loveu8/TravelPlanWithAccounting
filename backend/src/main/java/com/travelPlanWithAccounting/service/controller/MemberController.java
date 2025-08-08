@@ -35,9 +35,7 @@ public class MemberController {
 
   @PostMapping("/auth-flow")
   @Operation(summary = "驗證 OTP -> 登入/註冊 -> 回 AT/RT（只回一層 data）")
-  public AuthResponse authFlow(
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String lang,
-      @RequestBody AuthFlowRequest req) {
+  public AuthResponse authFlow(@RequestBody AuthFlowRequest req) {
     return memberService.authFlow(req);
   }
 
@@ -52,7 +50,6 @@ public class MemberController {
   @Operation(summary = "修改會員資料")
   public MemberProfileResponse updateProfile(
       @RequestHeader(HttpHeaders.AUTHORIZATION) String auth,
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String lang,
       @RequestBody MemberProfileUpdateRequest req) {
     return memberService.updateProfile(auth, req);
   }

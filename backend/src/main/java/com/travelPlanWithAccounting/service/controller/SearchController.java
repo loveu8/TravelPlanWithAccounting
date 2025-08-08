@@ -57,17 +57,14 @@ public class SearchController {
 
   @GetMapping("/countries")
   @Operation(summary = "取得國家列表 (DTO 格式)")
-  public List<Country> searchCountries(
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType) {
-    return searchService.searchCountries(langType);
+  public List<Country> searchCountries() {
+    return searchService.searchCountries();
   }
 
   @PostMapping("/regions")
   @Operation(summary = "取得地區和城市 (DTO 格式)")
-  public List<Region> searchRegions(
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
-      @RequestBody SearchRequest request) {
-    return searchService.searchRegions(request.getCode(), langType);
+  public List<Region> searchRegions(@RequestBody SearchRequest request) {
+    return searchService.searchRegions(request.getCode());
   }
 
   @GetMapping("/allLocations")
@@ -84,33 +81,26 @@ public class SearchController {
 
   @PostMapping("/searchNearbyByLocationCode")
   @Operation(summary = "根據 Location 代碼搜尋附近景點")
-  public List<LocationSearch> searchNearbyByLocationCode(
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
-      @RequestBody SearchRequest request) {
-    return searchService.searchNearbyByLocationCode(request, langType);
+  public List<LocationSearch> searchNearbyByLocationCode(@RequestBody SearchRequest request) {
+    return searchService.searchNearbyByLocationCode(request);
   }
 
   @PostMapping("/searchTextByLocationCode")
   @Operation(summary = "根據 Location 代碼和文字查詢搜尋景點")
-  public List<LocationSearch> searchTextByLocationCode(
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
-      @RequestBody TextSearchRequest request) {
-    return searchService.searchTextByLocationCode(request, langType);
+  public List<LocationSearch> searchTextByLocationCode(@RequestBody TextSearchRequest request) {
+    return searchService.searchTextByLocationCode(request);
   }
 
   @GetMapping("/placeDetails")
   @Operation(summary = "取得地點詳細資訊 (含照片)")
-  public PlaceDetailResponse getPlaceDetails(
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
-      @RequestParam String placeId) {
-    return searchService.getPlaceDetailById(placeId, langType);
+  public PlaceDetailResponse getPlaceDetails(@RequestParam String placeId) {
+    return searchService.getPlaceDetailById(placeId);
   }
 
   @PostMapping("/saveMemberPoi")
   @Operation(summary = "儲存會員景點（優先取 Access-Token 的 sub）")
   public SaveMemberPoiResponse saveMemberPoi(
       @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String auth,
-      @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE) String langType,
       @Valid @RequestBody SaveMemberPoiRequest req) {
 
     UUID authMemberId = null;
@@ -123,6 +113,6 @@ public class SearchController {
       }
     }
 
-    return searchService.saveMemberPoi(authMemberId, req, langType);
+    return searchService.saveMemberPoi(authMemberId, req);
   }
 }
