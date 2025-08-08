@@ -58,6 +58,10 @@ sequenceDiagram
 
 ### 2. 驗證 OTP 並完成登入/註冊
 - **API**：`POST /api/members/auth-flow`
+- **Headers**：
+```
+Accept-Language: zh-TW
+```
 - **Body 範例**：
 ```json
 {
@@ -229,6 +233,115 @@ sequenceDiagram
 3. **自動刷新**：在 Access Token 即將過期前自動刷新
 4. **登出清理**：登出時清除所有相關的 token
 5. **錯誤處理**：當 Refresh Token 無效時，重新導向到登入頁面
+
+---
+
+## 前端實作範例
+
+### JavaScript 範例
+
+```javascript
+// 1. 預驗證流程
+async function preAuthFlow(email) {
+  const response = await fetch('/api/members/pre-auth-flow', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, clientId: 'web' })
+  });
+  return response.json();
+}
+
+// 2. 驗證 OTP 並完成登入/註冊
+async function authFlow(email, otpCode, token, userData) {
+  const response = await fetch('/api/members/auth-flow', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept-Language': 'zh-TW' // 新增 Accept-Language header
+    },
+    body: JSON.stringify({
+      email,
+      otpCode,
+      token,
+      clientId: 'web',
+      ip: '192.168.1.1',
+      ua: navigator.userAgent,
+      ...userData
+    })
+  });
+  return response.json();
+}
+
+// 3. 驗證 Token
+async function verifyToken(token, tokenType = 'ACCESS') {
+  const response = await fetch('/api/auth/verify-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tokenType,
+      token,
+      clientId: 'web'
+    })
+  });
+  return response.json();
+}
+
+// 4. 刷新 Access Token
+async function refreshToken(refreshToken) {
+  const response = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      refreshToken,
+      clientId: 'web',
+      ip: '192.168.1.1',
+      ua: navigator.userAgent
+    })
+  });
+  return response.json();
+}
+
+// 5. 登出
+async function logout(refreshToken) {
+  const response = await fetch('/api/auth/logout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken })
+  });
+  return response.json();
+}
+
+// 使用範例
+async function loginFlow() {
+  try {
+    // 步驟 1: 預驗證
+    const preAuth = await preAuthFlow('user@example.com');
+    console.log('預驗證結果:', preAuth);
+    
+    // 步驟 2: 驗證 OTP 並登入/註冊
+    const auth = await authFlow(
+      'user@example.com',
+      '123456',
+      preAuth.token,
+      {
+        givenName: '小明',
+        familyName: '王',
+        nickName: '明明',
+        birthday: '2000-01-01',
+        langType: 'zh-TW'
+      }
+    );
+    console.log('登入結果:', auth);
+    
+    // 儲存 tokens
+    localStorage.setItem('accessToken', auth.cookies.access_token.code);
+    localStorage.setItem('refreshToken', auth.cookies.refresh_token.code);
+    
+  } catch (error) {
+    console.error('登入流程錯誤:', error);
+  }
+}
+```
 
 ---
 
