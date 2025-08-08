@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,21 +24,27 @@ public class AuthController {
 
   @PostMapping("/refresh")
   @Operation(summary = "用 Refresh-Token 換新 Access-Token（MEM）")
-  public AccessTokenResponse refresh(@Valid @RequestBody AuthRefreshRequest body) {
+  public AccessTokenResponse refresh(
+      @Valid @RequestBody AuthRefreshRequest body,
+      @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String lang) {
     return refreshTokenService.refreshAccessToken(
-        body.getRefreshToken(), body.getIp(), body.getUa());
+        body.getRefreshToken(), body.getIp(), body.getUa(), lang);
   }
 
   @PostMapping("/logout")
   @Operation(summary = "登出：由 refreshToken 判斷平台並撤銷（MEM）")
-  public SimpleResult logout(@Valid @RequestBody AuthLogoutByRtRequest body) {
-    boolean ok = refreshTokenService.logoutByRefreshToken(body.getRefreshToken());
+  public SimpleResult logout(
+      @Valid @RequestBody AuthLogoutByRtRequest body,
+      @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String lang) {
+    boolean ok = refreshTokenService.logoutByRefreshToken(body.getRefreshToken(), lang);
     return new SimpleResult(ok);
   }
 
   @PostMapping("/verify-token")
   @Operation(summary = "驗證 Token（ACCESS/REFRESH）")
-  public VerifyTokenResponse verifyToken(@Valid @RequestBody VerifyTokenRequest req) {
-    return refreshTokenService.verifyToken(req);
+  public VerifyTokenResponse verifyToken(
+      @Valid @RequestBody VerifyTokenRequest req,
+      @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String lang) {
+    return refreshTokenService.verifyToken(req, lang);
   }
 }
