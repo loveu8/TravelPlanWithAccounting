@@ -30,6 +30,8 @@ sequenceDiagram
 
 ## API 操作步驟
 
+> 所有 `/api/auth/**` 相關請求需在 `HTTP Header` 中附帶 `Accept-Language`（如 `zh-TW`、`en-US`），未提供或不支援時將以 `zh-TW` 為預設語系。
+
 ### 1. 預驗證流程 - 判斷登入/註冊並發送 OTP
 - **API**：`POST /api/members/pre-auth-flow`
 - **Body 範例**：
@@ -123,6 +125,7 @@ sequenceDiagram
 
 ### 3. 驗證 Token
 - **API**：`POST /api/auth/verify-token`
+- **Headers**：`Accept-Language: zh-TW` 或 `en-US`
 - **Body 範例**：
 ```json
 {
@@ -153,6 +156,7 @@ sequenceDiagram
 
 ### 4. 刷新 Access Token
 - **API**：`POST /api/auth/refresh`
+- **Headers**：`Accept-Language: zh-TW` 或 `en-US`
 - **Body 範例**：
 ```json
 {
@@ -177,6 +181,7 @@ sequenceDiagram
 
 ### 5. 登出
 - **API**：`POST /api/auth/logout`
+- **Headers**：`Accept-Language: zh-TW` 或 `en-US`
 - **Body 範例**：
 ```json
 {
