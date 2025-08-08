@@ -72,15 +72,14 @@ sequenceDiagram
     "givenName": "小明",
   "familyName": "王",
   "nickName": "明明",
-  "birthday": "2000-01-01",
-  "langType": "zh-TW"
+  "birthday": "2000-01-01"
 }
 ```
 - **說明**：
   - 驗證 OTP 驗證碼，`email` 必須與預先發送 OTP 的信箱相同
   - 如果是新用戶（purpose=REGISTRATION），會自動註冊並登入
   - 如果是現有用戶（purpose=LOGIN），會直接登入
-  - 註冊時可填寫 `givenName`、`familyName`、`nickName`、`birthday`、`langType` 等資料（`langType` 預設 zh-TW）
+  - 註冊時可填寫 `givenName`、`familyName`、`nickName`、`birthday`
   - access_token cookie保留15分鐘，refresh_token cookie保留14天
 - **回應**：
 ```json
@@ -116,8 +115,7 @@ sequenceDiagram
     "message": "會員資料欄位錯誤",
     "timestamp": "2024-01-15T10:30:00Z",
     "details": {
-      "givenName": "given_name 長度不可超過30",
-      "langType": "不支援的語系"
+      "givenName": "given_name 長度不可超過30"
     }
   }
 }
