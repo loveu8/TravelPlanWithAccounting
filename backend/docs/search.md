@@ -2,6 +2,8 @@
 
 > 提供國家、地區、城市搜尋功能，以及 Google Places API 整合的附近景點搜尋。
 
+> 所有搜尋相關 API 需透過 `Accept-Language` 指定語系（支援 `zh-TW`、`en-US`，預設為 `zh-TW`）。
+
 ## 流程圖
 
 ```mermaid
@@ -40,9 +42,10 @@ sequenceDiagram
 
 | 方法   | 端點                                      | 說明                     |
 |--------|-------------------------------------------|--------------------------|
-| GET    | `/api/search/countries/{langType}`        | 取得所有國家列表         |
+| GET    | `/api/search/countries`                   | 取得所有國家列表         |
 | POST   | `/api/search/regions`                     | 取得指定國家的地區和城市 |
 | GET    | `/api/search/allLocations`                | 取得所有地點資料         |
+| POST   | `/api/search/searchNearby`                | 搜尋附近景點             |
 | POST   | `/api/search/searchNearbyByLocationCode`  | 根據 Location 代碼搜尋附近景點 |
 | POST   | `/api/search/searchTextByLocationCode`    | 根據 Location 代碼和文字查詢搜尋景點 |
 | GET    | `/api/search/settings/{category}`         | 根據類別查詢設定         |
@@ -54,13 +57,13 @@ sequenceDiagram
 
 ### 1. 取得國家列表
 
-- **API**: `GET /api/search/countries/{langType}`
+- **API**: `GET /api/search/countries`
 - **描述**: 取得所有國家列表
 - **請求參數**:
-  - **路徑參數**:
-    | 參數      | 型別   | 必填 | 說明              |
-    |-----------|--------|------|-------------------|
-    | `langType`| String | 是   | 語言類型 (如：zh-TW, en-US) |
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
 - **回應**: List<國家>
 - **回應範例**:
   ```json
@@ -81,16 +84,18 @@ sequenceDiagram
 - **API**: `POST /api/search/regions`
 - **描述**: 取得指定國家的地區和城市
 - **請求參數**:
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數         | 型別   | 必填 | 說明              |
     |--------------|--------|------|-------------------|
-    | `countryCode`| String | 是   | 國家代碼          |
-    | `langType`   | String | 是   | 語言類型          |
+    | `code`       | String | 是   | 國家代碼          |
   - **請求體範例**:
     ```json
     {
-      "countryCode": "TW",
-      "langType": "zh-TW"
+      "code": "TW"
     }
     ```
 - **回應**: List<地區>
@@ -137,27 +142,30 @@ sequenceDiagram
   ]
   ```
 
-### 4. 根據 Location 代碼搜尋附近景點 ⭐
+### 4. 搜尋附近景點
+
+- **API**: `POST /api/search/searchNearby`
+- **描述**: 搜尋附近景點
+- **請求參數**: NearbySearchRequest
+- **回應**: List<LocationSearch>
+
+### 5. 根據 Location 代碼搜尋附近景點 ⭐
 
 - **API**: `POST /api/search/searchNearbyByLocationCode`
 - **描述**: 使用 Location 代碼自動取得經緯度，然後搜尋附近景點
 - **請求參數**:
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數            | 型別         | 必填 | 說明                           |
     |-----------------|--------------|------|--------------------------------|
     | `code`          | String       | 是   | Location 代碼                  |
-    | `langType`      | String       | 是   | 語言類型                      |
-    | `includedTypes` | List<String> | 否   | 景點類型篩選 (參見景點類型)   |
-    | `maxResultCount`| Integer      | 否   | 最大結果數量 (5-20，預設 5)   |
-    | `rankPreference`| String       | 否   | 排序方式 (DISTANCE, RATING)   |
   - **請求體範例**:
     ```json
     {
-      "code": "TPE",
-      "langType": "zh-TW",
-      "includedTypes": ["restaurant", "hotel", "tourist_attraction"],
-      "maxResultCount": 10,
-      "rankPreference": "DISTANCE"
+      "code": "TPE"
     }
     ```
 - **回應**: List<LocationSearch>
@@ -174,31 +182,16 @@ sequenceDiagram
   ]
   ```
 
-### 5. 根據 Location 代碼和文字查詢搜尋景點 ⭐
+### 6. 根據 Location 代碼和文字查詢搜尋景點 ⭐
 
 - **API**: `POST /api/search/searchTextByLocationCode`
 - **描述**: 結合文字搜尋和位置偏向，在指定區域內搜尋特定景點
 - **請求參數**:
-  - **請求體**:
-    | 參數            | 型別         | 必填 | 說明                           |
-    |-----------------|--------------|------|--------------------------------|
-    | `textQuery`     | String       | 是   | 要搜尋的文字查詢              |
-    | `code`          | String       | 是   | Location 代碼                  |
-    | `langType`      | String       | 是   | 語言類型                      |
-    | `maxResultCount`| Integer      | 否   | 最大結果數量 (預設 5)         |
-    | `rankPreference`| String       | 否   | 排序方式 (RELEVANCE, DISTANCE)|
-    | `includedTypes` | List<String> | 否   | 景點類型篩選 (參見景點類型)   |
-  - **請求體範例**:
-    ```json
-    {
-      "textQuery": "台北101",
-      "code": "TPE",
-      "langType": "zh-TW",
-      "maxResultCount": 10,
-      "rankPreference": "RELEVANCE",
-      "includedTypes": ["tourist_attraction"]
-    }
-    ```
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+  - **請求體**: TextSearchRequest
 - **回應**: List<LocationSearch>
 - **回應範例**:
   ```json
@@ -213,7 +206,7 @@ sequenceDiagram
   ]
   ```
 
-### 6. 根據類別查詢設定 ⭐
+### 7. 根據類別查詢設定 ⭐
 
 - **API**: `GET /api/search/settings/{category}`
 - **描述**: 根據類別查詢設定，目前只支援 `LANG_TYPE`
@@ -241,7 +234,7 @@ sequenceDiagram
   ]
   ```
 
-### 7. 查詢所有語言類型設定 ⭐
+### 8. 查詢所有語言類型設定 ⭐
 
 - **API**: `GET /api/search/settings/language-types`
 - **描述**: 專門用於查詢語言類型設定的快捷端點
@@ -265,16 +258,19 @@ sequenceDiagram
   ]
   ```
 
-### 8. 取得地點詳細資訊 (含照片)
+### 9. 取得地點詳細資訊 (含照片)
 
 - **API**: `GET /api/search/placeDetails`
 - **描述**: 根據 Google PlaceId 取得該地點的詳細資訊
 - **請求參數**:
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **查詢參數**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
     | `placeId` | String | 是   | Google Place 的唯一識別碼   |
-    | `langType`| String | 否   | 語言類型 (預設 zh-TW)      |
 - **回應**: 地點詳細資訊
 - **回應範例**:
   ```json
@@ -303,7 +299,7 @@ sequenceDiagram
   }
   ```
 
-### 9. 儲存會員景點 ⭐
+### 10. 儲存會員景點 ⭐
 
 - **API**: `POST /api/search/saveMemberPoi`
 - **描述**: 儲存會員指定的景點到個人收藏，支援多語系資料儲存
@@ -312,7 +308,8 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-    | `Authorization`   | String | 是   | Bearer Token 格式      |
+    | `Authorization`   | String | 否   | Bearer Token 格式      |
+| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
@@ -436,43 +433,44 @@ sequenceDiagram
 
 ```javascript
 // 1. 取得國家列表
-const countries = await fetch('/api/search/countries/zh-TW')
-  .then(res => res.json());
+const countries = await fetch('/api/search/countries', {
+  headers: { 'Accept-Language': 'zh-TW' }
+}).then(res => res.json());
 
 // 2. 取得地區和城市
 const regions = await fetch('/api/search/regions', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'Accept-Language': 'zh-TW'
+  },
   body: JSON.stringify({
-    countryCode: 'TW',
-    langType: 'zh-TW'
+    code: 'TW'
   })
 }).then(res => res.json());
 
 // 3. 根據 Location 代碼搜尋附近景點
 const nearbyByCode = await fetch('/api/search/searchNearbyByLocationCode', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'Accept-Language': 'zh-TW'
+  },
   body: JSON.stringify({
-    code: 'TPE',
-    langType: 'zh-TW',
-    includedTypes: ['restaurant', 'tourist_attraction'],
-    maxResultCount: 10,
-    rankPreference: 'DISTANCE'
+    code: 'TPE'
   })
 }).then(res => res.json());
 
 // 4. 根據 Location 代碼和文字查詢搜尋景點
 const textSearch = await fetch('/api/search/searchTextByLocationCode', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'Accept-Language': 'zh-TW'
+  },
   body: JSON.stringify({
     textQuery: '台北101',
-    code: 'TPE',
-    langType: 'zh-TW',
-    maxResultCount: 10,
-    rankPreference: 'RELEVANCE',
-    includedTypes: ['tourist_attraction']
+    code: 'TPE'
   })
 }).then(res => res.json());
 
@@ -484,12 +482,18 @@ const languageTypes = await fetch('/api/search/settings/LANG_TYPE')
 const allLanguageTypes = await fetch('/api/search/settings/language-types')
   .then(res => res.json());
 
-// 7. 儲存會員景點
+// 7. 取得地點詳細資訊
+const placeDetails = await fetch('/api/search/placeDetails?placeId=ChIJN1t_tDeuEmsRUsoyG83frY4', {
+  headers: { 'Accept-Language': 'zh-TW' }
+}).then(res => res.json());
+
+// 8. 儲存會員景點
 const saveResult = await fetch('/api/search/saveMemberPoi', {
   method: 'POST',
   headers: { 
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + accessToken // 需要有效的 Bearer Token
+    'Authorization': 'Bearer ' + accessToken, // 需要有效的 Bearer Token
+    'Accept-Language': 'zh-TW'
   },
   body: JSON.stringify({
     memberId: '550e8400-e29b-41d4-a716-446655440000',

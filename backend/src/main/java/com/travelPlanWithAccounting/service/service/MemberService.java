@@ -93,18 +93,12 @@ public class MemberService {
       member =
           memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
     } else {
-      member =
-          Member.builder()
-              .email(email)
-              .status(Short.valueOf("1"))
-              .subscribe(false)
-              .build();
+      member = Member.builder().email(email).status(Short.valueOf("1")).subscribe(true).build();
       MemberProfileUpdateRequest profileReq = new MemberProfileUpdateRequest();
       profileReq.setGivenName(req.getGivenName());
       profileReq.setFamilyName(req.getFamilyName());
       profileReq.setNickName(req.getNickName());
       profileReq.setBirthday(req.getBirthday());
-      profileReq.setLangType(req.getLangType());
       validateAndApplyProfile(member, profileReq);
       try {
         authInfo = otpService.verifyOtp(req.getToken(), req.getOtpCode(), purpose);
@@ -311,37 +305,24 @@ public class MemberService {
   }
 
   private void validateAndApplyProfile(Member member, MemberProfileUpdateRequest req) {
-    String reqLang = req.getLangType();
-    Locale locale = Locale.forLanguageTag(reqLang == null ? "zh-TW" : reqLang);
-    if (locale.getLanguage().isEmpty()) {
-      locale = Locale.forLanguageTag("zh-TW");
+    Locale locale = LocaleContextHolder.getLocale();
+    Map<String, String> fieldErrors = validateProfile(req, locale);
+    if (!fieldErrors.isEmpty()) {
+      throw new MemberException.ProfileFieldsInvalid(fieldErrors);
     }
-    Locale prevLocale = LocaleContextHolder.getLocale();
-    LocaleContextHolder.setLocale(locale);
-    try {
-      Map<String, String> fieldErrors = validateProfile(req, locale);
-      if (!fieldErrors.isEmpty()) {
-        throw new MemberException.ProfileFieldsInvalid(fieldErrors);
-      }
 
-      if (req.getGivenName() != null) member.setGivenName(req.getGivenName());
-      if (req.getFamilyName() != null) member.setFamilyName(req.getFamilyName());
-      if (req.getNickName() != null) member.setNickName(req.getNickName());
-      if (req.getBirthday() != null) member.setBirthday(req.getBirthday());
-      if (req.getSubscribe() != null) member.setSubscribe(req.getSubscribe());
-      if (req.getLangType() != null) {
-        String code =
-            settingRepository
-                .findByCategoryAndName("LANG_TYPE", req.getLangType())
-                .map(Setting::getCodeName)
-                .orElse(member.getLangType());
-        member.setLangType(code);
-      } else if (member.getLangType() == null) {
-        member.setLangType("001");
-      }
-    } finally {
-      LocaleContextHolder.setLocale(prevLocale);
-    }
+    if (req.getGivenName() != null) member.setGivenName(req.getGivenName());
+    if (req.getFamilyName() != null) member.setFamilyName(req.getFamilyName());
+    if (req.getNickName() != null) member.setNickName(req.getNickName());
+    if (req.getBirthday() != null) member.setBirthday(req.getBirthday());
+    if (req.getSubscribe() != null) member.setSubscribe(req.getSubscribe());
+
+    String code =
+        settingRepository
+            .findByCategoryAndName("LANG_TYPE", locale.toLanguageTag())
+            .map(Setting::getCodeName)
+            .orElse(member.getLangType() == null ? "001" : member.getLangType());
+    member.setLangType(code);
   }
 
   private UUID resolveMemberId(String authHeader) {
@@ -411,20 +392,6 @@ public class MemberService {
         fieldErrors.add(
             messageSource.getMessage("member.profile.nickName.invalid", null, locale));
       if (!fieldErrors.isEmpty()) errors.put("nickName", String.join("; ", fieldErrors));
-    }
-
-    if (req.getLangType() != null) {
-      List<String> fieldErrors = new ArrayList<>();
-      if (req.getLangType().length() > 10) {
-        fieldErrors.add(
-            messageSource.getMessage("member.profile.langType.length", null, locale));
-      } else if (settingRepository
-          .findByCategoryAndName("LANG_TYPE", req.getLangType())
-          .isEmpty()) {
-        fieldErrors.add(
-            messageSource.getMessage("member.profile.langType.invalid", null, locale));
-      }
-      if (!fieldErrors.isEmpty()) errors.put("langType", String.join("; ", fieldErrors));
     }
 
     return errors;

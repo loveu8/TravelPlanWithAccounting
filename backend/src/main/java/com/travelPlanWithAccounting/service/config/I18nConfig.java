@@ -42,10 +42,10 @@ public class I18nConfig {
     // 設定支援的 Locales，若 Accept-Language 沒設定或不在這清單內就會使用預設的 Locale
     List<Locale> supportedLocales = new ArrayList<>();
     supportedLocales.add(Locale.TAIWAN);
-    supportedLocales.add(Locale.ENGLISH);
+    supportedLocales.add(Locale.US);
 
     AcceptHeaderLocaleResolver acceptHeaderLocaleResolver = new AcceptHeaderLocaleResolver();
-    acceptHeaderLocaleResolver.setDefaultLocale(Locale.ENGLISH); // 預設 Locale
+    acceptHeaderLocaleResolver.setDefaultLocale(Locale.TAIWAN); // 預設 Locale
     acceptHeaderLocaleResolver.setSupportedLocales(supportedLocales);
     return acceptHeaderLocaleResolver;
   }

@@ -38,6 +38,7 @@ import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
 import com.travelPlanWithAccounting.service.validator.Validator;
 import jakarta.transaction.Transactional;
+import org.springframework.context.i18n.LocaleContextHolder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +83,8 @@ public class SearchService {
   @Autowired private PlaceDetailFacade placeDetailFacade;
   @Autowired private JsonHelper jsonHelper;
 
-  public List<Region> searchRegions(String countryCode, String langType) {
+  public List<Region> searchRegions(String countryCode) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
     // 1) 驗證資料
     coommonValidator.validate(countryCode, langType);
@@ -94,7 +96,8 @@ public class SearchService {
     return infoAggregator.searchRegions(results);
   }
 
-  public List<Country> searchCountries(String langType) {
+  public List<Country> searchCountries() {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
     // 1) 驗證資料
     coommonValidator.validate(langType);
 
@@ -203,7 +206,8 @@ public class SearchService {
    * @return PlaceDetailResponse
    */
   @Transactional
-  public PlaceDetailResponse getPlaceDetailById(String placeId, String langType) {
+  public PlaceDetailResponse getPlaceDetailById(String placeId) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
     // 1) 驗證
     placeDetailValidator.validate(placeId, langType);
@@ -219,7 +223,7 @@ public class SearchService {
       json = jsonHelper.deserializeToNode(cachedJson.get());
     } else {
       log.debug("Call api placeId={} langType={}", placeId, langType);
-      PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
+      PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId);
       json = mapService.getPlaceDetails(req);
 
       // 2.3) API 成功 → 立即 upsert 進 DB
@@ -232,6 +236,7 @@ public class SearchService {
 
   @Transactional
   public SaveMemberPoiResponse saveMemberPoi(UUID tokenMemberId, SaveMemberPoiRequest req) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
     /* 1) 取最終 memberId：先用 Access-Token，沒有才用 body */
     UUID memberId =
@@ -250,12 +255,12 @@ public class SearchService {
     memberService.assertActiveMember(memberId);
 
     // 2) 確認 語言傳遞正確
-    String langCode = langTypeMapper.toCode(req.getLangType());
+    String langCode = langTypeMapper.toCode(langType);
 
     // 3) 查詢API確認存在此地點
     PlaceDetailResponse dto;
     try {
-      dto = placeDetailFacade.fetch(req.getPlaceId(), req.getLangType());
+      dto = placeDetailFacade.fetch(req.getPlaceId());
     } catch (Exception ex) {
       throw new MemberPoiException.PlaceNotFound();
     }
@@ -267,7 +272,7 @@ public class SearchService {
     TxResult tx = doSaveTx(memberId, dto, langCode);
 
     // 5) 背景處理其他語系
-    enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), req.getLangType());
+    enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), langType);
 
     return SaveMemberPoiResponse.builder()
         .code(1)

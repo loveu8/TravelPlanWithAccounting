@@ -55,16 +55,16 @@ public class SearchController {
 
   // ==================== 原有的搜尋 API ====================
 
-  @GetMapping("/countries/{langType}")
+  @GetMapping("/countries")
   @Operation(summary = "取得國家列表 (DTO 格式)")
-  public List<Country> searchCountries(@PathVariable String langType) {
-    return searchService.searchCountries(langType);
+  public List<Country> searchCountries() {
+    return searchService.searchCountries();
   }
 
   @PostMapping("/regions")
   @Operation(summary = "取得地區和城市 (DTO 格式)")
   public List<Region> searchRegions(@RequestBody SearchRequest request) {
-    return searchService.searchRegions(request.getCode(), request.getLangType());
+    return searchService.searchRegions(request.getCode());
   }
 
   @GetMapping("/allLocations")
@@ -93,9 +93,8 @@ public class SearchController {
 
   @GetMapping("/placeDetails")
   @Operation(summary = "取得地點詳細資訊 (含照片)")
-  public PlaceDetailResponse getPlaceDetails(
-      @RequestParam String placeId, @RequestParam(defaultValue = "zh-TW") String langType) {
-    return searchService.getPlaceDetailById(placeId, langType);
+  public PlaceDetailResponse getPlaceDetails(@RequestParam String placeId) {
+    return searchService.getPlaceDetailById(placeId);
   }
 
   @PostMapping("/saveMemberPoi")

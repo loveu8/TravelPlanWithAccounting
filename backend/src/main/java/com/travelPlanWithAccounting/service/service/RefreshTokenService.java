@@ -282,4 +282,6 @@ public class RefreshTokenService {
         .sub(rt.getOwnerId())
         .build();
   }
+
+  // Locale is handled globally by LocaleAspect
 }

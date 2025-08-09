@@ -59,6 +59,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
+Accept-Language: zh-TW
 ```
 - **Body 範例**：
 ```json
@@ -450,7 +451,8 @@ async function updateMemberProfile(profileData) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept-Language': 'zh-TW' // 新增 Accept-Language header
       },
       body: JSON.stringify(profileData)
     });

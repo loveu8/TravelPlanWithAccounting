@@ -5,6 +5,7 @@ import static com.travelPlanWithAccounting.service.util.GooglePlaceConstants.*;
 import com.travelPlanWithAccounting.service.dto.google.*;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.entity.Location;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,7 +14,7 @@ public class GoogleRequestFactory {
   /* NearbySearch builder */
   public NearbySearchRequest buildNearby(Location loc, SearchRequest ui) {
     NearbySearchRequest req = new NearbySearchRequest();
-    req.setLanguageCode(ui.getLangType());
+    req.setLanguageCode(LocaleContextHolder.getLocale().toLanguageTag());
     req.setMaxResultCount(
         ui.getMaxResultCount() != null ? ui.getMaxResultCount() : MIN_RESULT_COUNT);
     req.setRankPreference(ui.getRankPreference() != null ? ui.getRankPreference() : RANK_DISTANCE);
@@ -35,7 +36,8 @@ public class GoogleRequestFactory {
 
   /** TextSearch builder */
   public com.travelPlanWithAccounting.service.dto.google.TextSearchRequest buildText(
-      Location loc, com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest ui) {
+      Location loc,
+      com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest ui) {
 
     // 1. 建立 Google 版 Request
     com.travelPlanWithAccounting.service.dto.google.TextSearchRequest req =
@@ -43,7 +45,7 @@ public class GoogleRequestFactory {
 
     // 2. 基本參數
     req.setTextQuery(ui.getTextQuery());
-    req.setLanguageCode(ui.getLangType());
+    req.setLanguageCode(LocaleContextHolder.getLocale().toLanguageTag());
     req.setMaxResultCount(
         ui.getMaxResultCount() != null ? ui.getMaxResultCount() : MIN_RESULT_COUNT);
     req.setRankPreference(ui.getRankPreference() != null ? ui.getRankPreference() : RANK_RELEVANCE);
@@ -68,11 +70,11 @@ public class GoogleRequestFactory {
   }
 
   /** PlaceDetails builder */
-  public PlaceDetailRequestPost buildPlaceDetails(String placeId, String langType) {
+  public PlaceDetailRequestPost buildPlaceDetails(String placeId) {
 
     PlaceDetailRequestPost req = new PlaceDetailRequestPost();
     req.setPlaceId(placeId);
-    req.setLanguageCode(langType);
+    req.setLanguageCode(LocaleContextHolder.getLocale().toLanguageTag());
     req.setFieldMask(PLACE_DETAILS_FIELD_MASK); // 常數集中管理
     return req;
   }

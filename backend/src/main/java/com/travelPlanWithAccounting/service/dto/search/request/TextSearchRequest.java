@@ -20,9 +20,6 @@ public class TextSearchRequest {
   @Schema(description = "國家/城市/區域 代碼", example = "TW", requiredMode = Schema.RequiredMode.REQUIRED)
   private String code;
 
-  @Schema(description = "語言語系", example = "zh-TW", requiredMode = Schema.RequiredMode.REQUIRED)
-  private String langType;
-
   @Schema(
       description = "可選。搜尋附近特定地點。",
       example =
