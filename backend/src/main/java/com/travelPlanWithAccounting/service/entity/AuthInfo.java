@@ -41,6 +41,18 @@ public class AuthInfo {
   @Column(nullable = false)
   private Boolean validation;
 
+  @Column(name = "attempt_count", nullable = false)
+  private Integer attemptCount;
+
+  @Column(name = "last_sent_at", nullable = false, columnDefinition = "timestamptz")
+  private OffsetDateTime lastSentAt;
+
+  @Column(name = "verified_at", columnDefinition = "timestamptz")
+  private OffsetDateTime verifiedAt;
+
+  @Version
+  private Long version;
+
   @Column(name = "expire_at", nullable = false, columnDefinition = "timestamptz")
   private OffsetDateTime expireAt;
 
