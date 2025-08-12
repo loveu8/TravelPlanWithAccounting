@@ -13,10 +13,11 @@ import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
 import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
 import com.travelPlanWithAccounting.service.service.MemberService;
+import com.travelPlanWithAccounting.service.security.AccessTokenRequired;
+import com.travelPlanWithAccounting.service.controller.AuthContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
   private final MemberService memberService;
+  private final AuthContext authContext;
 
   @PostMapping("/pre-auth-flow")
   @Operation(summary = "判斷登入/註冊並發送 OTP")
@@ -40,48 +42,45 @@ public class MemberController {
   }
 
   @GetMapping("/profile")
+  @AccessTokenRequired
   @Operation(summary = "查詢會員資料")
-  public MemberProfileResponse getProfile(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth) {
-    return memberService.getProfile(auth);
+  public MemberProfileResponse getProfile() {
+    return memberService.getProfile(authContext.getCurrentMemberId());
   }
 
   @PostMapping("/profile")
+  @AccessTokenRequired
   @Operation(summary = "修改會員資料")
-  public MemberProfileResponse updateProfile(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth,
-      @RequestBody MemberProfileUpdateRequest req) {
-    return memberService.updateProfile(auth, req);
+  public MemberProfileResponse updateProfile(@RequestBody MemberProfileUpdateRequest req) {
+    return memberService.updateProfile(authContext.getCurrentMemberId(), req);
   }
 
   @PostMapping("/email/identity-otp")
+  @AccessTokenRequired
   @Operation(summary = "發送信箱 OTP")
-  public OtpTokenResponse sendIdentityOtp(@RequestHeader(HttpHeaders.AUTHORIZATION) String auth) {
-    return memberService.sendIdentityOtp(auth);
+  public OtpTokenResponse sendIdentityOtp() {
+    return memberService.sendIdentityOtp(authContext.getCurrentMemberId());
   }
 
   @PostMapping("/email/identity-otp/verify")
+  @AccessTokenRequired
   @Operation(summary = "驗證信箱 OTP")
-  public IdentityOtpVerifyResponse verifyIdentityOtp(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth,
-      @RequestBody IdentityOtpVerifyRequest req) {
-    return memberService.verifyIdentityOtp(auth, req);
+  public IdentityOtpVerifyResponse verifyIdentityOtp(@RequestBody IdentityOtpVerifyRequest req) {
+    return memberService.verifyIdentityOtp(authContext.getCurrentMemberId(), req);
   }
 
   @PostMapping("/email/change-otp")
+  @AccessTokenRequired
   @Operation(summary = "發送新信箱 OTP")
-  public OtpTokenResponse sendEmailChangeOtp(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth,
-      @RequestBody EmailChangeOtpRequest req) {
-    return memberService.sendEmailChangeOtp(auth, req);
+  public OtpTokenResponse sendEmailChangeOtp(@RequestBody EmailChangeOtpRequest req) {
+    return memberService.sendEmailChangeOtp(authContext.getCurrentMemberId(), req);
   }
 
   @PostMapping("/email")
+  @AccessTokenRequired
   @Operation(summary = "更新信箱")
-  public EmailChangeResponse changeEmail(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String auth,
-      @RequestBody EmailChangeRequest req) {
-    return memberService.changeEmail(auth, req);
+  public EmailChangeResponse changeEmail(@RequestBody EmailChangeRequest req) {
+    return memberService.changeEmail(authContext.getCurrentMemberId(), req);
   }
 
 }
