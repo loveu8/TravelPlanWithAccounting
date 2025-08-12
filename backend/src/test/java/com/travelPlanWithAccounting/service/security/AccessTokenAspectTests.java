@@ -43,7 +43,7 @@ class AccessTokenAspectTests {
   @Test
   void validToken() throws Exception {
     UUID id = UUID.randomUUID();
-    Claims claims = Jwts.claims().setSubject(id.toString());
+    Claims claims = Jwts.claims().subject(id.toString()).build();
     Jws<Claims> jws = mock(Jws.class);
     when(jws.getPayload()).thenReturn(claims);
     when(jwtUtil.verify("good")).thenReturn(jws);
