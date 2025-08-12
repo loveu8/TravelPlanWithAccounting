@@ -349,3 +349,16 @@ async function loginFlow() {
 ---
 
 > 若有任何錯誤，API 會回傳友善的錯誤訊息，請依照訊息提示操作。
+
+## Access Token 驗證與 AuthContext 使用
+
+- 需驗證 Access Token 的 API 於 Controller 方法上加上 `@AccessTokenRequired`。
+- 驗證成功後，會員 ID 會透過 `AuthContext` 以 `ThreadLocal` 暫存，可在下游服務取得。
+- 取得範例：
+
+```java
+@Autowired AuthContext authContext;
+UUID memberId = authContext.getCurrentMemberId();
+```
+
+- 驗證失敗或未帶 Token 時將回傳 `401 Unauthorized`。
