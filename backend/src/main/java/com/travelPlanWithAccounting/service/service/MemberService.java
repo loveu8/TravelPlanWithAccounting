@@ -22,10 +22,7 @@ import com.travelPlanWithAccounting.service.model.OtpPurpose;
 import com.travelPlanWithAccounting.service.repository.AuthInfoRepository;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.repository.SettingRepository;
-import com.travelPlanWithAccounting.service.security.JwtUtil;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -54,7 +51,6 @@ public class MemberService {
   private final MemberRepository memberRepository;
   private final OtpService otpService;
   private final RefreshTokenService refreshTokenService;
-  private final JwtUtil jwtUtil;
   private final SettingRepository settingRepository;
   private final AuthInfoRepository authInfoRepository;
   private final MessageSource messageSource;
@@ -117,8 +113,7 @@ public class MemberService {
 
   /** 發送舊信箱 OTP */
   @Transactional
-  public OtpTokenResponse sendIdentityOtp(String authHeader) {
-    UUID memberId = resolveMemberId(authHeader);
+  public OtpTokenResponse sendIdentityOtp(UUID memberId) {
     Member member =
         memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
     if (member.getStatus() == null || member.getStatus() != 1) {
@@ -131,9 +126,7 @@ public class MemberService {
 
   /** 驗證舊信箱 OTP，回傳 identity token */
   @Transactional
-  public IdentityOtpVerifyResponse verifyIdentityOtp(
-      String authHeader, IdentityOtpVerifyRequest req) {
-    UUID memberId = resolveMemberId(authHeader);
+  public IdentityOtpVerifyResponse verifyIdentityOtp(UUID memberId, IdentityOtpVerifyRequest req) {
     Member member =
         memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
     if (member.getStatus() == null || member.getStatus() != 1) {
@@ -159,8 +152,7 @@ public class MemberService {
 
   /** 發送新信箱 OTP */
   @Transactional
-  public OtpTokenResponse sendEmailChangeOtp(String authHeader, EmailChangeOtpRequest req) {
-    UUID memberId = resolveMemberId(authHeader);
+  public OtpTokenResponse sendEmailChangeOtp(UUID memberId, EmailChangeOtpRequest req) {
     Member member =
         memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
     if (member.getStatus() == null || member.getStatus() != 1) {
@@ -194,8 +186,7 @@ public class MemberService {
 
   /** 更新信箱 */
   @Transactional
-  public EmailChangeResponse changeEmail(String authHeader, EmailChangeRequest req) {
-    UUID memberId = resolveMemberId(authHeader);
+  public EmailChangeResponse changeEmail(UUID memberId, EmailChangeRequest req) {
     Member member =
         memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
     if (member.getStatus() == null || member.getStatus() != 1) {
@@ -277,8 +268,7 @@ public class MemberService {
    * 查詢會員資料。
    */
   @Transactional(readOnly = true)
-  public MemberProfileResponse getProfile(String authHeader) {
-    UUID memberId = resolveMemberId(authHeader);
+  public MemberProfileResponse getProfile(UUID memberId) {
     Member member =
         memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
     if (member.getStatus() == null || member.getStatus() != 1) {
@@ -292,8 +282,7 @@ public class MemberService {
    */
   @Transactional
   public MemberProfileResponse updateProfile(
-      String authHeader, MemberProfileUpdateRequest req) {
-    UUID memberId = resolveMemberId(authHeader);
+      UUID memberId, MemberProfileUpdateRequest req) {
     Member member =
         memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
     if (member.getStatus() == null || member.getStatus() != 1) {
@@ -323,21 +312,6 @@ public class MemberService {
             .map(Setting::getCodeName)
             .orElse(member.getLangType() == null ? "001" : member.getLangType());
     member.setLangType(code);
-  }
-
-  private UUID resolveMemberId(String authHeader) {
-    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-      throw new MemberException.AccessTokenInvalid();
-    }
-    String token = authHeader.substring(7);
-    try {
-      var jws = jwtUtil.verify(token);
-      return UUID.fromString(jws.getPayload().getSubject());
-    } catch (ExpiredJwtException ex) {
-      throw new MemberException.AccessTokenExpired();
-    } catch (JwtException | IllegalArgumentException ex) {
-      throw new MemberException.AccessTokenInvalid();
-    }
   }
 
   private MemberProfileResponse toProfileResponse(Member member) {
