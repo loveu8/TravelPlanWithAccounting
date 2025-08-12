@@ -4,8 +4,12 @@ import java.util.UUID;
 
 /**
  * 從安全框架 (JWT / session) 取得登入會員。
- * 實作例：AuthContextImpl 於 SecurityConfig 透過 SecurityContextHolder 解析。
+ * 由 AOP 在驗證 Access Token 後寫入 ThreadLocal。
  */
 public interface AuthContext {
   UUID getCurrentMemberId();
+
+  void setCurrentMemberId(UUID id);
+
+  void clear();
 }
