@@ -6,14 +6,14 @@ import java.util.UUID;
 import lombok.Data;
 
 @Data
-public class TravelDetailRequest {
+public class TransI18nRequest {
     private UUID id;
-    private UUID travelMainId;
-    private UUID travelDateId;
-    private UUID poiId;
-    private String sort;
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private UUID startDetailId;
+    private UUID endDetailId;
+    private String infosRaw;
+    private String transType;
+    private LocalTime transTime;
+    private String summary;
     private String notes;
     private UUID createdBy;
 }

@@ -1,5 +1,14 @@
 package com.travelPlanWithAccounting.service.entity;
 
+import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,17 +16,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
-import java.io.Serializable;
-import java.time.Instant;
-import java.time.LocalTime;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Valid
@@ -42,6 +44,9 @@ public class TravelDetail implements Serializable {
 
   @Column(name = "poi_id", nullable = false)
   private UUID poiId; // 不建立雙向關聯
+
+  @Column(name = "sort", nullable = false)
+  private String sort;
 
   @Column(name = "start_time", nullable = false)
   private LocalTime startTime;
