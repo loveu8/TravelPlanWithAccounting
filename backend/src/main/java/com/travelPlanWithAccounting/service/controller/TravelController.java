@@ -164,8 +164,8 @@ public class TravelController {
     @PostMapping("/createTravelDetail")
     public ResponseEntity<?> createTravelDetail(@RequestBody TravelDetailRequest request) {
         try {
-            if (request.getTravelMainId() == null || request.getTravelDateId() == null || request.getType() == null) {
-                return ResponseEntity.badRequest().body("行程主表ID、行程日期ID和類型不能為空。");
+            if (request.getTravelMainId() == null || request.getTravelDateId() == null) {
+                return ResponseEntity.badRequest().body("行程主表ID、行程日期ID不能為空。");
             }
             TravelDetail newTravelDetail = travelService.createTravelDetail(request);
             return new ResponseEntity<>(newTravelDetail, HttpStatus.CREATED);
