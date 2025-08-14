@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 public class TransI18nRequest {
     private UUID id;
+    private String langType;
     private UUID startDetailId;
     private UUID endDetailId;
     private String infosRaw;

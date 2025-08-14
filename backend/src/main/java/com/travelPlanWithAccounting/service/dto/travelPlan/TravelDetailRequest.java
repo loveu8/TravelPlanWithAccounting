@@ -11,7 +11,7 @@ public class TravelDetailRequest {
     private UUID travelMainId;
     private UUID travelDateId;
     private UUID poiId;
-    private String sort;
+    private Integer sort;
     private LocalTime startTime;
     private LocalTime endTime;
     private String notes;

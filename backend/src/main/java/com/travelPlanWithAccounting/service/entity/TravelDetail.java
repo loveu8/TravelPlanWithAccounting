@@ -7,7 +7,9 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -46,7 +48,8 @@ public class TravelDetail implements Serializable {
   private UUID poiId; // 不建立雙向關聯
 
   @Column(name = "sort", nullable = false)
-  private String sort;
+  @JdbcTypeCode(SqlTypes.SMALLINT)
+  private Integer sort;
 
   @Column(name = "start_time", nullable = false)
   private LocalTime startTime;

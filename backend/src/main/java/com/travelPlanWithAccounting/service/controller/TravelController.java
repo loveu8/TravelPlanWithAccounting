@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.travelPlanWithAccounting.service.dto.UuidRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
 import com.travelPlanWithAccounting.service.entity.TravelDate;
@@ -187,6 +188,19 @@ public class TravelController {
             return ResponseEntity.badRequest().body(e.getMessage()); // ID 為空時的處理
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("更新行程詳情時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/reorderTravelDetail")
+    public ResponseEntity<?> reorderTravelDetail(@RequestBody List<TravelDetailSortRequest> requests) {
+        try {
+        travelService.reorderTravelDetails(requests);
+        return ResponseEntity.ok().build();
+        } catch (NoSuchElementException | IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("重新排序行程詳情時發生未知錯誤: " + e.getMessage());
         }
     }
 
