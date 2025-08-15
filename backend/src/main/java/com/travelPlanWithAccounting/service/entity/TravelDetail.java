@@ -60,6 +60,9 @@ public class TravelDetail implements Serializable {
   @Column(name = "notes", columnDefinition = "TEXT")
   private String notes;
 
+  @Column(name = "is_time_conflict", nullable = false)
+  private boolean timeConflict;
+
   @Column(name = "created_by")
   private UUID createdBy;
 

@@ -14,6 +14,7 @@ public class TravelDetailRequest {
     private Integer sort;
     private LocalTime startTime;
     private LocalTime endTime;
+    private boolean timeConflict;
     private String notes;
     private UUID createdBy;
 }
