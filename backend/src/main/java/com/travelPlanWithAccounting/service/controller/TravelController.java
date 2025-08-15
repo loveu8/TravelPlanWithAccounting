@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.travelPlanWithAccounting.service.dto.UuidRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
@@ -89,6 +90,20 @@ public class TravelController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到會員ID為 " + request.getId() + " 的行程主表。");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("根據會員ID獲取行程主表時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/copyTravelPlan")
+    public ResponseEntity<?> copyTravelPlan(@RequestBody TravelCopyRequest request) {
+        try {
+            TravelMainResponse response = travelService.copyTravelPlan(request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("複製行程時發生未知錯誤: " + e.getMessage());
         }
     }
 

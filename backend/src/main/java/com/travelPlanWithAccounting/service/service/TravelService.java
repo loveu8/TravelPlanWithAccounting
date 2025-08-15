@@ -5,7 +5,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -15,10 +17,12 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
+import com.travelPlanWithAccounting.service.entity.TransI18n;
 import com.travelPlanWithAccounting.service.entity.TravelDate;
 import com.travelPlanWithAccounting.service.entity.TravelDetail;
 import com.travelPlanWithAccounting.service.entity.TravelMain;
@@ -434,5 +438,88 @@ public class TravelService {
     existingTravelDetail.setUpdatedBy(request.getCreatedBy()); // 假設 request.createdBy 是更新人
 
     return travelDetailRepository.save(existingTravelDetail);
+  }
+
+  @Transactional
+  public TravelMainResponse copyTravelPlan(TravelCopyRequest request) {
+    if (request.getId() == null || request.getMemberId() == null) {
+      throw new IllegalArgumentException("行程主表ID與會員ID不能為空。");
+    }
+
+    if (!memberRepository.existsById(request.getMemberId())) {
+      throw new NoSuchElementException("找不到ID為 " + request.getMemberId() + " 的會員。");
+    }
+
+    TravelMain sourceTravelMain =
+        travelMainRepository
+            .findById(request.getId())
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "找不到ID為 " + request.getId() + " 的行程主表。"));
+
+    TravelMain newTravelMain = new TravelMain();
+    newTravelMain.setMemberId(request.getMemberId());
+    newTravelMain.setIsPrivate(sourceTravelMain.getIsPrivate());
+    newTravelMain.setStartDate(sourceTravelMain.getStartDate());
+    newTravelMain.setEndDate(sourceTravelMain.getEndDate());
+    newTravelMain.setTitle(sourceTravelMain.getTitle());
+    newTravelMain.setNotes(sourceTravelMain.getNotes());
+    newTravelMain.setVisitPlace(sourceTravelMain.getVisitPlace());
+    newTravelMain.setCreatedBy(request.getCreatedBy());
+    newTravelMain = travelMainRepository.save(newTravelMain);
+
+    List<TravelDate> sourceDates = travelDateRepository.findByTravelMainId(sourceTravelMain.getId());
+    Map<UUID, UUID> dateIdMap = new HashMap<>();
+    List<TravelDate> newDates = new ArrayList<>();
+    for (TravelDate date : sourceDates) {
+      TravelDate newDate = new TravelDate();
+      newDate.setTravelMainId(newTravelMain.getId());
+      newDate.setTravelDate(date.getTravelDate());
+      newDate.setCreatedBy(request.getCreatedBy());
+      newDate = travelDateRepository.save(newDate);
+      dateIdMap.put(date.getId(), newDate.getId());
+      newDates.add(newDate);
+    }
+
+    Map<UUID, UUID> detailIdMap = new HashMap<>();
+    for (TravelDate date : sourceDates) {
+      List<TravelDetail> details = travelDetailRepository.findByTravelDateId(date.getId());
+      UUID newDateId = dateIdMap.get(date.getId());
+      for (TravelDetail detail : details) {
+        TravelDetail newDetail = new TravelDetail();
+        newDetail.setTravelMainId(newTravelMain.getId());
+        newDetail.setTravelDateId(newDateId);
+        newDetail.setPoiId(detail.getPoiId());
+        newDetail.setSort(detail.getSort());
+        newDetail.setStartTime(detail.getStartTime());
+        newDetail.setEndTime(detail.getEndTime());
+        newDetail.setNotes(detail.getNotes());
+        newDetail.setCreatedBy(request.getCreatedBy());
+        newDetail = travelDetailRepository.save(newDetail);
+        detailIdMap.put(detail.getId(), newDetail.getId());
+      }
+    }
+
+    if (!detailIdMap.isEmpty()) {
+      List<UUID> detailIds = new ArrayList<>(detailIdMap.keySet());
+      List<TransI18n> transList =
+          transI18nRepository.findByStartDetailIdInOrEndDetailIdIn(detailIds, detailIds);
+      for (TransI18n trans : transList) {
+        TransI18n newTrans = new TransI18n();
+        newTrans.setLangType(trans.getLangType());
+        newTrans.setStartDetailId(detailIdMap.get(trans.getStartDetailId()));
+        newTrans.setEndDetailId(detailIdMap.get(trans.getEndDetailId()));
+        newTrans.setInfosRaw(trans.getInfosRaw());
+        newTrans.setTransType(trans.getTransType());
+        newTrans.setTransTime(trans.getTransTime());
+        newTrans.setSummary(trans.getSummary());
+        newTrans.setNotes(trans.getNotes());
+        newTrans.setCreatedBy(request.getCreatedBy());
+        transI18nRepository.save(newTrans);
+      }
+    }
+
+    return new TravelMainResponse(newTravelMain, newDates);
   }
 }
