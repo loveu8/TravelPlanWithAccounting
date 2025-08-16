@@ -43,4 +43,8 @@ public class Setting extends BaseEntity {
     @OneToMany(mappedBy = "setting", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<SettingLog> settingLogs;
+
+    @OneToMany(mappedBy = "setting", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private List<SettingI18n> settingI18ns;
 }

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,14 +42,17 @@ public class SearchController {
 
   @GetMapping("/settings/{category}")
   @Operation(summary = "根據類別查詢設定")
-  public List<SettingResponse> getSettingsByCategory(@PathVariable String category) {
-    return settingService.getSettingsByCategory(category);
+  public List<SettingResponse> getSettingsByCategory(
+      @PathVariable String category,
+      @RequestHeader(value = "Accept-Language", required = false) String lang) {
+    return settingService.getSettingsByCategory(category, lang);
   }
 
   @GetMapping("/settings/language-types")
   @Operation(summary = "查詢所有語言類型設定")
-  public List<SettingResponse> getAllLanguageTypes() {
-    return settingService.getAllLanguageTypes();
+  public List<SettingResponse> getAllLanguageTypes(
+      @RequestHeader(value = "Accept-Language", required = false) String lang) {
+    return settingService.getSettingsByCategory("LANG_TYPE", lang);
   }
 
   // ==================== 原有的搜尋 API ====================

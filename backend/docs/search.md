@@ -209,8 +209,12 @@ sequenceDiagram
 ### 7. 根據類別查詢設定 ⭐
 
 - **API**: `GET /api/search/settings/{category}`
-- **描述**: 根據類別查詢設定，目前只支援 `LANG_TYPE`
+- **描述**: 根據類別查詢設定，支援 `POI_TYPE`、`LANG_TYPE`
 - **請求參數**:
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+    | `Accept-Language` | String | 否   | 語言類型 (預設 zh-TW)   |
   - **路徑參數**:
     | 參數      | 型別   | 必填 | 說明              |
     |-----------|--------|------|-------------------|
@@ -220,16 +224,11 @@ sequenceDiagram
   ```json
   [
     {
-      "category": "LANG_TYPE",
-      "name": "繁體中文",
-      "codeName": "zh-TW",
-      "codeDesc": "繁體中文(台灣)"
-    },
-    {
-      "category": "LANG_TYPE",
-      "name": "English",
-      "codeName": "en-US",
-      "codeDesc": "English(USA)"
+      "category": "POI_TYPE",
+      "codeName": "P001",
+      "codeDesc": "FOOD_DRINK",
+      "name": "Restaurants",
+      "description": "Food & Drink"
     }
   ]
   ```
@@ -238,22 +237,21 @@ sequenceDiagram
 
 - **API**: `GET /api/search/settings/language-types`
 - **描述**: 專門用於查詢語言類型設定的快捷端點
-- **請求參數**: 無
+- **請求參數**:
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+    | `Accept-Language` | String | 否   | 語言類型 (預設 zh-TW)   |
 - **回應**: List<Setting>
 - **回應範例**:
   ```json
   [
     {
       "category": "LANG_TYPE",
-      "name": "繁體中文",
       "codeName": "zh-TW",
-      "codeDesc": "繁體中文(台灣)"
-    },
-    {
-      "category": "LANG_TYPE",
-      "name": "English",
-      "codeName": "en-US",
-      "codeDesc": "English(USA)"
+      "codeDesc": "ZH_TW",
+      "name": "繁體中文（台灣）",
+      "description": "介面語言：繁體中文（台灣）"
     }
   ]
   ```
@@ -475,12 +473,14 @@ const textSearch = await fetch('/api/search/searchTextByLocationCode', {
 }).then(res => res.json());
 
 // 5. 查詢語言類型設定
-const languageTypes = await fetch('/api/search/settings/LANG_TYPE')
-  .then(res => res.json());
+const languageTypes = await fetch('/api/search/settings/LANG_TYPE', {
+  headers: { 'Accept-Language': 'en-US' }
+}).then(res => res.json());
 
 // 6. 查詢所有語言類型設定
-const allLanguageTypes = await fetch('/api/search/settings/language-types')
-  .then(res => res.json());
+const allLanguageTypes = await fetch('/api/search/settings/language-types', {
+  headers: { 'Accept-Language': 'en-US' }
+}).then(res => res.json());
 
 // 7. 取得地點詳細資訊
 const placeDetails = await fetch('/api/search/placeDetails?placeId=ChIJN1t_tDeuEmsRUsoyG83frY4', {
