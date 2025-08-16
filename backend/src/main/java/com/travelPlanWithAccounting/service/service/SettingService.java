@@ -8,6 +8,7 @@ import com.travelPlanWithAccounting.service.validator.Validator;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,19 +19,18 @@ public class SettingService {
   @Autowired private LangTypeMapper langTypeMapper;
 
   /**
-   * 根據類別查詢設定，並依據語系回傳對應資料。
+   * 根據類別查詢設定，並依據當前語系回傳對應資料。
    *
    * @param category 設定類別
-   * @param lang Accept-Language 標頭
    * @return List<SettingResponse>
    */
   @Cacheable(
       value = CacheConstants.SETTING_CACHE,
-      key = "#category + '::' + (#lang == null || #lang.isEmpty() ? 'zh-TW' : #lang)")
-  public List<SettingResponse> getSettingsByCategory(String category, String lang) {
+      key = "#category + '::' + T(org.springframework.context.i18n.LocaleContextHolder).getLocale().toLanguageTag()")
+  public List<SettingResponse> getSettingsByCategory(String category) {
     coommonValidator.validateCategory(category);
 
-    String language = (lang == null || lang.isEmpty()) ? "zh-TW" : lang;
+    String language = LocaleContextHolder.getLocale().toLanguageTag();
     coommonValidator.validate(language);
     String langCode = langTypeMapper.toCode(language);
 
