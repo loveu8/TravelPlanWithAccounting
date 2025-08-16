@@ -13,15 +13,18 @@ import lombok.NoArgsConstructor;
 @Schema(description = "設定回應 DTO")
 public class SettingResponse {
 
-  @Schema(description = "設定類別", example = "LANG_TYPE")
+  @Schema(description = "設定類別", example = "POI_TYPE")
   private String category;
 
-  @Schema(description = "設定名稱", example = "繁體中文")
-  private String name;
-
-  @Schema(description = "設定代碼", example = "zh-TW")
+  @Schema(description = "設定代碼", example = "P001")
   private String codeName;
 
-  @Schema(description = "設定描述", example = "繁體中文(台灣)")
+  @Schema(description = "固定描述代碼", example = "FOOD_DRINK")
   private String codeDesc;
+
+  @Schema(description = "顯示名稱", example = "Restaurants")
+  private String name;
+
+  @Schema(description = "設定描述", example = "Food & Drink")
+  private String description;
 }

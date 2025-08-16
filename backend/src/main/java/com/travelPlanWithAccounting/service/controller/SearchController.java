@@ -48,7 +48,7 @@ public class SearchController {
   @GetMapping("/settings/language-types")
   @Operation(summary = "查詢所有語言類型設定")
   public List<SettingResponse> getAllLanguageTypes() {
-    return settingService.getAllLanguageTypes();
+    return settingService.getSettingsByCategory("LANG_TYPE");
   }
 
   // ==================== 原有的搜尋 API ====================

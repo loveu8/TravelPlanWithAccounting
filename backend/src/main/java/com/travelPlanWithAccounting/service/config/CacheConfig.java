@@ -20,6 +20,7 @@ public class CacheConfig {
         CacheConstants.ONE_TIME_TOKEN_CACHE,
         CacheConstants.REFRESH_TOKEN_CACHE,
         CacheConstants.USER_TOKENS_CACHE,
-        CacheConstants.OTP_VERIFIED_TOKEN_CACHE);
+        CacheConstants.OTP_VERIFIED_TOKEN_CACHE,
+        CacheConstants.SETTING_CACHE);
   }
 }
