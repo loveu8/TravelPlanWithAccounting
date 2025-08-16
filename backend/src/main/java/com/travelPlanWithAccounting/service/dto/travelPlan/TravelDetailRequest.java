@@ -10,10 +10,11 @@ public class TravelDetailRequest {
     private UUID id;
     private UUID travelMainId;
     private UUID travelDateId;
-    private String type;
+    private UUID poiId;
+    private Integer sort;
     private LocalTime startTime;
     private LocalTime endTime;
-    private String googleMapInfo;
+    private boolean timeConflict;
     private String notes;
     private UUID createdBy;
 }

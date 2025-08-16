@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.travelPlanWithAccounting.service.dto.UuidRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
 import com.travelPlanWithAccounting.service.entity.TravelDate;
@@ -91,6 +93,20 @@ public class TravelController {
         }
     }
 
+    @PostMapping("/copyTravelPlan")
+    public ResponseEntity<?> copyTravelPlan(@RequestBody TravelCopyRequest request) {
+        try {
+            TravelMainResponse response = travelService.copyTravelPlan(request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("複製行程時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/addTravelDate")
     public ResponseEntity<?> addTravelDate(@RequestBody TravelDateRequest request) {
         try {    
@@ -164,8 +180,8 @@ public class TravelController {
     @PostMapping("/createTravelDetail")
     public ResponseEntity<?> createTravelDetail(@RequestBody TravelDetailRequest request) {
         try {
-            if (request.getTravelMainId() == null || request.getTravelDateId() == null || request.getType() == null) {
-                return ResponseEntity.badRequest().body("行程主表ID、行程日期ID和類型不能為空。");
+            if (request.getTravelMainId() == null || request.getTravelDateId() == null) {
+                return ResponseEntity.badRequest().body("行程主表ID、行程日期ID不能為空。");
             }
             TravelDetail newTravelDetail = travelService.createTravelDetail(request);
             return new ResponseEntity<>(newTravelDetail, HttpStatus.CREATED);
@@ -187,6 +203,19 @@ public class TravelController {
             return ResponseEntity.badRequest().body(e.getMessage()); // ID 為空時的處理
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("更新行程詳情時發生未知錯誤: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/reorderTravelDetail")
+    public ResponseEntity<?> reorderTravelDetail(@RequestBody List<TravelDetailSortRequest> requests) {
+        try {
+        travelService.reorderTravelDetails(requests);
+        return ResponseEntity.ok().build();
+        } catch (NoSuchElementException | IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("重新排序行程詳情時發生未知錯誤: " + e.getMessage());
         }
     }
 

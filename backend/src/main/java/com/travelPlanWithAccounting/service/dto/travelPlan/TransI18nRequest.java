@@ -1,4 +1,4 @@
-package com.travelPlanWithAccounting.service.dto.transI18n;
+package com.travelPlanWithAccounting.service.dto.travelPlan;
 
 import java.time.LocalTime;
 import java.util.UUID;
