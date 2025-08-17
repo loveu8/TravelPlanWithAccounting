@@ -51,6 +51,7 @@ sequenceDiagram
 | GET    | `/api/search/settings/{category}`         | 根據類別查詢設定         |
 | GET    | `/api/search/settings/language-types`     | 查詢所有語言類型設定     |
 | GET    | `/api/search/placeDetails`                | 取得地點詳細資訊 (含照片) |
+| POST   | `/api/search/memberPois`                  | 取得會員收藏景點清單 ⭐ |
 | POST   | `/api/search/saveMemberPoi`               | 儲存會員景點 ⭐          |
 
 ## API 詳細說明
@@ -346,6 +347,61 @@ sequenceDiagram
   | `unsupported langType`      | 不支援的語言類型     | 檢查 `langType` 是否正確  |
   | `place not found`           | 找不到指定景點       | 確認 `placeId` 是否有效   |
   | `place missing required fields` | 景點缺少必要欄位 | 選擇其他景點              |
+
+### 11. 取得會員收藏景點清單 ⭐
+
+- **API**: `POST /api/search/memberPois`
+- **描述**: 取得會員依指定類型的收藏景點，並回傳分頁資訊。
+- **認證**: 需要 Bearer Token 驗證
+- **請求參數**:
+  - **標頭**:
+    | 標頭            | 型別   | 必填 | 說明                    |
+    |-----------------|--------|------|-------------------------|
+    | `Authorization` | String | 是   | Bearer Token 格式       |
+    | `Accept-Language` | String | 否 | 語言類型 (如：zh-TW, en-US) |
+  - **請求體**:
+    | 參數            | 型別   | 必填 | 說明                              |
+    |-----------------|--------|------|-----------------------------------|
+    | `poiType`       | String | 是   | 景點類型代碼 (P001–P018)          |
+    | `page`          | Integer| 否   | 頁碼，預設 1                      |
+    | `maxResultCount`| Integer| 否   | 每頁筆數，預設 5，範圍 5–20       |
+  - **請求體範例**:
+    ```json
+    {
+      "poiType": "P001",
+      "page": 1,
+      "maxResultCount": 5
+    }
+    ```
+- **回應**: `MemberPoiListResponse`
+- **回應範例**:
+    ```json
+    {
+      "list": [
+        {
+          "placeId": "ChIJNw3g1QZePjURMSN68fjJ92o",
+          "name": "Yozan Museum",
+          "city": "Kagoshima",
+          "photoUrl": "https://.../media?key=API_KEY&maxWidthPx=400",
+          "rating": 2.8
+        }
+      ],
+      "meta": {
+        "page": 1,
+        "size": 5,
+        "totalPages": 3,
+        "totalElements": 13,
+        "hasNext": true,
+        "hasPrev": false
+      }
+    }
+    ```
+- **常見錯誤**:
+  | 錯誤代碼                  | 說明                 |
+  |---------------------------|----------------------|
+  | `invalid poi type`        | poiType 不在允許範圍 |
+  | `invalid max result count`| 每頁筆數不在範圍內   |
+  | `invalid page`            | page 必須 >= 1       |
 
 ## 共同資料結構
 
