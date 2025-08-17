@@ -3,6 +3,8 @@ package com.travelPlanWithAccounting.service.controller;
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListResponse;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
@@ -93,6 +95,14 @@ public class SearchController {
   @Operation(summary = "取得地點詳細資訊 (含照片)")
   public PlaceDetailResponse getPlaceDetails(@RequestParam String placeId) {
     return searchService.getPlaceDetailById(placeId);
+  }
+
+  @PostMapping("/memberPois")
+  @AccessTokenRequired
+  @Operation(summary = "取得會員收藏景點清單")
+  public MemberPoiListResponse getMemberPoiList(
+      @Valid @RequestBody MemberPoiListRequest req) {
+    return searchService.getMemberPoiList(authContext.getCurrentMemberId(), req);
   }
 
   @PostMapping("/saveMemberPoi")

@@ -5,6 +5,8 @@ import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.google.PlaceDetailRequestPost;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListResponse;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
@@ -12,6 +14,7 @@ import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
+import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
@@ -24,6 +27,7 @@ import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
 import com.travelPlanWithAccounting.service.mapper.InfoAggregator;
 import com.travelPlanWithAccounting.service.repository.MemberPoiRepository;
+import com.travelPlanWithAccounting.service.repository.MemberPoiRepository.MemberPoiProjection;
 import com.travelPlanWithAccounting.service.repository.PoiI18nRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
@@ -35,6 +39,7 @@ import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
 import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
+import com.travelPlanWithAccounting.service.validator.MemberPoiListValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
 import com.travelPlanWithAccounting.service.validator.Validator;
 import jakarta.transaction.Transactional;
@@ -47,6 +52,9 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -82,6 +90,7 @@ public class SearchService {
   @Autowired private PoiLanguageEnrichmentPublisher enrichmentPublisher;
   @Autowired private PlaceDetailFacade placeDetailFacade;
   @Autowired private JsonHelper jsonHelper;
+  @Autowired private MemberPoiListValidator memberPoiListValidator;
 
   public List<Region> searchRegions(String countryCode) {
     String langType = LocaleContextHolder.getLocale().toLanguageTag();
@@ -232,6 +241,49 @@ public class SearchService {
     }
 
     return placeDetailMapper.toDto(json, false);
+  }
+
+  public MemberPoiListResponse getMemberPoiList(UUID memberId, MemberPoiListRequest req) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
+    String langCode = langTypeMapper.toCode(langType);
+
+    memberPoiListValidator.validate(req.getPoiType(), req.getPage(), req.getMaxResultCount());
+
+    int page = req.getPage() == null ? 1 : req.getPage();
+    int size = req.getMaxResultCount() == null ? 5 : req.getMaxResultCount();
+
+    Pageable pageable = PageRequest.of(page - 1, size);
+    Page<MemberPoiProjection> result =
+        memberPoiRepository.findMemberPoiList(memberId, req.getPoiType(), langCode, pageable);
+
+    List<LocationSearch> list =
+        result.getContent().stream()
+            .map(
+                p -> {
+                  LocationSearch loc = new LocationSearch();
+                  loc.setPlaceId(p.getPlaceId());
+                  loc.setName(p.getName());
+                  loc.setCity(p.getCity());
+                  loc.setPhotoUrl(p.getPhotoUrl());
+                  loc.setRating(p.getRating());
+                  return loc;
+                })
+            .toList();
+
+    PageMeta meta =
+        PageMeta.builder()
+            .page(result.getNumber() + 1)
+            .size(result.getSize())
+            .totalPages(result.getTotalPages())
+            .totalElements(result.getTotalElements())
+            .hasNext(result.hasNext())
+            .hasPrev(result.hasPrevious())
+            .build();
+
+    MemberPoiListResponse resp = new MemberPoiListResponse();
+    resp.setList(list);
+    resp.setMeta(meta);
+    return resp;
   }
 
   @Transactional

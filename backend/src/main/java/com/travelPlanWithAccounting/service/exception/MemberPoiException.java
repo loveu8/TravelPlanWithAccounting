@@ -25,4 +25,22 @@ public class MemberPoiException extends ApiException {
       super(MemberPoiMessageCode.PLACE_REQUIRED_MISSING);
     }
   }
+
+  public static class InvalidPoiType extends ApiException {
+    public InvalidPoiType() {
+      super(MemberPoiMessageCode.INVALID_POI_TYPE);
+    }
+  }
+
+  public static class InvalidMaxResultCount extends ApiException {
+    public InvalidMaxResultCount() {
+      super(MemberPoiMessageCode.INVALID_MAX_RESULT_COUNT);
+    }
+  }
+
+  public static class InvalidPage extends ApiException {
+    public InvalidPage() {
+      super(MemberPoiMessageCode.INVALID_PAGE);
+    }
+  }
 }

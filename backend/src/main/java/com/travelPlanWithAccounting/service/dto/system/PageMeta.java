@@ -21,4 +21,6 @@ public class PageMeta implements Serializable {
   private int size;
   private int totalPages;
   private long totalElements;
+  private boolean hasNext;
+  private boolean hasPrev;
 }
