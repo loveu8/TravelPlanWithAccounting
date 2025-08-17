@@ -29,6 +29,7 @@
     "otp-resend": "重新取得驗證碼",
     "valid-time": "有效時間: {{time}} 秒"
   },
+  "logout": "登出",
   "account": {
     "surname": "姓氏",
     "given-name": "名字",

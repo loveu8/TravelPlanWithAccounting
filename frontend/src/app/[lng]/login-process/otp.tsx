@@ -20,8 +20,12 @@ export type OTPImperativeHandle = {
 };
 
 export default function OTPDialog({
+  title,
+  buttonText,
   ref,
 }: {
+  title?: string;
+  buttonText?: string;
   ref?: React.RefObject<OTPImperativeHandle | null>;
 }) {
   const { t } = useT("common");
@@ -99,7 +103,7 @@ export default function OTPDialog({
           onSubmit={open ? handleSubmit : (e) => e.preventDefault()}
         >
           <Grid columns="1" gap="5">
-            <DialogHeader title={t("login.otp")}></DialogHeader>
+            <DialogHeader title={title || t("login.otp")}></DialogHeader>
             <DialogBody>
               <OneTimePasswordField.Root name="otp" id="otp">
                 <Grid columns="6" gap="2" width="250px" className="mx-auto">
@@ -133,7 +137,10 @@ export default function OTPDialog({
               )}
             </DialogBody>
             <DialogFooter justify="center" withCloseBtn>
-              <Button type="submit" text={t("login.button-login")}></Button>
+              <Button
+                type="submit"
+                text={buttonText || t("login.button-login")}
+              ></Button>
             </DialogFooter>
           </Grid>
         </form>
