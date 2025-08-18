@@ -43,4 +43,10 @@ public class MemberPoiException extends ApiException {
       super(MemberPoiMessageCode.INVALID_PAGE);
     }
   }
+
+  public static class MemberPoiNotFound extends ApiException {
+    public MemberPoiNotFound() {
+      super(MemberPoiMessageCode.MEMBER_POI_NOT_FOUND);
+    }
+  }
 }

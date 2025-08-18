@@ -53,6 +53,7 @@ sequenceDiagram
 | GET    | `/api/search/placeDetails`                | 取得地點詳細資訊 (含照片) |
 | POST   | `/api/search/memberPois`                  | 取得會員收藏景點清單 ⭐ |
 | POST   | `/api/search/saveMemberPoi`               | 儲存會員景點 ⭐          |
+| DELETE | `/api/search/cancelMemberPois`            | 取消會員收藏景點 ⭐      |
 
 ## API 詳細說明
 
@@ -400,6 +401,30 @@ sequenceDiagram
   | `invalid poi type`        | poiType 不在允許範圍 |
   | `invalid max result count`| 每頁筆數不在範圍內   |
   | `invalid page`            | page 必須 >= 1       |
+
+### 12. 取消會員收藏景點 ⭐
+
+- **API**: `DELETE /api/search/cancelMemberPois`
+- **描述**: 取消會員與指定 POI 的關聯
+- **認證**: 需要 Bearer Token 驗證
+- **請求參數**:
+  - **標頭**:
+    | 標頭            | 型別   | 必填 | 說明                    |
+    |-----------------|--------|------|-------------------------|
+    | `Authorization` | String | 是   | Bearer Token 格式       |
+    | `Accept-Language` | String | 否 | 語言類型 (如：zh-TW, en-US) |
+  - **查詢參數**:
+    | 參數   | 型別 | 必填 | 說明        |
+    |--------|------|------|-------------|
+    | `poiId`| UUID | 是   | 收藏景點 ID |
+- **回應**:
+  ```json
+  { "success": true }
+  ```
+- **常見錯誤**:
+  | 錯誤代碼 | 說明               |
+  |----------|--------------------|
+  | `MP-007` | 未找到對應收藏景點 |
 
 ## 共同資料結構
 

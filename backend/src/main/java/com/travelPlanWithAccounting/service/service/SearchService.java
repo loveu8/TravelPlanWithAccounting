@@ -7,6 +7,7 @@ import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListResponse;
+import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
@@ -18,6 +19,7 @@ import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.entity.MemberPoi;
 import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
 import com.travelPlanWithAccounting.service.exception.MemberException;
@@ -335,6 +337,19 @@ public class SearchService {
         .langInserted(tx.langInserted())
         .alreadySaved(tx.alreadySaved())
         .build();
+  }
+
+  @Transactional
+  public SimpleResult cancelMemberPoi(UUID memberId, UUID poiId) {
+    if (memberId == null) {
+      throw new MemberException.MemberNotFound();
+    }
+    MemberPoi mp =
+        memberPoiRepository
+            .findByMemberIdAndPoi_Id(memberId, poiId)
+            .orElseThrow(MemberPoiException.MemberPoiNotFound::new);
+    memberPoiRepository.delete(mp);
+    return new SimpleResult(true);
   }
 
   @Transactional

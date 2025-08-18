@@ -10,7 +10,8 @@ public enum MemberPoiMessageCode implements MessageCode {
   PLACE_REQUIRED_MISSING("MP-003", HttpStatus.BAD_REQUEST),
   INVALID_POI_TYPE      ("MP-004", HttpStatus.BAD_REQUEST),
   INVALID_MAX_RESULT_COUNT("MP-005", HttpStatus.BAD_REQUEST),
-  INVALID_PAGE          ("MP-006", HttpStatus.BAD_REQUEST);
+  INVALID_PAGE          ("MP-006", HttpStatus.BAD_REQUEST),
+  MEMBER_POI_NOT_FOUND  ("MP-007", HttpStatus.NOT_FOUND);
 
   private final String code;
   private final HttpStatus status;
