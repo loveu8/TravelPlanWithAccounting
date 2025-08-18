@@ -7,6 +7,7 @@ import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListResponse;
+import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
@@ -18,6 +19,7 @@ import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.entity.MemberPoi;
 import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
 import com.travelPlanWithAccounting.service.exception.MemberException;
@@ -226,10 +228,13 @@ public class SearchService {
     Optional<String> cachedJson = poiRepository.findCachedRawJson(placeId, langCode);
     JsonNode json;
     boolean hit = cachedJson.isPresent();
+    UUID poiId = null;
 
     if (hit) {
       log.debug("Cache‑hit placeId={} langType={}", placeId, langType);
       json = jsonHelper.deserializeToNode(cachedJson.get());
+      poiId =
+          poiRepository.findByExternalId(placeId).map(p -> p.getId()).orElse(null);
     } else {
       log.debug("Call api placeId={} langType={}", placeId, langType);
       PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId);
@@ -237,10 +242,13 @@ public class SearchService {
 
       // 2.3) API 成功 → 立即 upsert 進 DB
       PlaceDetailResponse dto = placeDetailMapper.toDto(json, false);
-      upsertPoiAndI18n(dto, langCode); // 共用方法，避免重複
+      TxPoiResult tx = upsertPoiAndI18n(dto, langCode); // 共用方法，避免重複
+      poiId = tx.getPoiId();
     }
 
-    return placeDetailMapper.toDto(json, false);
+    PlaceDetailResponse resp = placeDetailMapper.toDto(json, false);
+    resp.setPoiId(poiId);
+    return resp;
   }
 
   public MemberPoiListResponse getMemberPoiList(UUID memberId, MemberPoiListRequest req) {
@@ -261,6 +269,7 @@ public class SearchService {
             .map(
                 p -> {
                   LocationSearch loc = new LocationSearch();
+                  loc.setPoiId(p.getPoiId());
                   loc.setPlaceId(p.getPlaceId());
                   loc.setName(p.getName());
                   loc.setCity(p.getCity());
@@ -290,17 +299,11 @@ public class SearchService {
   public SaveMemberPoiResponse saveMemberPoi(UUID tokenMemberId, SaveMemberPoiRequest req) {
     String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
-    /* 1) 取最終 memberId：先用 Access-Token，沒有才用 body */
-    UUID memberId =
-        tokenMemberId != null
-            ? tokenMemberId
-            : Optional.ofNullable(req.getMemberId())
-                .filter(s -> !s.isBlank())
-                .map(UUID::fromString)
-                .orElse(null);
+    /* 1) 取最終 memberId：使用 Access-Token */
+    UUID memberId = tokenMemberId;
 
     if (memberId == null) {
-      throw new MemberException.MemberNotFound(); // ← 請在 MemberException 新增 (或沿用現有)
+      throw new MemberException.MemberNotFound();
     }
 
     /* 1.1) 只驗證「存在 + active」，不再比對 body */
@@ -334,6 +337,19 @@ public class SearchService {
         .langInserted(tx.langInserted())
         .alreadySaved(tx.alreadySaved())
         .build();
+  }
+
+  @Transactional
+  public SimpleResult cancelMemberPoi(UUID memberId, UUID poiId) {
+    if (memberId == null) {
+      throw new MemberException.MemberNotFound();
+    }
+    MemberPoi mp =
+        memberPoiRepository
+            .findByMemberIdAndPoi_Id(memberId, poiId)
+            .orElseThrow(MemberPoiException.MemberPoiNotFound::new);
+    memberPoiRepository.delete(mp);
+    return new SimpleResult(true);
   }
 
   @Transactional

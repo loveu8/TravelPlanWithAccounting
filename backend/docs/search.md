@@ -40,7 +40,7 @@ sequenceDiagram
 
 ## API 端點總覽
 
-| 方法   | 端點                                      | 說明                     |
+    | 方法   | 端點                                      | 說明                     |
 |--------|-------------------------------------------|--------------------------|
 | GET    | `/api/search/countries`                   | 取得所有國家列表         |
 | POST   | `/api/search/regions`                     | 取得指定國家的地區和城市 |
@@ -53,6 +53,7 @@ sequenceDiagram
 | GET    | `/api/search/placeDetails`                | 取得地點詳細資訊 (含照片) |
 | POST   | `/api/search/memberPois`                  | 取得會員收藏景點清單 ⭐ |
 | POST   | `/api/search/saveMemberPoi`               | 儲存會員景點 ⭐          |
+| DELETE | `/api/search/cancelMemberPois`            | 取消會員收藏景點 ⭐      |
 
 ## API 詳細說明
 
@@ -64,7 +65,7 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
 - **回應**: List<國家>
 - **回應範例**:
   ```json
@@ -88,7 +89,7 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數         | 型別   | 必填 | 說明              |
     |--------------|--------|------|-------------------|
@@ -158,11 +159,14 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數            | 型別         | 必填 | 說明                           |
     |-----------------|--------------|------|--------------------------------|
     | `code`          | String       | 是   | Location 代碼                  |
+    | `includedTypes` | List<String> | 否   | 限制景點類型                   |
+    | `maxResultCount`| Integer      | 否   | 返回的最大結果數，範圍 5–20    |
+    | `rankPreference`| String       | 否   | 排序偏好：RELEVANCE 或 DISTANCE |
   - **請求體範例**:
     ```json
     {
@@ -191,9 +195,23 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
-  - **請求體**: TextSearchRequest
-- **回應**: List<LocationSearch>
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+  - **請求體**:
+    | 參數            | 型別         | 必填 | 說明                           |
+    |-----------------|--------------|------|--------------------------------|
+    | `textQuery`     | String       | 是   | 搜尋文字                       |
+    | `code`          | String       | 是   | Location 代碼                  |
+    | `includedTypes` | List<String> | 否   | 限制景點類型                   |
+    | `maxResultCount`| Integer      | 否   | 返回的最大結果數，範圍 5–20    |
+    | `rankPreference`| String       | 否   | 排序偏好：RELEVANCE 或 DISTANCE |
+  - **請求體範例**:
+    ```json
+    {
+      "textQuery": "台北101",
+      "code": "TPE"
+    }
+    ```
+  - **回應**: List<LocationSearch>
 - **回應範例**:
   ```json
   [
@@ -265,36 +283,40 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **查詢參數**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
     | `placeId` | String | 是   | Google Place 的唯一識別碼   |
-- **回應**: 地點詳細資訊
+  - **回應**: 地點詳細資訊，含資料庫 `poiId`
 - **回應範例**:
   ```json
   {
-    "id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    "poiId": "550e8400-e29b-41d4-a716-446655440001",
+    "placeId": "ChIJN1t_tDeuEmsRUsoyG83frY4",
     "name": "Google Sydney",
-    "addr": "48 Pirrama Rd, Pyrmont NSW 2009, Australia",
-    "rate": 4.5,
-    "cnt": 1000,
-    "desc": "Google's Sydney office.",
-    "tel": "+61 2 9374 4000",
-    "site": "https://www.google.com.au/about/careers/locations/sydney/",
-    "lat": -33.866651,
-    "lon": 151.195827,
-    "city": "Sydney",
-    "country": "Australia",
-    "photos": [
+    "address": "48 Pirrama Rd, Pyrmont NSW 2009, Australia",
+    "rating": 4.5,
+    "reviewCount": 1000,
+    "description": "Google's Sydney office.",
+    "phone": "+61 2 9374 4000",
+    "website": "https://www.google.com.au/about/careers/locations/sydney/",
+    "photoUrls": [
       "https://places.googleapis.com/v1/xxx/media?key=xxx&maxWidthPx=400"
     ],
-    "rawHours": {
+    "regularHoursRaw": {
       "weekdayDescriptions": [
         "Monday: 9:00 AM – 5:00 PM",
         "Tuesday: 9:00 AM – 5:00 PM"
       ]
-    }
+    },
+    "lat": -33.866651,
+    "lon": 151.195827,
+    "city": "Sydney",
+    "country": "Australia",
+    "types": ["point_of_interest"],
+    "primaryType": "point_of_interest",
+    "rawJson": {}
   }
   ```
 
@@ -307,22 +329,18 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-    | `Authorization`   | String | 否   | Bearer Token 格式      |
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Authorization`   | String | 是   | Bearer Token 格式      |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
-    | `memberId`| UUID   | 否   | 會員 ID (方便測試API用)      |
     | `placeId` | String | 是   | Google Place 的唯一識別碼   |
-    | `langType`| String | 是   | 語言類型                   |
   - **請求體範例**:
     ```json
     {
-      "memberId": "550e8400-e29b-41d4-a716-446655440000",
-      "placeId": "ChIJN1t_tDeuEmsRUsoyG83frY4",
-      "langType": "zh-TW"
+      "placeId": "ChIJN1t_tDeuEmsRUsoyG83frY4"
     }
-    ```
+  ```
 - **認證流程**:
   1. 系統會從 `Authorization` header 中提取 Bearer Token
   2. 驗證 Token 的有效性
@@ -379,6 +397,7 @@ sequenceDiagram
     {
       "list": [
         {
+          "poiId": "43b1ec1f-1234-5678-9abc-def012345678",
           "placeId": "ChIJNw3g1QZePjURMSN68fjJ92o",
           "name": "Yozan Museum",
           "city": "Kagoshima",
@@ -402,6 +421,30 @@ sequenceDiagram
   | `invalid poi type`        | poiType 不在允許範圍 |
   | `invalid max result count`| 每頁筆數不在範圍內   |
   | `invalid page`            | page 必須 >= 1       |
+
+### 12. 取消會員收藏景點 ⭐
+
+- **API**: `DELETE /api/search/cancelMemberPois`
+- **描述**: 取消會員與指定 POI 的關聯
+- **認證**: 需要 Bearer Token 驗證
+- **請求參數**:
+  - **標頭**:
+    | 標頭            | 型別   | 必填 | 說明                    |
+    |-----------------|--------|------|-------------------------|
+    | `Authorization` | String | 是   | Bearer Token 格式       |
+    | `Accept-Language` | String | 否 | 語言類型 (如：zh-TW, en-US) |
+  - **查詢參數**:
+    | 參數   | 型別 | 必填 | 說明        |
+    |--------|------|------|-------------|
+    | `poiId`| UUID | 是   | 收藏景點 ID |
+- **回應**:
+  ```json
+  { "success": true }
+  ```
+- **常見錯誤**:
+  | 錯誤代碼 | 說明               |
+  |----------|--------------------|
+  | `MP-007` | 未找到對應收藏景點 |
 
 ## 共同資料結構
 
@@ -440,6 +483,7 @@ sequenceDiagram
 
 | 欄位      | 型別   | 說明                  |
 |-----------|--------|-----------------------|
+| `poiId`   | String | 會員收藏識別碼，取消收藏時使用（一般搜尋不回傳） |
 | `placeId` | String | Google Places 唯一識別碼 |
 | `name`    | String | 景點名稱              |
 | `city`    | String | 所在城市              |
@@ -546,15 +590,13 @@ const placeDetails = await fetch('/api/search/placeDetails?placeId=ChIJN1t_tDeuE
 // 8. 儲存會員景點
 const saveResult = await fetch('/api/search/saveMemberPoi', {
   method: 'POST',
-  headers: { 
+  headers: {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ' + accessToken, // 需要有效的 Bearer Token
     'Accept-Language': 'zh-TW'
   },
   body: JSON.stringify({
-    memberId: '550e8400-e29b-41d4-a716-446655440000',
-    placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4',
-    langType: 'zh-TW'
+    placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4'
   })
 }).then(res => res.json());
 

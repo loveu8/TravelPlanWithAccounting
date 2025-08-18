@@ -194,7 +194,7 @@ Accept-Language: zh-TW
 - **回應**：
 ```json
 {
-  "ok": true
+  "success": true
 }
 ```
 

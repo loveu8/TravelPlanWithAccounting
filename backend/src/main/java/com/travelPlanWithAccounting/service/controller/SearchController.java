@@ -5,6 +5,7 @@ import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListResponse;
+import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
@@ -21,8 +22,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -110,5 +113,12 @@ public class SearchController {
   @Operation(summary = "儲存會員景點（優先取 Access-Token 的 sub）")
   public SaveMemberPoiResponse saveMemberPoi(@Valid @RequestBody SaveMemberPoiRequest req) {
     return searchService.saveMemberPoi(authContext.getCurrentMemberId(), req);
+  }
+
+  @DeleteMapping("/cancelMemberPois")
+  @AccessTokenRequired
+  @Operation(summary = "取消會員收藏景點")
+  public SimpleResult cancelMemberPoi(@RequestParam UUID poiId) {
+    return searchService.cancelMemberPoi(authContext.getCurrentMemberId(), poiId);
   }
 }
