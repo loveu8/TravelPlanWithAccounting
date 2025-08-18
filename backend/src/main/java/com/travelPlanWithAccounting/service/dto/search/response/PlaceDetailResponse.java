@@ -2,6 +2,7 @@ package com.travelPlanWithAccounting.service.dto.search.response;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
+import java.util.UUID;
 import lombok.*;
 
 @Data
@@ -9,6 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class PlaceDetailResponse {
+  private UUID poiId;
   private String placeId;
   private String name;
   private String address;

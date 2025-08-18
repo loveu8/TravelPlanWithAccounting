@@ -226,10 +226,13 @@ public class SearchService {
     Optional<String> cachedJson = poiRepository.findCachedRawJson(placeId, langCode);
     JsonNode json;
     boolean hit = cachedJson.isPresent();
+    UUID poiId = null;
 
     if (hit) {
       log.debug("Cache‑hit placeId={} langType={}", placeId, langType);
       json = jsonHelper.deserializeToNode(cachedJson.get());
+      poiId =
+          poiRepository.findByExternalId(placeId).map(p -> p.getId()).orElse(null);
     } else {
       log.debug("Call api placeId={} langType={}", placeId, langType);
       PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId);
@@ -237,10 +240,13 @@ public class SearchService {
 
       // 2.3) API 成功 → 立即 upsert 進 DB
       PlaceDetailResponse dto = placeDetailMapper.toDto(json, false);
-      upsertPoiAndI18n(dto, langCode); // 共用方法，避免重複
+      TxPoiResult tx = upsertPoiAndI18n(dto, langCode); // 共用方法，避免重複
+      poiId = tx.getPoiId();
     }
 
-    return placeDetailMapper.toDto(json, false);
+    PlaceDetailResponse resp = placeDetailMapper.toDto(json, false);
+    resp.setPoiId(poiId);
+    return resp;
   }
 
   public MemberPoiListResponse getMemberPoiList(UUID memberId, MemberPoiListRequest req) {
@@ -290,17 +296,11 @@ public class SearchService {
   public SaveMemberPoiResponse saveMemberPoi(UUID tokenMemberId, SaveMemberPoiRequest req) {
     String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
-    /* 1) 取最終 memberId：先用 Access-Token，沒有才用 body */
-    UUID memberId =
-        tokenMemberId != null
-            ? tokenMemberId
-            : Optional.ofNullable(req.getMemberId())
-                .filter(s -> !s.isBlank())
-                .map(UUID::fromString)
-                .orElse(null);
+    /* 1) 取最終 memberId：使用 Access-Token */
+    UUID memberId = tokenMemberId;
 
     if (memberId == null) {
-      throw new MemberException.MemberNotFound(); // ← 請在 MemberException 新增 (或沿用現有)
+      throw new MemberException.MemberNotFound();
     }
 
     /* 1.1) 只驗證「存在 + active」，不再比對 body */

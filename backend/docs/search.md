@@ -270,11 +270,12 @@ sequenceDiagram
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
     | `placeId` | String | 是   | Google Place 的唯一識別碼   |
-- **回應**: 地點詳細資訊
+  - **回應**: 地點詳細資訊，含資料庫 `poiId`
 - **回應範例**:
   ```json
   {
-    "id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    "poiId": "550e8400-e29b-41d4-a716-446655440001",
+    "placeId": "ChIJN1t_tDeuEmsRUsoyG83frY4",
     "name": "Google Sydney",
     "addr": "48 Pirrama Rd, Pyrmont NSW 2009, Australia",
     "rate": 4.5,
@@ -312,17 +313,13 @@ sequenceDiagram
   - **請求體**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
-    | `memberId`| UUID   | 否   | 會員 ID (方便測試API用)      |
     | `placeId` | String | 是   | Google Place 的唯一識別碼   |
-    | `langType`| String | 是   | 語言類型                   |
   - **請求體範例**:
     ```json
     {
-      "memberId": "550e8400-e29b-41d4-a716-446655440000",
-      "placeId": "ChIJN1t_tDeuEmsRUsoyG83frY4",
-      "langType": "zh-TW"
+      "placeId": "ChIJN1t_tDeuEmsRUsoyG83frY4"
     }
-    ```
+  ```
 - **認證流程**:
   1. 系統會從 `Authorization` header 中提取 Bearer Token
   2. 驗證 Token 的有效性
@@ -546,15 +543,13 @@ const placeDetails = await fetch('/api/search/placeDetails?placeId=ChIJN1t_tDeuE
 // 8. 儲存會員景點
 const saveResult = await fetch('/api/search/saveMemberPoi', {
   method: 'POST',
-  headers: { 
+  headers: {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer ' + accessToken, // 需要有效的 Bearer Token
     'Accept-Language': 'zh-TW'
   },
   body: JSON.stringify({
-    memberId: '550e8400-e29b-41d4-a716-446655440000',
-    placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4',
-    langType: 'zh-TW'
+    placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4'
   })
 }).then(res => res.json());
 
