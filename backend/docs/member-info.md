@@ -68,13 +68,13 @@ Accept-Language: zh-TW
   "familyName": "王",
   "nickName": "明明",
   "birthday": "2000-01-01",
-  "subscribe": true,
-  "langType": "zh-TW"
+  "subscribe": true
 }
 ```
 - **說明**：
   - 修改會員的基本資料
   - 電子郵件（email）不可修改
+  - 語系類型由 `Accept-Language` 標頭決定，請求體無需帶 `langType`
   - 所有欄位都是選填，只會更新有提供的欄位
   - 生日格式必須為 YYYY-MM-DD
 - **回應**：

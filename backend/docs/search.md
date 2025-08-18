@@ -40,7 +40,7 @@ sequenceDiagram
 
 ## API 端點總覽
 
-| 方法   | 端點                                      | 說明                     |
+    | 方法   | 端點                                      | 說明                     |
 |--------|-------------------------------------------|--------------------------|
 | GET    | `/api/search/countries`                   | 取得所有國家列表         |
 | POST   | `/api/search/regions`                     | 取得指定國家的地區和城市 |
@@ -65,7 +65,7 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
 - **回應**: List<國家>
 - **回應範例**:
   ```json
@@ -89,7 +89,7 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數         | 型別   | 必填 | 說明              |
     |--------------|--------|------|-------------------|
@@ -159,11 +159,14 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數            | 型別         | 必填 | 說明                           |
     |-----------------|--------------|------|--------------------------------|
     | `code`          | String       | 是   | Location 代碼                  |
+    | `includedTypes` | List<String> | 否   | 限制景點類型                   |
+    | `maxResultCount`| Integer      | 否   | 返回的最大結果數，範圍 5–20    |
+    | `rankPreference`| String       | 否   | 排序偏好：RELEVANCE 或 DISTANCE |
   - **請求體範例**:
     ```json
     {
@@ -192,9 +195,23 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
-  - **請求體**: TextSearchRequest
-- **回應**: List<LocationSearch>
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+  - **請求體**:
+    | 參數            | 型別         | 必填 | 說明                           |
+    |-----------------|--------------|------|--------------------------------|
+    | `textQuery`     | String       | 是   | 搜尋文字                       |
+    | `code`          | String       | 是   | Location 代碼                  |
+    | `includedTypes` | List<String> | 否   | 限制景點類型                   |
+    | `maxResultCount`| Integer      | 否   | 返回的最大結果數，範圍 5–20    |
+    | `rankPreference`| String       | 否   | 排序偏好：RELEVANCE 或 DISTANCE |
+  - **請求體範例**:
+    ```json
+    {
+      "textQuery": "台北101",
+      "code": "TPE"
+    }
+    ```
+  - **回應**: List<LocationSearch>
 - **回應範例**:
   ```json
   [
@@ -266,7 +283,7 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **查詢參數**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
@@ -278,25 +295,28 @@ sequenceDiagram
     "poiId": "550e8400-e29b-41d4-a716-446655440001",
     "placeId": "ChIJN1t_tDeuEmsRUsoyG83frY4",
     "name": "Google Sydney",
-    "addr": "48 Pirrama Rd, Pyrmont NSW 2009, Australia",
-    "rate": 4.5,
-    "cnt": 1000,
-    "desc": "Google's Sydney office.",
-    "tel": "+61 2 9374 4000",
-    "site": "https://www.google.com.au/about/careers/locations/sydney/",
-    "lat": -33.866651,
-    "lon": 151.195827,
-    "city": "Sydney",
-    "country": "Australia",
-    "photos": [
+    "address": "48 Pirrama Rd, Pyrmont NSW 2009, Australia",
+    "rating": 4.5,
+    "reviewCount": 1000,
+    "description": "Google's Sydney office.",
+    "phone": "+61 2 9374 4000",
+    "website": "https://www.google.com.au/about/careers/locations/sydney/",
+    "photoUrls": [
       "https://places.googleapis.com/v1/xxx/media?key=xxx&maxWidthPx=400"
     ],
-    "rawHours": {
+    "regularHoursRaw": {
       "weekdayDescriptions": [
         "Monday: 9:00 AM – 5:00 PM",
         "Tuesday: 9:00 AM – 5:00 PM"
       ]
-    }
+    },
+    "lat": -33.866651,
+    "lon": 151.195827,
+    "city": "Sydney",
+    "country": "Australia",
+    "types": ["point_of_interest"],
+    "primaryType": "point_of_interest",
+    "rawJson": {}
   }
   ```
 
@@ -309,8 +329,8 @@ sequenceDiagram
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
     |-------------------|--------|------|-------------------------|
-    | `Authorization`   | String | 否   | Bearer Token 格式      |
-| `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+    | `Authorization`   | String | 是   | Bearer Token 格式      |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
   - **請求體**:
     | 參數      | 型別   | 必填 | 說明                        |
     |-----------|--------|------|-----------------------------|
