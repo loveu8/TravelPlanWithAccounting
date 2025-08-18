@@ -22,6 +22,7 @@ public interface MemberPoiRepository extends JpaRepository<MemberPoi,UUID> {
       value =
           """
           SELECT p.external_id AS place_id,
+                 mp.poi_id AS poi_id,
                  i.name,
                  i.city_name AS city,
                  (p.photo_urls::json ->> 0) AS photo_url,
@@ -47,6 +48,7 @@ public interface MemberPoiRepository extends JpaRepository<MemberPoi,UUID> {
       Pageable pageable);
 
   interface MemberPoiProjection {
+    UUID getPoiId();
     String getPlaceId();
 
     String getName();

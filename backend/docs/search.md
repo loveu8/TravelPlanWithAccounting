@@ -376,6 +376,7 @@ sequenceDiagram
     {
       "list": [
         {
+          "poiId": "43b1ec1f-1234-5678-9abc-def012345678",
           "placeId": "ChIJNw3g1QZePjURMSN68fjJ92o",
           "name": "Yozan Museum",
           "city": "Kagoshima",
@@ -437,6 +438,7 @@ sequenceDiagram
 
 | 欄位      | 型別   | 說明                  |
 |-----------|--------|-----------------------|
+| `poiId`   | String | 會員收藏識別碼，取消收藏時使用（一般搜尋不回傳） |
 | `placeId` | String | Google Places 唯一識別碼 |
 | `name`    | String | 景點名稱              |
 | `city`    | String | 所在城市              |

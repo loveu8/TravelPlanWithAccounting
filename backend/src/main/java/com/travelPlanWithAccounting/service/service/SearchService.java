@@ -267,6 +267,7 @@ public class SearchService {
             .map(
                 p -> {
                   LocationSearch loc = new LocationSearch();
+                  loc.setPoiId(p.getPoiId());
                   loc.setPlaceId(p.getPlaceId());
                   loc.setName(p.getName());
                   loc.setCity(p.getCity());
