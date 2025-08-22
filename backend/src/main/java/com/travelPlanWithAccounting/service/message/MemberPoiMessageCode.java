@@ -11,7 +11,10 @@ public enum MemberPoiMessageCode implements MessageCode {
   INVALID_POI_TYPE      ("MP-004", HttpStatus.BAD_REQUEST),
   INVALID_MAX_RESULT_COUNT("MP-005", HttpStatus.BAD_REQUEST),
   INVALID_PAGE          ("MP-006", HttpStatus.BAD_REQUEST),
-  MEMBER_POI_NOT_FOUND  ("MP-007", HttpStatus.NOT_FOUND);
+  MEMBER_POI_NOT_FOUND  ("MP-007", HttpStatus.NOT_FOUND),
+  FAVORITES_IDS_EMPTY   ("MP-008", HttpStatus.BAD_REQUEST),
+  FAVORITES_IDS_TOO_MANY("MP-009", HttpStatus.BAD_REQUEST),
+  FAVORITES_ID_EMPTY    ("MP-010", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final HttpStatus status;
