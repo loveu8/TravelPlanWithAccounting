@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -106,6 +107,13 @@ public class SearchController {
   public MemberPoiListResponse getMemberPoiList(
       @Valid @RequestBody MemberPoiListRequest req) {
     return searchService.getMemberPoiList(authContext.getCurrentMemberId(), req);
+  }
+
+  @PostMapping("/poisFavoritesCheck")
+  @AccessTokenRequired
+  @Operation(summary = "批量查詢會員收藏景點狀態")
+  public Map<String, Boolean> poisFavoritesCheck(@RequestBody List<String> placeIds) {
+    return searchService.checkPoisFavorites(authContext.getCurrentMemberId(), placeIds);
   }
 
   @PostMapping("/saveMemberPoi")

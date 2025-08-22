@@ -1,6 +1,7 @@
 package com.travelPlanWithAccounting.service.repository;
 
 import com.travelPlanWithAccounting.service.entity.MemberPoi;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,18 @@ public interface MemberPoiRepository extends JpaRepository<MemberPoi,UUID> {
   @Modifying
   @Query(value="INSERT INTO member_poi (member_id, poi_id) VALUES (:mid, :pid) ON CONFLICT (member_id, poi_id) DO NOTHING", nativeQuery=true)
   int insertIgnore(@Param("mid") UUID memberId, @Param("pid") UUID poiId);
+
+  @Query(
+      value =
+          """
+          SELECT p.external_id
+          FROM member_poi mp
+          JOIN poi p ON mp.poi_id = p.id
+          WHERE mp.member_id = :memberId AND p.external_id IN (:placeIds)
+          """,
+      nativeQuery = true)
+  List<String> findFavoritePlaceIds(
+      @Param("memberId") UUID memberId, @Param("placeIds") List<String> placeIds);
 
   @Query(
       value =

@@ -52,6 +52,7 @@ sequenceDiagram
 | GET    | `/api/search/settings/language-types`     | 查詢所有語言類型設定     |
 | GET    | `/api/search/placeDetails`                | 取得地點詳細資訊 (含照片) |
 | POST   | `/api/search/memberPois`                  | 取得會員收藏景點清單 ⭐ |
+| POST   | `/api/search/poisFavoritesCheck`          | 批量查詢收藏狀態 ⭐      |
 | POST   | `/api/search/saveMemberPoi`               | 儲存會員景點 ⭐          |
 | DELETE | `/api/search/cancelMemberPois`            | 取消會員收藏景點 ⭐      |
 
@@ -422,7 +423,41 @@ sequenceDiagram
   | `invalid max result count`| 每頁筆數不在範圍內   |
   | `invalid page`            | page 必須 >= 1       |
 
-### 12. 取消會員收藏景點 ⭐
+### 12. 批量查詢會員收藏景點狀態 ⭐
+
+- **API**: `POST /api/search/poisFavoritesCheck`
+- **描述**: 一次查詢多個 Google place_id 是否已被會員收藏
+- **認證**: 需要 Bearer Token 驗證
+- **請求參數**:
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+    | `Authorization`   | String | 是   | Bearer Token 格式      |
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+  - **請求體**: Array<String>，最多 30 筆，每筆為非空的 place_id
+  - **請求體範例**:
+    ```json
+    [
+      "ChIJd7zN_th6QjQRcoyzN_t3zQQ",
+      "ChIJN1t_tDeuEmsRUsoyG83frY4"
+    ]
+    ```
+- **回應**: `Object<String, Boolean>`
+- **回應範例**:
+    ```json
+    {
+      "ChIJd7zN_th6QjQRcoyzN_t3zQQ": true,
+      "ChIJN1t_tDeuEmsRUsoyG83frY4": false
+    }
+    ```
+- **常見錯誤**:
+  | 錯誤代碼 | 說明             |
+  |----------|------------------|
+  | `MP-008` | 請求陣列不可為空 |
+  | `MP-009` | 請求陣列最多30筆 |
+  | `MP-010` | placeId 不可為空 |
+
+### 13. 取消會員收藏景點 ⭐
 
 - **API**: `DELETE /api/search/cancelMemberPois`
 - **描述**: 取消會員與指定 POI 的關聯

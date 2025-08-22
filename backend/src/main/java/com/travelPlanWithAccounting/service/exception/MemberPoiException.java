@@ -49,4 +49,22 @@ public class MemberPoiException extends ApiException {
       super(MemberPoiMessageCode.MEMBER_POI_NOT_FOUND);
     }
   }
+
+  public static class FavoritesIdsEmpty extends ApiException {
+    public FavoritesIdsEmpty() {
+      super(MemberPoiMessageCode.FAVORITES_IDS_EMPTY);
+    }
+  }
+
+  public static class FavoritesIdsTooMany extends ApiException {
+    public FavoritesIdsTooMany() {
+      super(MemberPoiMessageCode.FAVORITES_IDS_TOO_MANY);
+    }
+  }
+
+  public static class FavoriteIdEmpty extends ApiException {
+    public FavoriteIdEmpty() {
+      super(MemberPoiMessageCode.FAVORITES_ID_EMPTY);
+    }
+  }
 }

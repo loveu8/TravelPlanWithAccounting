@@ -42,6 +42,7 @@ import com.travelPlanWithAccounting.service.util.LocationHelper;
 import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
 import com.travelPlanWithAccounting.service.validator.MemberPoiListValidator;
+import com.travelPlanWithAccounting.service.validator.MemberPoiFavoritesValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
 import com.travelPlanWithAccounting.service.validator.Validator;
 import jakarta.transaction.Transactional;
@@ -49,6 +50,10 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -93,6 +98,7 @@ public class SearchService {
   @Autowired private PlaceDetailFacade placeDetailFacade;
   @Autowired private JsonHelper jsonHelper;
   @Autowired private MemberPoiListValidator memberPoiListValidator;
+  @Autowired private MemberPoiFavoritesValidator memberPoiFavoritesValidator;
 
   public List<Region> searchRegions(String countryCode) {
     String langType = LocaleContextHolder.getLocale().toLanguageTag();
@@ -293,6 +299,17 @@ public class SearchService {
     resp.setList(list);
     resp.setMeta(meta);
     return resp;
+  }
+
+  public Map<String, Boolean> checkPoisFavorites(UUID memberId, List<String> placeIds) {
+    memberPoiFavoritesValidator.validate(placeIds);
+    List<String> saved = memberPoiRepository.findFavoritePlaceIds(memberId, placeIds);
+    Set<String> savedSet = new HashSet<>(saved);
+    Map<String, Boolean> result = new LinkedHashMap<>();
+    for (String id : placeIds) {
+      result.put(id, savedSet.contains(id));
+    }
+    return result;
   }
 
   @Transactional
