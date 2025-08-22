@@ -11,6 +11,11 @@ public class MemberPoiFavoritesValidator {
     if (placeIds == null || placeIds.isEmpty()) {
       throw new MemberPoiException.FavoritesIdsEmpty();
     }
+    for (String placeId : placeIds) {
+      if (placeId == null) {
+        throw new MemberPoiException.FavoritesIdsEmpty();
+      }
+    }
     if (placeIds.size() > 30) {
       throw new MemberPoiException.FavoritesIdsTooMany();
     }
