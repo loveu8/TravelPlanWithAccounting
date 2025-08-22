@@ -2,6 +2,7 @@ package com.travelPlanWithAccounting.service.aspect;
 
 import com.travelPlanWithAccounting.service.controller.AuthContext;
 import com.travelPlanWithAccounting.service.security.JwtUtil;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
@@ -38,10 +39,13 @@ public class AccessTokenAspect {
       var jws = jwtUtil.verify(auth.substring(7));
       UUID id = UUID.fromString(jws.getPayload().getSubject());
       authContext.setCurrentMemberId(id);
-      return pjp.proceed();
-    } catch (Exception e) {
+    } catch (JwtException | IllegalArgumentException e) {
       if (resp != null) resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       return null;
+    }
+    // 業務例外不應被吞掉，直接向外拋出
+    try {
+      return pjp.proceed();
     } finally {
       authContext.clear();
     }

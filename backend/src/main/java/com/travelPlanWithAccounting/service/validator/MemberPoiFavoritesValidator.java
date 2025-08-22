@@ -12,7 +12,7 @@ public class MemberPoiFavoritesValidator {
       throw new MemberPoiException.FavoritesIdsEmpty();
     }
     for (String placeId : placeIds) {
-      if (placeId == null) {
+      if (placeId == null || "".equals(placeId)) {
         throw new MemberPoiException.FavoritesIdsEmpty();
       }
     }
