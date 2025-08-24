@@ -69,6 +69,9 @@ public class SearchService {
 
   private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
+  private static final List<String> OTHER_POI_TYPES =
+      List.of("P008", "P009", "P010", "P011", "P012", "P013", "P014", "P015", "P016", "P017", "P018");
+
   @Autowired private SearchCountryRepository searchCountryRepository;
 
   @Autowired private MapService mapService;
@@ -267,8 +270,12 @@ public class SearchService {
     int size = req.getMaxResultCount() == null ? 5 : req.getMaxResultCount();
 
     Pageable pageable = PageRequest.of(page - 1, size);
+    String poiType = req.getPoiType();
+    List<String> poiTypes =
+        OTHER_POI_TYPES.contains(poiType) ? OTHER_POI_TYPES : List.of(poiType);
+
     Page<MemberPoiProjection> result =
-        memberPoiRepository.findMemberPoiList(memberId, req.getPoiType(), langCode, pageable);
+        memberPoiRepository.findMemberPoiList(memberId, poiTypes, langCode, pageable);
 
     List<LocationSearch> list =
         result.getContent().stream()
