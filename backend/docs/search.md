@@ -165,7 +165,7 @@ sequenceDiagram
     | 參數            | 型別         | 必填 | 說明                           |
     |-----------------|--------------|------|--------------------------------|
     | `code`          | String       | 是   | Location 代碼                  |
-    | `includedTypes` | List<String> | 否   | 限制景點類型                   |
+    | `includedTypes` | List<String> | 否   | 限制景點類型，建議值：`restaurant`、`hotel`、`tourist_attraction`、`store`、`natural_feature`、`transit_station`、`museum`、`point_of_interest` |
     | `maxResultCount`| Integer      | 否   | 返回的最大結果數，範圍 5–20    |
     | `rankPreference`| String       | 否   | 排序偏好：RELEVANCE 或 DISTANCE |
   - **請求體範例**:
@@ -202,7 +202,7 @@ sequenceDiagram
     |-----------------|--------------|------|--------------------------------|
     | `textQuery`     | String       | 是   | 搜尋文字                       |
     | `code`          | String       | 是   | Location 代碼                  |
-    | `includedTypes` | List<String> | 否   | 限制景點類型                   |
+    | `includedTypes` | List<String> | 否   | 限制景點類型，建議值：`restaurant`、`hotel`、`tourist_attraction`、`store`、`natural_feature`、`transit_station`、`museum`、`point_of_interest` |
     | `maxResultCount`| Integer      | 否   | 返回的最大結果數，範圍 5–20    |
     | `rankPreference`| String       | 否   | 排序偏好：RELEVANCE 或 DISTANCE |
   - **請求體範例**:
@@ -381,7 +381,7 @@ sequenceDiagram
   - **請求體**:
     | 參數            | 型別   | 必填 | 說明                              |
     |-----------------|--------|------|-----------------------------------|
-    | `poiType`       | String | 是   | 景點類型代碼 (P001–P018)          |
+    | `poiType`       | String | 是   | 景點類型代碼 (P001–P018)。若傳入 `P008`–`P017`，後端將視為 `P018`（OTHER） |
     | `page`          | Integer| 否   | 頁碼，預設 1                      |
     | `maxResultCount`| Integer| 否   | 每頁筆數，預設 5，範圍 5–20       |
   - **請求體範例**:
@@ -547,18 +547,18 @@ sequenceDiagram
 
 ## 景點類型
 
-以下是常用的景點類型，可用於 `includedTypes` 參數：
+SearchRequest 的 `includedTypes` 直接對應 Google Places API 的 `included_types`，建議使用下列大分類：
 
-| 類型               | 說明      |
-|--------------------|-----------|
-| `restaurant`       | 餐廳      |
-| `tourist_attraction`| 觀光景點 |
-| `hotel`            | 飯店      |
-| `shopping_mall`    | 購物中心  |
-| `museum`           | 博物館    |
-| `park`             | 公園      |
-| `cafe`             | 咖啡廳    |
-| `bar`              | 酒吧      |
+| 產品分類 | Google `includedTypes` |
+|----------|------------------------|
+| 餐飲     | `restaurant`           |
+| 住宿     | `hotel`                |
+| 觀光景點 | `tourist_attraction`   |
+| 購物     | `store`                |
+| 自然景觀 | `natural_feature`      |
+| 交通運輸 | `transit_station`      |
+| 文化     | `museum`               |
+| 其他     | `point_of_interest`    |
 
 ## 使用範例
 

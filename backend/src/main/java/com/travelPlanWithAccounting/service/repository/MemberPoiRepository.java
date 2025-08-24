@@ -43,7 +43,7 @@ public interface MemberPoiRepository extends JpaRepository<MemberPoi,UUID> {
           FROM member_poi mp
           JOIN poi p ON mp.poi_id = p.id
           JOIN poi_i18n i ON i.poi_id = p.id AND i.lang_type = :langType
-          WHERE mp.member_id = :memberId AND p.poi_type = :poiType
+          WHERE mp.member_id = :memberId AND p.poi_type IN (:poiTypes)
           ORDER BY mp.saved_at DESC
           """,
       countQuery =
@@ -51,12 +51,12 @@ public interface MemberPoiRepository extends JpaRepository<MemberPoi,UUID> {
           SELECT COUNT(*)
           FROM member_poi mp
           JOIN poi p ON mp.poi_id = p.id
-          WHERE mp.member_id = :memberId AND p.poi_type = :poiType
+          WHERE mp.member_id = :memberId AND p.poi_type IN (:poiTypes)
           """,
       nativeQuery = true)
   Page<MemberPoiProjection> findMemberPoiList(
       @Param("memberId") UUID memberId,
-      @Param("poiType") String poiType,
+      @Param("poiTypes") List<String> poiTypes,
       @Param("langType") String langType,
       Pageable pageable);
 
