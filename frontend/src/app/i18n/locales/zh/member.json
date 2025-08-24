@@ -1,0 +1,15 @@
+{
+  "page": {
+    "title": "個人帳戶設定"
+  },
+  "edit": {
+    "title": "修改基本資料",
+    "button-save": "儲存修改",
+    "button-validate": "驗證",
+    "email-edit": "修改信箱",
+    "email-edit-hint": "確定修改後需驗證",
+    "original-email-otp": "原信箱驗證碼",
+    "enter-email": "輸入新的電子信箱",
+    "new-email-otp": "新信箱驗證碼"
+  }
+}

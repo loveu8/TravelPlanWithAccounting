@@ -33,6 +33,7 @@
     "otp-resend": "Resend OTP",
     "valid-time": "Valid for: {{time}} seconds."
   },
+  "logout": "Logout",
   "account": {
     "surname": "Surname",
     "given-name": "Given Name",

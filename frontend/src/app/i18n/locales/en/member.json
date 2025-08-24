@@ -1,0 +1,15 @@
+{
+  "page": {
+    "title": "Personal Account Settings"
+  },
+  "edit": {
+    "title": "Edit Personal Account",
+    "button-save": "Save Changes",
+    "button-validate": "Validate",
+    "email-edit": "Edit Email",
+    "email-edit-hint": "You need to verify your email when making changes.",
+    "original-email-otp": "Original Email OTP",
+    "enter-email": "Enter New Email",
+    "new-email-otp": "New Email OTP"
+  }
+}
