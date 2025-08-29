@@ -447,6 +447,36 @@ public class TravelService {
     return travelDetailRepository.findById(saved.getId()).orElse(saved);
   }
 
+  public Map<String, Object> checkTimeConflict(TravelDetailRequest request) {
+    validateTime(request.getStartTime(), request.getEndTime());
+    List<TravelDetail> details = travelDetailRepository.findByTravelDateId(request.getTravelDateId());
+    if (request.getId() != null) {
+      details =
+          details.stream().filter(d -> !d.getId().equals(request.getId())).collect(Collectors.toList());
+    }
+    TravelDetail tempDetail =
+        TravelDetail.builder().startTime(request.getStartTime()).endTime(request.getEndTime()).build();
+    details.add(tempDetail);
+    details.sort(Comparator.comparing(TravelDetail::getStartTime));
+    LocalTime lastEnd = null;
+    for (TravelDetail detail : details) {
+      boolean conflict = lastEnd != null && detail.getStartTime().isBefore(lastEnd);
+      detail.setTimeConflict(conflict);
+      if (lastEnd == null || detail.getEndTime().isAfter(lastEnd)) {
+        lastEnd = detail.getEndTime();
+      }
+    }
+    boolean hasConflict = details.stream().anyMatch(TravelDetail::isTimeConflict);
+    Map<String, Object> result = new HashMap<>();
+    result.put("timeConflict", hasConflict);
+    if (hasConflict) {
+      result.put(
+          "details",
+          details.stream().filter(TravelDetail::isTimeConflict).collect(Collectors.toList()));
+    }
+    return result;
+  }
+
   private void validateTime(LocalTime start, LocalTime end) {
     if (start == null || end == null || !start.isBefore(end)) {
       throw new IllegalArgumentException("開始時間必須早於結束時間");

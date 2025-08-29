@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.travelPlanWithAccounting.service.dto.UuidRequest;
+import com.travelPlanWithAccounting.service.dto.system.RestResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
@@ -21,6 +22,7 @@ import com.travelPlanWithAccounting.service.entity.TravelDate;
 import com.travelPlanWithAccounting.service.entity.TravelDetail;
 import com.travelPlanWithAccounting.service.entity.TravelMain;
 import com.travelPlanWithAccounting.service.service.TravelService;
+import com.travelPlanWithAccounting.service.util.RestResponseUtils;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -242,6 +244,11 @@ public class TravelController {
             return ResponseEntity.ok(travelDetails);
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("找不到ID為 " + request.getId() + " 的行程詳情。");
+    }
+
+    @PostMapping("/checkTimeConflict")
+    public RestResponse<Object, Object> checkTimeConflict(@RequestBody TravelDetailRequest request) {
+        return RestResponseUtils.success(travelService.checkTimeConflict(request));
     }
 
     @PostMapping("/deleteTravelDetail") // 刪除行程詳情 (POST 請求，ID在 Request Body 中)
