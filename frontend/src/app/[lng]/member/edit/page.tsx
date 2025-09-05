@@ -1,13 +1,10 @@
 import { Container, Heading } from "@radix-ui/themes";
-import { getT } from "@/app/i18n";
+import { getT, generateI18NTitle } from "@/app/i18n";
 import EditForm from "./EditForm";
+import { LayoutParams } from "@/app/lib/types";
 
-type LayoutParams = { params: { lng: string } | Promise<{ lng: string }> };
-
-export async function generateMetadata({ params }: LayoutParams) {
-  const { lng } = await params;
-  const { t } = await getT(lng, "member");
-  return { title: t("edit.title") };
+export async function generateMetadata(props: LayoutParams) {
+  return generateI18NTitle(props, "member", "edit.title");
 }
 
 export default async function Page({ params }: LayoutParams) {

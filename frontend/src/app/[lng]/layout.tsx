@@ -1,18 +1,13 @@
 import { languages } from "@/app/i18n/settings";
-import { getT } from "@/app/i18n";
+import { generateI18NTitle } from "@/app/i18n";
+import { LayoutParams } from "@/app/lib/types";
 
 export async function generateStaticParams() {
   return languages.map((lng) => ({ lng }));
 }
 
-type LayoutParams = { params: { lng: string } | Promise<{ lng: string }> };
-
-export async function generateMetadata({ params }: LayoutParams) {
-  const { lng } = await params;
-  const { t } = await getT(lng, "common");
-  return {
-    title: t("ssr-demo.title"),
-  };
+export async function generateMetadata(props: LayoutParams) {
+  return generateI18NTitle(props, "common", "ssr-demo.title");
 }
 
 export default async function Layout({

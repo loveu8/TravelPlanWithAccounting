@@ -1,14 +1,11 @@
 import { Container, Heading, Grid } from "@radix-ui/themes";
 import { PersonIcon, ExitIcon } from "@radix-ui/react-icons";
-import { getT } from "@/app/i18n";
+import { getT, generateI18NTitle } from "@/app/i18n";
+import { LayoutParams } from "@/app/lib/types";
 import LinkButton from "./LinkButton";
 
-type LayoutParams = { params: { lng: string } | Promise<{ lng: string }> };
-
-export async function generateMetadata({ params }: LayoutParams) {
-  const { lng } = await params;
-  const { t } = await getT(lng, "member");
-  return { title: t("page.title") };
+export async function generateMetadata(props: LayoutParams) {
+  return generateI18NTitle(props, "member", "page.title");
 }
 
 export default async function Page({ params }: LayoutParams) {

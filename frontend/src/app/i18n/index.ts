@@ -1,6 +1,7 @@
 import i18next from "./i18next";
 import { headerName, fallbackLng } from "./settings";
 import { headers } from "next/headers";
+import { LayoutParams } from "@/app/lib/types";
 
 /**
  * SSR/SSG 專用的 i18n helper，根據語言與 namespace 回傳 t function
@@ -46,5 +47,23 @@ export async function getT(
       options?.keyPrefix,
     ),
     i18n: i18next,
+  };
+}
+
+/**
+ * 用 i18n 產生頁面標題
+ * @param param0 - 包含語言參數的物件
+ * @param ns - namespace 名稱
+ * @param key - title 對應的 key
+ */
+export async function generateI18NTitle(
+  { params }: LayoutParams,
+  ns: string,
+  key: string,
+) {
+  const { lng } = await params;
+  const { t } = await getT(lng, ns);
+  return {
+    title: t(key),
   };
 }
