@@ -1,7 +1,6 @@
 package com.travelPlanWithAccounting.service.service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -10,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TransI18nRequest;
 import com.travelPlanWithAccounting.service.entity.TransI18n;
 import com.travelPlanWithAccounting.service.entity.TravelDetail;
+import com.travelPlanWithAccounting.service.exception.TravelException;
 import com.travelPlanWithAccounting.service.repository.TransI18nRepository;
 import com.travelPlanWithAccounting.service.repository.TravelDetailRepository;
 
@@ -28,12 +28,16 @@ public class TransI18nService {
 
     @Transactional
     public TransI18n createOrUpdate(TransI18nRequest request) {
-        TravelDetail start = travelDetailRepository.findById(request.getStartDetailId())
-            .orElseThrow(() -> new NoSuchElementException("找不到起始行程詳情"));
-        TravelDetail end = travelDetailRepository.findById(request.getEndDetailId())
-            .orElseThrow(() -> new NoSuchElementException("找不到結束行程詳情"));
+        TravelDetail start =
+            travelDetailRepository
+                .findById(request.getStartDetailId())
+                .orElseThrow(TravelException.TravelDetailNotFound::new);
+        TravelDetail end =
+            travelDetailRepository
+                .findById(request.getEndDetailId())
+                .orElseThrow(TravelException.TravelDetailNotFound::new);
         if (!start.getTravelMainId().equals(end.getTravelMainId())) {
-            throw new IllegalArgumentException("起迄景點不屬於同一行程");
+            throw new TravelException.DetailsNotSameTravel();
         }
         TransI18n trans;
         if (request.getId() != null) {

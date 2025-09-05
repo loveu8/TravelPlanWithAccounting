@@ -109,6 +109,7 @@ public class GooglePlaceDetailMapper {
   // 轉 DB -> PlaceDetailResponse
   public PlaceDetailResponse toDtoFromDb(Poi p, PoiI18n i) {
     return PlaceDetailResponse.builder()
+        .poiId(p.getId())
         .placeId(p.getExternalId())
         .name(i.getName())
         .address(i.getAddress())
