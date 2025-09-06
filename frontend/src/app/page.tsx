@@ -119,7 +119,7 @@ export default function Home() {
           </TextField>
         </div>
         <div className="space-x-4">
-          <DatePicker localeType="zh-TW" />
+          <DatePicker lng="zh" />
           <form onSubmit={(e) => e.preventDefault()}>
             <TextField
               size="2"
