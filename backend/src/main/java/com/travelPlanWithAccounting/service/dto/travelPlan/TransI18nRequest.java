@@ -3,6 +3,8 @@ package com.travelPlanWithAccounting.service.dto.travelPlan;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 
 @Data
@@ -16,5 +18,5 @@ public class TransI18nRequest {
     private LocalTime transTime;
     private String summary;
     private String notes;
-    private UUID createdBy;
+    @JsonIgnore private UUID createdBy;
 }
