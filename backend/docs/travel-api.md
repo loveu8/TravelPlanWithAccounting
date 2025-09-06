@@ -2,23 +2,23 @@
 
 以下文件依 `TravelController` 與 `TransController` 的所有 POST API 進行說明，內容包括用途說明、請求範例、成功與失敗回應範例，以及邏輯流程圖。
 
+所有需授權的端點必須在 Header 帶入 `Authorization: Bearer <token>`，後端會透過 `AuthContext.getCurrentMemberId()` 取得會員 ID，前端不需傳送 `memberId` 或 `createdBy`。
 ---
 
 ## TravelController (`/api/travels`)
 
 ### 1. 建立主行程 `POST /createTravelMain`
 - **目的**：建立新的旅遊主行程並自動產生對應的每日行程 `TravelDate`。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 {
-  "memberId": "a3d2e7b4-1234-4321-9abc-5678def01234",
   "isPrivate": false,
   "startDate": "2024-09-01",
   "endDate": "2024-09-05",
   "title": "東京五日遊",
   "notes": "備註內容",
-  "visitPlace": "{\"country\":\"JP\"}",
-  "createdBy": "a3d2e7b4-1234-4321-9abc-5678def01234"
+  "visitPlace": "{\"country\":\"JP\"}"
 }
 ```
 - **成功回應**
@@ -73,18 +73,17 @@ flowchart TD
 
 ### 2. 更新主行程 `POST /updateTravelMain`
 - **目的**：更新既有主行程，若日期區間變更會增刪 `TravelDate`。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 {
   "id": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
-  "memberId": "a3d2e7b4-1234-4321-9abc-5678def01234",
   "isPrivate": true,
   "startDate": "2024-09-02",
   "endDate": "2024-09-06",
   "title": "東京調整後行程",
   "notes": "更新備註",
-  "visitPlace": "{\"country\":\"JP\"}",
-  "createdBy": "a3d2e7b4-1234-4321-9abc-5678def01234"
+  "visitPlace": "{\"country\":\"JP\"}"
 }
 ```
 - **成功回應**
@@ -156,14 +155,12 @@ flowchart TD
 
 ### 4. 依會員查詢主行程 `POST /getTravelMainsByMemberId`
 - **目的**：取得指定會員的所有主行程。
-- **請求範例**
-```json
-{ "id": "a3d2e7b4-1234-4321-9abc-5678def01234" }
-```
+- **授權**：需要帶入 `Authorization: Bearer <token>`
+- **請求範例**：無需 request body
 - **成功回應**：`data` 為 `TravelMain` 陣列。
-- **失敗回應 (範例：TRAVEL_MEMBER_ID_REQUIRED)**
+- **失敗回應 (範例：TRAVEL_MEMBER_NOT_FOUND)**
 ```json
-{ "data": null, "meta": null, "error": { "code": "TRAVEL_MEMBER_ID_REQUIRED", "message": "Member id required" } }
+{ "data": null, "meta": null, "error": { "code": "TRAVEL_MEMBER_NOT_FOUND", "message": "Travel member not found" } }
 ```
 - **流程圖**
 ```mermaid
@@ -171,19 +168,18 @@ flowchart TD
   A --> B[POST /api/travels/getTravelMainsByMemberId]
   B --> C[TravelService.getTravelMainsByMemberId]
   C -->|成功| D[回傳行程陣列]
-  C -->|memberId 缺失| E[TRAVEL_MEMBER_ID_REQUIRED -> Error]
+  C -->|找不到會員| E[TRAVEL_MEMBER_NOT_FOUND -> Error]
 ```
 
 ---
 
-### 5. 複製主行程 `POST /copyTravelPlan`
-- **目的**：將某主行程複製給新會員，建立新的主行程及相關資料。
+- ### 5. 複製主行程 `POST /copyTravelPlan`
+- **目的**：將某主行程複製給目前登入會員，建立新的主行程及相關資料。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 {
-  "id": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
-  "memberId": "bbbbbbbb-1234-4321-9abc-5678def01234",
-  "createdBy": "a3d2e7b4-1234-4321-9abc-5678def01234"
+  "id": "30c29c31-e9c2-4d0a-81d2-4f2a07123456"
 }
 ```
 - **成功回應**：`data` 為新建 `TravelMain`。
@@ -202,12 +198,12 @@ flowchart TD
 
 ### 6. 新增行程日期 `POST /addTravelDate`
 - **目的**：於指定主行程後追加一天行程。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 {
   "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
-  "travelDate": "2024-09-05",
-  "createdBy": "a3d2e7b4-1234-4321-9abc-5678def01234"
+  "travelDate": "2024-09-05"
 }
 ```
 - **成功回應**：`data` 為新增的 `TravelDate`。
@@ -229,6 +225,7 @@ flowchart TD
 
 ### 7. 刪除行程日期 `POST /deleteTravelDate`
 - **目的**：刪除特定 `TravelDate`，若刪除最後一天則可能更新主行程結束日期。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 { "id": "5d5e5e5e-e9c2-4d0a-81d2-4f2a07123456" }
@@ -291,6 +288,7 @@ flowchart TD
 
 ### 10. 建立行程明細 `POST /createTravelDetail`
 - **目的**：在特定日期下新增一筆行程明細。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 {
@@ -300,8 +298,7 @@ flowchart TD
   "sort": 1,
   "startTime": "09:00",
   "endTime": "11:00",
-  "notes": "參觀景點",
-  "createdBy": "a3d2e7b4-1234-4321-9abc-5678def01234"
+  "notes": "參觀景點"
 }
 ```
 - **成功回應**：`data` 為新建 `TravelDetail`。
@@ -322,6 +319,7 @@ flowchart TD
 
 ### 11. 更新行程明細 `POST /updateTravelDetail`
 - **目的**：修改既有明細。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**：同 `createTravelDetail` 但需帶 `id`。
 - **成功回應**：`data` 為更新後 `TravelDetail`。
 - **失敗回應 (範例：TRAVEL_DETAIL_NOT_FOUND)**
@@ -341,6 +339,7 @@ flowchart TD
 
 ### 12. 調整明細排序 `POST /reorderTravelDetail`
 - **目的**：重新排序同日明細。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 [
@@ -395,8 +394,9 @@ flowchart TD
 
 ---
 
-### 15. 檢查時間衝突 `POST /checkTimeConflict`
+- ### 15. 檢查時間衝突 `POST /checkTimeConflict`
 - **目的**：確認明細時間是否與同日其他明細衝突。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**：同 `createTravelDetail` 格式。
 - **成功回應**：`data` 為布林值或詳細資訊（Service 回傳結果）。
 - **失敗回應 (範例：TRAVEL_DETAIL_INVALID_TIME)**
@@ -414,8 +414,9 @@ flowchart TD
 
 ---
 
-### 16. 刪除行程明細 `POST /deleteTravelDetail`
+- ### 16. 刪除行程明細 `POST /deleteTravelDetail`
 - **目的**：刪除單一明細及其相關交通紀錄。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**：`{ "id": "detail-uuid" }`
 - **成功回應**：`data` 為 `null`。
 - **失敗回應**：`TRAVEL_DETAIL_NOT_FOUND`。
@@ -434,6 +435,7 @@ flowchart TD
 
 ### 1. 建立/更新交通紀錄 `POST /create`
 - **目的**：新增或更新兩個行程明細之間的交通資訊。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 {
@@ -445,8 +447,7 @@ flowchart TD
   "transType": "CAR",
   "transTime": "00:30",
   "summary": "從A到B約30分鐘",
-  "notes": "備註",
-  "createdBy": "a3d2e7b4-1234-4321-9abc-5678def01234"
+  "notes": "備註"
 }
 ```
 - **成功回應**：`data` 為 `TransI18n`。
@@ -466,6 +467,7 @@ flowchart TD
 
 ### 2. 刪除交通紀錄 `POST /delete`
 - **目的**：依交通紀錄 ID 刪除。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
 { "id": "trans-uuid" }
