@@ -6,10 +6,15 @@ import Calendar from "./calendar";
 import TextField, { TextFieldSlot } from "@/app/components/TextField";
 import { FORMAT_TOKEN_MAP } from "./consts";
 
-import type { IDatePickerProps } from "./date-picker.types";
+import type { IDatePickerProps, SupportLocaleType } from "./date-picker.types";
+
+const langToLocaleMap: Record<string, SupportLocaleType> = {
+  en: "en-US",
+  zh: "zh-TW",
+};
 
 function DatePicker({
-  localeType = "en-US",
+  lng = "en",
   label,
   id,
   name,
@@ -18,6 +23,7 @@ function DatePicker({
   calendarOptions = {},
   required = false,
 }: IDatePickerProps) {
+  const localeType: SupportLocaleType = langToLocaleMap[lng] || "en-US";
   const inputId = useId();
 
   // Hold the month in state to control the calendar when the input changes
