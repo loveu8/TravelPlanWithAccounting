@@ -17,8 +17,15 @@ import { useT } from "@/app/i18n/client";
 import useDialogWithForm from "./useDialogWithForm";
 import ErrorProcess from "./error-process";
 
+export type SignUpData = {
+  givenName: string;
+  familyName: string;
+  nickName: string;
+  birthday: string;
+};
+
 export type SignUpImperativeHandle = {
-  openDialogWithPromise: () => Promise<boolean | undefined>;
+  openDialogWithPromise: () => Promise<SignUpData | undefined>;
 };
 
 const nameFields = [
@@ -36,24 +43,28 @@ const nameFields = [
 
 export default function SignUpDialog({
   ref,
+  defaultEmail,
 }: {
   ref?: React.RefObject<SignUpImperativeHandle | null>;
+  defaultEmail?: string;
 }) {
   const { lng } = useParams<{ lng: string }>();
   const { t } = useT("common");
   const { open, error, openDialogWithPromise, handleSubmit, handleOpenChange } =
-    useDialogWithForm({
+    useDialogWithForm<SignUpData>({
       onSubmit: async (e: React.FormEvent) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget as HTMLFormElement);
-        /**
-         * @todo 處理 API 存資料和驗證
-         */
-        console.log(
-          "Form data submitted:",
-          Object.fromEntries(formData.entries()),
-        );
-        return true;
+        const givenName = String(formData.get("givenName") || "").trim();
+        const familyName = String(formData.get("surname") || "").trim();
+        const nickName = String(formData.get("nickname") || "").trim();
+        const birthday = String(formData.get("birthday") || "").trim();
+
+        if (!givenName || !familyName || !nickName || !birthday) {
+          throw new Error("請完整填寫註冊資料");
+        }
+
+        return { givenName, familyName, nickName, birthday };
       },
     });
 
@@ -109,12 +120,14 @@ export default function SignUpDialog({
                   size="2"
                   type="email"
                   required
+                  defaultValue={defaultEmail}
+                  disabled
                 />
               </Grid>
               <ErrorProcess error={error} />
             </DialogBody>
             <DialogFooter justify="center" withCloseBtn>
-              <Button type="button" text={t("login.button-sign-up")}></Button>
+              <Button type="submit" text={t("login.button-sign-up")}></Button>
             </DialogFooter>
           </Grid>
         </form>
