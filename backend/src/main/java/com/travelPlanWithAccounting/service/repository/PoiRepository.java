@@ -46,6 +46,7 @@ public interface PoiRepository extends JpaRepository<Poi, UUID> {
              p.lat as lat,
              p.lon as lon,
              i.name as name,
+             i.countryName as countryName,
              i.cityName as cityName
         from Poi p
         join PoiI18n i on i.poi = p
@@ -78,6 +79,8 @@ public interface PoiRepository extends JpaRepository<Poi, UUID> {
     BigDecimal getLon();
 
     String getName();
+
+    String getCountryName();
 
     String getCityName();
   }

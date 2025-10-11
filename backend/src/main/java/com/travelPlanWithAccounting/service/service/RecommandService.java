@@ -10,7 +10,6 @@ import com.travelPlanWithAccounting.service.exception.RecommandException;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository.LocationSummary;
 import com.travelPlanWithAccounting.service.repository.PoiRepository.PoiExternalId;
-import com.travelPlanWithAccounting.service.service.SearchService;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import java.io.IOException;
 import java.io.InputStream;
@@ -198,6 +197,7 @@ public class RecommandService {
         .poiId(summary.getId())
         .placeId(summary.getExternalId())
         .name(summary.getName())
+        .country(summary.getCountryName())
         .city(summary.getCityName())
         .photoUrl(extractFirstPhoto(summary.getPhotoUrls()))
         .rating(toDouble(summary.getRating()))

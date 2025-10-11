@@ -57,6 +57,7 @@ Accept-Language: zh-TW
     "poiId": "42061ab7-174a-476f-85fd-23b6f89d360f",
     "placeId": "ChIJLZgN8z6tQjQR3kK3hKZJwJg",
     "name": "台北 101",
+    "country" : "台灣",
     "city": "台北市",
     "photoUrl": "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=...",
     "rating": 4.5,
@@ -67,6 +68,7 @@ Accept-Language: zh-TW
     "poiId": "e1985ee4-8d5a-45a5-9b34-60dffe2d8e3c",
     "placeId": "ChIJLZgN8z6tQjQR3kK3hKZJwJg",
     "name": "國立故宮博物院",
+    "country" : "台灣",
     "city": "台北市",
     "photoUrl": "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=...",
     "rating": 4.7,
@@ -85,6 +87,7 @@ Accept-Language: zh-TW
 | poiId | UUID | 內部景點 ID |
 | placeId | String | Google Places API 的 place ID |
 | name | String | 景點名稱（根據語系顯示） |
+| country | String | 所在國家名稱 |
 | city | String | 所在城市名稱 |
 | photoUrl | String | 景點照片 URL（第一張照片） |
 | rating | Double | 景點評分（1.0-5.0） |

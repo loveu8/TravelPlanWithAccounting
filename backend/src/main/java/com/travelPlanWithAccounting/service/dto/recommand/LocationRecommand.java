@@ -12,6 +12,7 @@ public class LocationRecommand {
   private UUID poiId;
   private String placeId;
   private String name;
+  private String country;
   private String city;
   private String photoUrl;
   private Double rating;
