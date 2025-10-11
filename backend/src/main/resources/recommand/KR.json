@@ -1,12 +1,42 @@
 [
-  { "poiId": "4392660f-1619-469c-8145-f87f786e5c40", "nameZh": "景福宮" },
-  { "poiId": "7c1e88d6-7bb1-40ed-8888-0eb7c87a01d5", "nameZh": "北村韓屋村" },
-  { "poiId": "cb83365e-6422-4768-b386-d4ac5c9bda3b", "nameZh": "明洞商圈" },
-  { "poiId": "04e03d47-8a35-4902-8ba2-aaf4d72faef6", "nameZh": "南山首爾塔" },
-  { "poiId": "cc9a2952-c1a2-4533-ae8a-f2427a7fb1cd", "nameZh": "東大門設計廣場" },
-  { "poiId": "5ce4e91e-78f9-4067-bcb5-a1888d4afece", "nameZh": "濟州城山日出峰" },
-  { "poiId": "37e7a183-07b5-43bd-9205-d53ee03ec4d0", "nameZh": "釜山甘川文化村" },
-  { "poiId": "45ca5bc2-bc57-4ea5-9d89-06bddd6ae7b9", "nameZh": "海雲台海水浴場" },
-  { "poiId": "80ee283a-072b-4cdd-91db-bfead79a9558", "nameZh": "樂天世界" },
-  { "poiId": "8bc32174-3887-4e9a-9587-3fdff5fdb6d3", "nameZh": "昌德宮後苑" }
+  {
+    "poiId": "750c029f-ffe0-4110-8cfe-015765ba3e26",
+    "nameZh": "景福宮"
+  },
+  {
+    "poiId": "64165f73-56c0-4dcd-9d21-3ec95b6b4f7e",
+    "nameZh": "北村韓屋村"
+  },
+  {
+    "poiId": "f3178a28-2da6-45a7-bb2c-f2570e46fe5f",
+    "nameZh": "明洞商圈"
+  },
+  {
+    "poiId": "4b6ad02f-436b-4eba-9739-8035d84f060e",
+    "nameZh": "南山首爾塔"
+  },
+  {
+    "poiId": "e3925521-106a-4b8f-83ab-4b4d75c56d68",
+    "nameZh": "東大門設計廣場 DDP"
+  },
+  {
+    "poiId": "208dbdde-0c63-4415-b23f-4052d66e2c82",
+    "nameZh": "濟州城山日出峰"
+  },
+  {
+    "poiId": "75480099-fe6b-464f-95ed-9b95fb2394bd",
+    "nameZh": "釜山甘川文化村"
+  },
+  {
+    "poiId": "b8312ec5-e055-4479-8c14-144421c44656",
+    "nameZh": "海雲台海灘"
+  },
+  {
+    "poiId": "f5063072-3a35-49f5-b7e7-53f95374a18c",
+    "nameZh": "樂天世界"
+  },
+  {
+    "poiId": "8adeae49-fd49-4f8e-a96d-d707746a4291",
+    "nameZh": "昌德宮後苑"
+  }
 ]
