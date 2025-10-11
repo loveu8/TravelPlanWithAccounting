@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum RecommandMessageCode implements MessageCode {
   INVALID_COUNTRY("RC-001", HttpStatus.BAD_REQUEST),
   UNSUPPORTED_LANG("RC-002", HttpStatus.BAD_REQUEST),
-  CONFIG_ERROR("RC-003", HttpStatus.INTERNAL_SERVER_ERROR);
+  CONFIG_ERROR("RC-003", HttpStatus.INTERNAL_SERVER_ERROR),
+  INVALID_LIMIT("RC-004", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final HttpStatus httpStatus;

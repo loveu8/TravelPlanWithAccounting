@@ -24,4 +24,10 @@ public class RecommandException {
       super(RecommandMessageCode.CONFIG_ERROR, new Object[] {country});
     }
   }
+
+  public static class InvalidLimit extends ApiException {
+    public InvalidLimit(Integer limit) {
+      super(RecommandMessageCode.INVALID_LIMIT, new Object[] {limit});
+    }
+  }
 }
