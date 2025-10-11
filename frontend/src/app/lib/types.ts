@@ -22,3 +22,17 @@ export type AuthResponse = {
     };
   };
 };
+
+export type RefreshResponse = {
+  data: { accessToken: string; expiresIn: number };
+};
+
+export type SessionData = {
+  valid?: boolean;
+  sub?: string;
+  id?: string;
+  role?: string;
+  exp?: number;
+  tokenType?: "ACCESS" | "REFRESH";
+  reason?: string | null;
+};

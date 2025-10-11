@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import type { RefreshResponse } from "./types";
 
 // Central axios instance
 export const api = axios.create({
@@ -15,8 +16,6 @@ const refreshClient = axios.create({
   baseURL: "", // call Next.js BFF routes on same origin
   headers: { "Content-Type": "application/json" },
 });
-
-type RefreshResponse = { accessToken: string; expiresIn: number };
 
 let isRefreshing = false;
 let pendingQueue: Array<(token: string | null) => void> = [];
@@ -59,7 +58,7 @@ api.interceptors.response.use(
         {},
       );
       // Do not store or set headers; cookies updated by BFF are enough
-      onRefreshed(data.accessToken || null);
+      onRefreshed(data.data.accessToken || null);
       return api.request(original);
     } catch (e) {
       onRefreshed(null);

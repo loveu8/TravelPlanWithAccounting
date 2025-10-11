@@ -61,6 +61,9 @@ export default function SignUpDialog({
         const birthday = String(formData.get("birthday") || "").trim();
 
         if (!givenName || !familyName || !nickName || !birthday) {
+          /**
+           * @todo Hard-coded Chinese error message should use the translation system like other error messages in the component for internationalization consistency.
+           */
           throw new Error("請完整填寫註冊資料");
         }
 

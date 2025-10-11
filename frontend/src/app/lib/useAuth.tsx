@@ -2,7 +2,8 @@
 import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { api } from "./http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PreAuthFlowResponse } from "./types";
+import type { PreAuthFlowResponse, SessionData } from "./types";
+import type { AxiosResponse } from "axios";
 
 export type AuthState = {
   user: { id: string; role: string } | null;
@@ -35,33 +36,26 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  type SessionData = {
-    valid?: boolean;
-    sub?: string;
-    id?: string;
-    role?: string;
-    exp?: number;
-    tokenType?: "ACCESS" | "REFRESH";
-    reason?: string | null;
-  };
   const sessionQuery = useQuery({
     queryKey: ["auth", "session"],
     queryFn: async () => {
       try {
-        const { data } = await api.post("/api/auth/verify", {});
-        return data as SessionData;
+        const { data } = await api.post<unknown, AxiosResponse<SessionData>>(
+          "/api/auth/verify",
+          {},
+        );
+        return data;
       } catch {
-        return { valid: false } as SessionData;
+        return { valid: false };
       }
     },
     staleTime: 60 * 1000,
     refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const user = useMemo(() => {
-    const d = sessionQuery.data as
-      | { valid?: boolean; sub?: string; id?: string; role?: string }
-      | undefined;
+    const d = sessionQuery.data;
     if (!d || d.valid === false) return null;
     return { id: d.sub ?? d.id ?? "", role: d.role ?? "" };
   }, [sessionQuery.data]);
@@ -80,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       birthday?: string;
     }) => {
       const res = await api.post("/api/members/auth-flow", input);
-      return res.data as { id: string; role: string };
+      return res.data;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
@@ -114,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useMutation({
       mutationFn: async () => {
         const res = await api.post("/api/auth/refresh", {});
-        return res.data as { accessToken?: string };
+        return res.data;
       },
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
