@@ -4,10 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.travelPlanWithAccounting.service.dto.recommand.LocationRecommand;
+import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.exception.MemberPoiException;
 import com.travelPlanWithAccounting.service.exception.RecommandException;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository.LocationSummary;
+import com.travelPlanWithAccounting.service.repository.PoiRepository.PoiExternalId;
+import com.travelPlanWithAccounting.service.service.SearchService;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +43,7 @@ public class RecommandService {
 
   private final PoiRepository poiRepository;
   private final LangTypeMapper langTypeMapper;
+  private final SearchService searchService;
   private final ResourceLoader resourceLoader;
   private final ObjectMapper objectMapper;
 
@@ -62,13 +66,22 @@ public class RecommandService {
             .collect(Collectors.toMap(LocationSummary::getId, r -> r, (left, right) -> left));
 
     List<LocationRecommand> result = new ArrayList<>(definitions.size());
+    Map<UUID, String> externalIdMap = null;
     for (RecommandDefinition definition : definitions) {
       LocationSummary summary = dataMap.get(definition.poiId());
       if (summary == null) {
-        log.warn(
-            "POI {} defined in {} recommendations missing from database.",
-            definition.poiId(),
-            country);
+        if (externalIdMap == null) {
+          externalIdMap = loadExternalIds(poiIds);
+        }
+        LocationRecommand refreshed = refreshFromPlaceDetails(definition, externalIdMap);
+        if (refreshed == null) {
+          log.warn(
+              "POI {} defined in {} recommendations missing from database.",
+              definition.poiId(),
+              country);
+          continue;
+        }
+        result.add(refreshed);
         continue;
       }
       result.add(toDto(summary));
@@ -86,6 +99,19 @@ public class RecommandService {
         .rating(toDouble(summary.getRating()))
         .lat(toDouble(summary.getLat()))
         .lon(toDouble(summary.getLon()))
+        .build();
+  }
+
+  private LocationRecommand toDto(PlaceDetailResponse detail) {
+    return LocationRecommand.builder()
+        .poiId(detail.getPoiId())
+        .placeId(detail.getPlaceId())
+        .name(detail.getName())
+        .city(detail.getCity())
+        .photoUrl(firstPhoto(detail.getPhotoUrls()))
+        .rating(detail.getRating())
+        .lat(detail.getLat())
+        .lon(detail.getLon())
         .build();
   }
 
@@ -119,6 +145,13 @@ public class RecommandService {
       log.warn("Failed to parse photoUrls JSON for poi {}", photoJson, e);
     }
     return null;
+  }
+
+  private String firstPhoto(List<String> photos) {
+    if (photos == null || photos.isEmpty()) {
+      return null;
+    }
+    return photos.get(0);
   }
 
   private List<RecommandDefinition> loadDefinitions(String country) {
@@ -160,6 +193,37 @@ public class RecommandService {
       return langTypeMapper.toCode(languageTag);
     } catch (MemberPoiException.UnsupportedLang ex) {
       throw new RecommandException.UnsupportedLang(languageTag);
+    }
+  }
+
+  private Map<UUID, String> loadExternalIds(List<UUID> poiIds) {
+    if (poiIds.isEmpty()) {
+      return Map.of();
+    }
+    return poiRepository.findAllExternalIdsByIdIn(poiIds).stream()
+        .collect(Collectors.toMap(PoiExternalId::getId, PoiExternalId::getExternalId));
+  }
+
+  private LocationRecommand refreshFromPlaceDetails(
+      RecommandDefinition definition, Map<UUID, String> externalIdMap) {
+    String externalId = externalIdMap.get(definition.poiId());
+    if (externalId == null || externalId.isBlank()) {
+      log.warn("POI {} missing externalId while refreshing recommendations.", definition.poiId());
+      return null;
+    }
+    try {
+      PlaceDetailResponse detail = searchService.getPlaceDetailById(externalId);
+      if (detail == null) {
+        log.warn("Place detail API returned null for poiId {}.", definition.poiId());
+        return null;
+      }
+      return toDto(detail);
+    } catch (RuntimeException ex) {
+      log.error(
+          "Failed to refresh recommendation for poi {} via placeDetails API.",
+          definition.poiId(),
+          ex);
+      return null;
     }
   }
 
