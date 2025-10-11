@@ -8,7 +8,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,8 +21,7 @@ public class RecommandController {
 
   @GetMapping("/{country}")
   @Operation(summary = "取得指定國家的推薦景點")
-  public List<LocationRecommand> getRecommendations(
-      @PathVariable String country, @RequestHeader("Accept-Language") String acceptLanguage) {
-    return recommandService.getRecommendations(country, acceptLanguage);
+  public List<LocationRecommand> getRecommendations(@PathVariable String country) {
+    return recommandService.getRecommendations(country);
   }
 }

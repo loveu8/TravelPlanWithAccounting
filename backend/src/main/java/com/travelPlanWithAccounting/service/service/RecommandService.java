@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -42,12 +43,11 @@ public class RecommandService {
   private final ResourceLoader resourceLoader;
   private final ObjectMapper objectMapper;
 
-  private final ConcurrentMap<String, List<RecommandDefinition>> cache =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, List<RecommandDefinition>> cache = new ConcurrentHashMap<>();
 
-  public List<LocationRecommand> getRecommendations(String countryCode, String acceptLanguage) {
+  public List<LocationRecommand> getRecommendations(String countryCode) {
     String country = normalizeCountry(countryCode);
-    String languageTag = normalizeLanguage(acceptLanguage);
+    String languageTag = LocaleContextHolder.getLocale().toLanguageTag();
     String langType = toLangType(languageTag);
 
     List<RecommandDefinition> definitions = loadDefinitions(country);
@@ -56,12 +56,10 @@ public class RecommandService {
     }
 
     List<UUID> poiIds = definitions.stream().map(RecommandDefinition::poiId).toList();
-    List<LocationSummary> rows =
-        poiRepository.findAllWithI18nByIdInAndLangType(poiIds, langType);
+    List<LocationSummary> rows = poiRepository.findAllWithI18nByIdInAndLangType(poiIds, langType);
     Map<UUID, LocationSummary> dataMap =
         rows.stream()
-            .collect(
-                Collectors.toMap(LocationSummary::getId, r -> r, (left, right) -> left));
+            .collect(Collectors.toMap(LocationSummary::getId, r -> r, (left, right) -> left));
 
     List<LocationRecommand> result = new ArrayList<>(definitions.size());
     for (RecommandDefinition definition : definitions) {
@@ -134,8 +132,7 @@ public class RecommandService {
     }
     try (InputStream inputStream = resource.getInputStream()) {
       List<RecommandDefinition> definitions =
-          objectMapper.readValue(
-              inputStream, new TypeReference<List<RecommandDefinition>>() {});
+          objectMapper.readValue(inputStream, new TypeReference<List<RecommandDefinition>>() {});
       if (definitions.size() != EXPECTED_RECOMMANDATIONS
           || definitions.stream().map(RecommandDefinition::poiId).anyMatch(Objects::isNull)) {
         throw new RecommandException.ConfigError(country);
@@ -156,23 +153,6 @@ public class RecommandService {
       throw new RecommandException.InvalidCountry(countryCode);
     }
     return normalized;
-  }
-
-  private String normalizeLanguage(String acceptLanguage) {
-    if (acceptLanguage == null || acceptLanguage.isBlank()) {
-      throw new RecommandException.UnsupportedLang(acceptLanguage);
-    }
-    String[] parts = acceptLanguage.split(",");
-    String primary = parts[0].trim();
-    if (primary.isEmpty()) {
-      throw new RecommandException.UnsupportedLang(acceptLanguage);
-    }
-    Locale locale = Locale.forLanguageTag(primary);
-    String tag = locale.toLanguageTag();
-    if (tag == null || tag.isBlank()) {
-      throw new RecommandException.UnsupportedLang(acceptLanguage);
-    }
-    return tag;
   }
 
   private String toLangType(String languageTag) {
