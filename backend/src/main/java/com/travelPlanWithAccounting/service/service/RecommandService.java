@@ -1,0 +1,187 @@
+package com.travelPlanWithAccounting.service.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.travelPlanWithAccounting.service.dto.recommand.LocationRecommand;
+import com.travelPlanWithAccounting.service.exception.MemberPoiException;
+import com.travelPlanWithAccounting.service.exception.RecommandException;
+import com.travelPlanWithAccounting.service.repository.PoiRepository;
+import com.travelPlanWithAccounting.service.repository.PoiRepository.LocationSummary;
+import com.travelPlanWithAccounting.service.util.LangTypeMapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class RecommandService {
+
+  private static final String RESOURCE_PATTERN = "classpath:recommand/%s.json";
+  private static final int EXPECTED_RECOMMANDATIONS = 10;
+  private static final Set<String> SUPPORTED_COUNTRY_CODES = Set.of("TW", "JP", "KR", "HK");
+
+  private final PoiRepository poiRepository;
+  private final LangTypeMapper langTypeMapper;
+  private final ResourceLoader resourceLoader;
+  private final ObjectMapper objectMapper;
+
+  private final ConcurrentMap<String, List<RecommandDefinition>> cache =
+      new ConcurrentHashMap<>();
+
+  public List<LocationRecommand> getRecommendations(String countryCode, String acceptLanguage) {
+    String country = normalizeCountry(countryCode);
+    String languageTag = normalizeLanguage(acceptLanguage);
+    String langType = toLangType(languageTag);
+
+    List<RecommandDefinition> definitions = loadDefinitions(country);
+    if (definitions.isEmpty()) {
+      return List.of();
+    }
+
+    List<UUID> poiIds = definitions.stream().map(RecommandDefinition::poiId).toList();
+    List<LocationSummary> rows =
+        poiRepository.findAllWithI18nByIdInAndLangType(poiIds, langType);
+    Map<UUID, LocationSummary> dataMap =
+        rows.stream()
+            .collect(
+                Collectors.toMap(LocationSummary::getId, r -> r, (left, right) -> left));
+
+    List<LocationRecommand> result = new ArrayList<>(definitions.size());
+    for (RecommandDefinition definition : definitions) {
+      LocationSummary summary = dataMap.get(definition.poiId());
+      if (summary == null) {
+        log.warn(
+            "POI {} defined in {} recommendations missing from database.",
+            definition.poiId(),
+            country);
+        continue;
+      }
+      result.add(toDto(summary));
+    }
+    return result;
+  }
+
+  private LocationRecommand toDto(LocationSummary summary) {
+    return LocationRecommand.builder()
+        .poiId(summary.getId())
+        .placeId(summary.getExternalId())
+        .name(summary.getName())
+        .city(summary.getCityName())
+        .photoUrl(extractFirstPhoto(summary.getPhotoUrls()))
+        .rating(toDouble(summary.getRating()))
+        .lat(toDouble(summary.getLat()))
+        .lon(toDouble(summary.getLon()))
+        .build();
+  }
+
+  private Double toDouble(BigDecimal value) {
+    return value == null ? null : value.doubleValue();
+  }
+
+  private String extractFirstPhoto(String photoJson) {
+    if (photoJson == null || photoJson.isBlank()) {
+      return null;
+    }
+    try {
+      JsonNode node = objectMapper.readTree(photoJson);
+      if (!node.isArray() || node.isEmpty()) {
+        return null;
+      }
+      JsonNode first = node.get(0);
+      if (first == null) {
+        return null;
+      }
+      if (first.isTextual()) {
+        return first.asText();
+      }
+      if (first.hasNonNull("url")) {
+        return first.get("url").asText();
+      }
+      if (first.hasNonNull("photoUrl")) {
+        return first.get("photoUrl").asText();
+      }
+    } catch (IOException e) {
+      log.warn("Failed to parse photoUrls JSON for poi {}", photoJson, e);
+    }
+    return null;
+  }
+
+  private List<RecommandDefinition> loadDefinitions(String country) {
+    return cache.computeIfAbsent(country, this::readDefinitions);
+  }
+
+  private List<RecommandDefinition> readDefinitions(String country) {
+    Resource resource = resourceLoader.getResource(RESOURCE_PATTERN.formatted(country));
+    if (!resource.exists()) {
+      throw new RecommandException.ConfigError(country);
+    }
+    try (InputStream inputStream = resource.getInputStream()) {
+      List<RecommandDefinition> definitions =
+          objectMapper.readValue(
+              inputStream, new TypeReference<List<RecommandDefinition>>() {});
+      if (definitions.size() != EXPECTED_RECOMMANDATIONS
+          || definitions.stream().map(RecommandDefinition::poiId).anyMatch(Objects::isNull)) {
+        throw new RecommandException.ConfigError(country);
+      }
+      return List.copyOf(definitions);
+    } catch (IOException e) {
+      log.error("Failed to load recommendations for {}", country, e);
+      throw new RecommandException.ConfigError(country);
+    }
+  }
+
+  private String normalizeCountry(String countryCode) {
+    if (countryCode == null) {
+      throw new RecommandException.InvalidCountry(null);
+    }
+    String normalized = countryCode.trim().toUpperCase(Locale.ROOT);
+    if (!SUPPORTED_COUNTRY_CODES.contains(normalized)) {
+      throw new RecommandException.InvalidCountry(countryCode);
+    }
+    return normalized;
+  }
+
+  private String normalizeLanguage(String acceptLanguage) {
+    if (acceptLanguage == null || acceptLanguage.isBlank()) {
+      throw new RecommandException.UnsupportedLang(acceptLanguage);
+    }
+    String[] parts = acceptLanguage.split(",");
+    String primary = parts[0].trim();
+    if (primary.isEmpty()) {
+      throw new RecommandException.UnsupportedLang(acceptLanguage);
+    }
+    Locale locale = Locale.forLanguageTag(primary);
+    String tag = locale.toLanguageTag();
+    if (tag == null || tag.isBlank()) {
+      throw new RecommandException.UnsupportedLang(acceptLanguage);
+    }
+    return tag;
+  }
+
+  private String toLangType(String languageTag) {
+    try {
+      return langTypeMapper.toCode(languageTag);
+    } catch (MemberPoiException.UnsupportedLang ex) {
+      throw new RecommandException.UnsupportedLang(languageTag);
+    }
+  }
+
+  private record RecommandDefinition(UUID poiId, String nameZh) {}
+}
