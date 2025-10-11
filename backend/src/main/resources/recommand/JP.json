@@ -1,12 +1,42 @@
 [
-  { "poiId": "7cc7d91f-8b84-4a50-b2f7-af17de0bbd8b", "nameZh": "東京晴空塔" },
-  { "poiId": "f6c9f3ab-8bbc-45c1-9a23-7b99839c65d5", "nameZh": "淺草寺" },
-  { "poiId": "2343c19c-b120-4ec4-b3ec-c0c9505c6a13", "nameZh": "伏見稻荷大社" },
-  { "poiId": "756d7f6d-34e1-4520-869a-e33723c16d33", "nameZh": "嵐山竹林" },
-  { "poiId": "033c4272-dc22-4126-9301-1df5a30da89d", "nameZh": "大阪城" },
-  { "poiId": "f2098f44-8427-4b7d-b52e-3fdfbb65d150", "nameZh": "道頓堀" },
-  { "poiId": "4838fb91-2ebd-4b38-980e-8293aac38729", "nameZh": "富士山河口湖" },
-  { "poiId": "0f2b2157-de13-432b-83d2-40b7d86cd135", "nameZh": "日本環球影城" },
-  { "poiId": "13bcbfcd-ad47-4ccd-8fef-8eb339474be4", "nameZh": "奈良公園" },
-  { "poiId": "f86444c4-e6fc-4671-97f1-3efe909dd9a7", "nameZh": "澀谷十字路口" }
+  {
+    "poiId": "cd0c73e0-f893-4729-9f71-3a28efa67f82",
+    "nameZh": "東京晴空塔"
+  },
+  {
+    "poiId": "9da3a674-8c76-46ff-8af2-7c3d47ee9a49",
+    "nameZh": "淺草寺"
+  },
+  {
+    "poiId": "04ba2eec-f634-48f6-ba62-9f8071a249b0",
+    "nameZh": "伏見稻荷大社"
+  },
+  {
+    "poiId": "a4923f62-a558-4103-812a-1a8e43053dc7",
+    "nameZh": "嵐山竹林小徑"
+  },
+  {
+    "poiId": "10d14001-f79b-4df2-a7ce-70f9e5333115",
+    "nameZh": "大阪城"
+  },
+  {
+    "poiId": "bb6b77c8-21f7-43bf-bd0e-e56d02ca289d",
+    "nameZh": "道頓堀"
+  },
+  {
+    "poiId": "9d8311cf-7d6a-4f73-b5b7-da110d5717ab",
+    "nameZh": "富士山河口湖"
+  },
+  {
+    "poiId": "f886f219-2592-4da7-b12b-6a45ba243dae",
+    "nameZh": "日本環球影城"
+  },
+  {
+    "poiId": "0406b39a-d7e8-4971-be1a-6ad21958a859",
+    "nameZh": "東京迪士尼樂園"
+  },
+  {
+    "poiId": "71231ab1-7157-4ec6-a64b-76842956b802",
+    "nameZh": "澀谷十字路口"
+  }
 ]
