@@ -66,6 +66,8 @@ Accept-Language: zh-TW
 
 #### 回應欄位說明
 
+**成功回應欄位**：
+
 | 欄位名稱 | 類型 | 說明 |
 |----------|------|------|
 | poiId | UUID | 內部景點 ID |
@@ -77,14 +79,30 @@ Accept-Language: zh-TW
 | lat | Double | 緯度 |
 | lon | Double | 經度 |
 
+**錯誤回應欄位**：
+
+| 欄位名稱 | 類型 | 說明 |
+|----------|------|------|
+| data | Object | 成功時為資料內容，錯誤時為 null |
+| meta | Object | 輔助資訊，錯誤時為 null |
+| error | Object | 錯誤資訊，成功時為 null |
+| error.code | String | 錯誤代碼（如 RC-001、RC-002、RC-003） |
+| error.message | String | 錯誤訊息（根據語系顯示） |
+| error.timestamp | String | 錯誤發生時間（ISO 8601 格式） |
+| error.details | Object | 額外錯誤詳情，通常為 null |
+
 #### 錯誤回應
 
 **不支援的國家代碼**：
 ```json
 {
+  "data": null,
+  "meta": null,
   "error": {
-    "code": "INVALID_COUNTRY",
-    "message": "不支援的國家代碼: XX"
+    "code": "RC-001",
+    "message": "country 僅支援 TW/JP/KR/HK，傳入值: XX",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "details": null
   }
 }
 ```
@@ -92,9 +110,13 @@ Accept-Language: zh-TW
 **不支援的語系**：
 ```json
 {
+  "data": null,
+  "meta": null,
   "error": {
-    "code": "UNSUPPORTED_LANG",
-    "message": "不支援的語系: xx-XX"
+    "code": "RC-002",
+    "message": "Accept-Language 僅支援 zh-TW 與 en-US，傳入值: xx-XX",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "details": null
   }
 }
 ```
@@ -102,9 +124,13 @@ Accept-Language: zh-TW
 **配置錯誤**：
 ```json
 {
+  "data": null,
+  "meta": null,
   "error": {
-    "code": "CONFIG_ERROR",
-    "message": "推薦配置檔案錯誤: TW"
+    "code": "RC-003",
+    "message": "推薦清單設定錯誤：TW",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "details": null
   }
 }
 ```
@@ -260,14 +286,35 @@ curl -X GET "http://localhost:8080/api/recommands/KR"
 2. **錯誤處理**：
    ```javascript
    try {
-     const recommendations = await getRecommendations(country);
-     // 處理成功回應
-   } catch (error) {
-     if (error.code === 'INVALID_COUNTRY') {
-       // 顯示不支援的國家訊息
-     } else if (error.code === 'UNSUPPORTED_LANG') {
-       // 切換到預設語系
+     const response = await fetch('/api/recommands/TW', {
+       headers: { 'Accept-Language': 'zh-TW' }
+     });
+     
+     const result = await response.json();
+     
+     if (result.error) {
+       // 處理錯誤
+       switch (result.error.code) {
+         case 'RC-001':
+           console.error('不支援的國家代碼:', result.error.message);
+           break;
+         case 'RC-002':
+           console.error('不支援的語系:', result.error.message);
+           // 切換到預設語系
+           break;
+         case 'RC-003':
+           console.error('配置錯誤:', result.error.message);
+           break;
+         default:
+           console.error('未知錯誤:', result.error.message);
+       }
+     } else {
+       // 處理成功回應
+       const recommendations = result.data || result; // 直接返回資料時
+       console.log('推薦景點:', recommendations);
      }
+   } catch (error) {
+     console.error('請求失敗:', error);
    }
    ```
 
@@ -305,6 +352,27 @@ A: 不會自動更新，需要手動修改配置檔案。但景點的基本資�
 
 ### Q: 如果某個景點資料庫中找不到怎麼辦？
 A: 系統會嘗試透過 Google Places API 即時取得該景點的詳細資訊。
+
+### Q: 錯誤代碼代表什麼意思？
+A: 系統使用標準化的錯誤代碼：
+- **RC-001**: 不支援的國家代碼，只接受 TW、JP、KR、HK
+- **RC-002**: 不支援的語系，只接受 zh-TW 和 en-US
+- **RC-003**: 推薦配置檔案錯誤，可能是 JSON 格式問題或景點數量不符
+
+### Q: 錯誤回應格式是什麼？
+A: 所有錯誤都使用統一的 `RestResponse` 格式：
+```json
+{
+  "data": null,
+  "meta": null,
+  "error": {
+    "code": "RC-001",
+    "message": "具體錯誤訊息",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "details": null
+  }
+}
+```
 
 ---
 
