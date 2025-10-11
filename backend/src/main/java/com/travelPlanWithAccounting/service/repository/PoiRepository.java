@@ -55,6 +55,15 @@ public interface PoiRepository extends JpaRepository<Poi, UUID> {
   java.util.List<LocationSummary> findAllWithI18nByIdInAndLangType(
       @Param("poiIds") Collection<UUID> poiIds, @Param("langType") String langType);
 
+  @Query(
+      """
+      select p.id as id,
+             p.externalId as externalId
+        from Poi p
+       where p.id in :poiIds
+      """)
+  java.util.List<PoiExternalId> findAllExternalIdsByIdIn(@Param("poiIds") Collection<UUID> poiIds);
+
   interface LocationSummary {
     UUID getId();
 
@@ -71,5 +80,11 @@ public interface PoiRepository extends JpaRepository<Poi, UUID> {
     String getName();
 
     String getCityName();
+  }
+
+  interface PoiExternalId {
+    UUID getId();
+
+    String getExternalId();
   }
 }
