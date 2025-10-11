@@ -37,10 +37,12 @@ interface ICommonProps
  * 底線樣式 props
  * @property {keyof typeof RadixColorName} underlineColor - active 底線顏色
  * @property {number} underlineHeight                     - active 底線高度
+ * @property {string} className                           - 自定義樣式類名
  */
 export interface IUnderlineTabProps extends ICommonProps {
   underlineColor?: keyof typeof RadixColorName;
   underlineHeight?: number;
+  className?: string;
 }
 
 export type IPillTabProps = Omit<ICommonProps, "size">;
