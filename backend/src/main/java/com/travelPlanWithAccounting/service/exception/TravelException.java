@@ -101,4 +101,16 @@ public class TravelException extends ApiException {
             super(TravelMessageCode.TRAVEL_DETAILS_NOT_SAME_TRAVEL);
         }
     }
+
+    public static class PopularStrategyInvalid extends ApiException {
+        public PopularStrategyInvalid(String strategy) {
+            super(TravelMessageCode.POPULAR_STRATEGY_INVALID, new Object[] {strategy});
+        }
+    }
+
+    public static class PopularMinFavoritesInvalid extends ApiException {
+        public PopularMinFavoritesInvalid(Integer value) {
+            super(TravelMessageCode.POPULAR_MIN_FAVORITES_INVALID, new Object[] {value});
+        }
+    }
 }
