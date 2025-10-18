@@ -3,13 +3,16 @@ package com.travelPlanWithAccounting.service.controller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.travelPlanWithAccounting.service.dto.UuidRequest;
 import com.travelPlanWithAccounting.service.dto.system.RestResponse;
+import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResult;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
@@ -20,9 +23,11 @@ import com.travelPlanWithAccounting.service.entity.TravelDate;
 import com.travelPlanWithAccounting.service.entity.TravelDetail;
 import com.travelPlanWithAccounting.service.entity.TravelMain;
 import com.travelPlanWithAccounting.service.security.AccessTokenRequired;
+import com.travelPlanWithAccounting.service.service.TravelPopularityService;
 import com.travelPlanWithAccounting.service.service.TravelService;
 import com.travelPlanWithAccounting.service.util.RestResponseUtils;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -32,10 +37,12 @@ public class TravelController {
 
     private final TravelService travelService;
     private final AuthContext authContext;
+    private final TravelPopularityService travelPopularityService;
 
-    public TravelController(TravelService travelService, AuthContext authContext) {
+    public TravelController(TravelService travelService, AuthContext authContext, TravelPopularityService travelPopularityService) {
         this.travelService = travelService;
         this.authContext = authContext;
+        this.travelPopularityService = travelPopularityService;
     }
 
     @PostMapping("/createTravelMain")
@@ -159,5 +166,15 @@ public class TravelController {
     public RestResponse<Object, Object> deleteTravelDetailById(@RequestBody UuidRequest request) {
         travelService.deleteTravelDetailById(request.getId());
         return RestResponseUtils.success(null);
+    }
+
+    @GetMapping("/popular")
+    @Operation(summary = "取得人氣行程", description = "依據收藏數回傳最多四筆公開人氣行程")
+    public RestResponse<Object, Object> getPopularTravels(
+        @RequestParam(name = "strategy", defaultValue = "top") String strategy,
+        @RequestParam(name = "minFavorites", required = false) Integer minFavorites
+    ) {
+        PopularTravelResult result = travelPopularityService.getPopularTravels(strategy, minFavorites);
+        return RestResponseUtils.successWithMeta(result.travels(), result.meta());
     }
 }
