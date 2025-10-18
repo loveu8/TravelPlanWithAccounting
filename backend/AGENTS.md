@@ -4,11 +4,11 @@
 
 ```
 Java: 21
-Spring Boot: 3.5.3
+Spring Boot: 3.5.6
 OpenAPI: springdoc-openapi 2.8.6
-JWT: jjwt 0.12.5
+JWT: jjwt 0.13.0
 Database: PostgreSQL + Spring Data JPA
-Apache HttpClient: 4.5.9
+Apache HttpClient: 4.5.14
 其他: HikariCP, Jackson Hibernate6, Gson, Spring Security, Spring Mail
 ```
 
