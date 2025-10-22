@@ -55,11 +55,25 @@ export default function ValidateEmail() {
         ref={otpDialogRef}
         title={memberTranslate("edit.original-email-otp")}
         buttonText={memberTranslate("edit.button-validate")}
+        onResend={async () => {
+          console.log("Resend OTP");
+        }}
+        onSubmitOtp={async (otp: string) => {
+          console.log("Submitted OTP:", otp);
+          return true;
+        }}
       />
       <OTPDialog
         ref={newEmailOtpDialogRef}
         title={memberTranslate("edit.new-email-otp")}
         buttonText={memberTranslate("edit.button-validate")}
+        onResend={async () => {
+          console.log("Resend OTP for new email");
+        }}
+        onSubmitOtp={async (otp: string) => {
+          console.log("Submitted OTP for new email:", otp);
+          return true;
+        }}
       />
       <NewEmailDialog ref={newEmailDialogRef} />
     </>
