@@ -6,10 +6,12 @@ import Button from "@/app/components/Button";
 
 interface CardSectionProps<T> {
   title: string;
-  data: T[];
+  data: Partial<T>[];
   CardComponent: React.ComponentType<T>;
   buttonText?: string;
   viewMoreUrl?: string;
+  handleCardClick?: (id: string, title: string) => void;
+  handleBookmarkClick?: (id: string) => void;
 }
 
 export default function CardSection<T>({
@@ -18,6 +20,8 @@ export default function CardSection<T>({
   CardComponent,
   buttonText,
   viewMoreUrl,
+  handleCardClick,
+  handleBookmarkClick,
 }: CardSectionProps<T>) {
   const router = useRouter();
   return (
@@ -27,7 +31,12 @@ export default function CardSection<T>({
       </Heading>
       <Grid columns="4" gap="6" width="auto">
         {data.map((item, index) => {
-          return <CardComponent key={index} {...item} />;
+          const props = {
+            ...item,
+            handleCardClick,
+            handleBookmarkClick,
+          } as T;
+          return <CardComponent key={index} {...props} />;
         })}
       </Grid>
       {buttonText && (
