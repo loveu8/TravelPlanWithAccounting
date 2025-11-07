@@ -31,7 +31,8 @@ interface ICardBodyProps {
  * @property {React.ReactNode} [children] - 子元素
  */
 interface ICardBaseProps extends ICardHeadProps, ICardBodyProps {
-  handleCardClick: () => void;
+  id: string;
+  handleCardClick: (id: string, title: string) => void;
   children?: React.ReactNode;
 }
 
@@ -61,7 +62,7 @@ interface ITravelPlanCardProps extends ICardBaseProps {
   location: string;
   author: string;
   isBookmarked: boolean;
-  handleBookmarkClick: () => void;
+  handleBookmarkClick: (id: string) => void;
 }
 
 /**
@@ -80,8 +81,8 @@ interface ILandscapeCardProps extends ICardBaseProps {
   score: number;
   evaluateCount: number;
   isBookmarked: boolean;
-  handleBookmarkClick: () => void;
-  handleAddScheduleClick: () => void;
+  handleBookmarkClick: (id: string) => void;
+  handleAddScheduleClick: (id: string) => void;
 }
 
 /**
