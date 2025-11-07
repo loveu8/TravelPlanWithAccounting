@@ -13,12 +13,15 @@ import PinpointIcon from "@/app/assets/pinpoint.svg";
 
 export default function LandScapeCard(props: ILandscapeCardProps) {
   const {
+    id,
+    title,
     location,
     score,
     evaluateCount,
     isBookmarked,
     handleBookmarkClick,
     handleAddScheduleClick,
+    handleCardClick,
   } = props;
   return (
     <div className="relative group">
@@ -27,7 +30,7 @@ export default function LandScapeCard(props: ILandscapeCardProps) {
           <Button
             size="2"
             icon={<PlusCircledIcon width={18} height={18} />}
-            handleClick={handleAddScheduleClick}
+            handleClick={() => handleAddScheduleClick(id)}
           />
           <Button
             size="2"
@@ -38,11 +41,11 @@ export default function LandScapeCard(props: ILandscapeCardProps) {
                 <BookmarkIcon width={18} height={18} />
               )
             }
-            handleClick={handleBookmarkClick}
+            handleClick={() => handleBookmarkClick(id)}
           />
         </div>
       </div>
-      <CardBase {...props}>
+      <CardBase {...props} handleCardClick={() => handleCardClick(id, title)}>
         <Badge
           text={location}
           icon={<PinpointIcon className="text-blue-9" />}

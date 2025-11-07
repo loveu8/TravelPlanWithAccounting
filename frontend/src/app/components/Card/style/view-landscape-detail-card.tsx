@@ -58,6 +58,7 @@ function LandscapeDetailItem({
 }
 
 export default function ViewLandscapeDetailCard({
+  id,
   title,
   imgSrc,
   score,
@@ -109,12 +110,12 @@ export default function ViewLandscapeDetailCard({
                   <BookmarkIcon width={16} height={16} />
                 )
               }
-              onClick={handleBookmarkClick}
+              handleClick={() => handleBookmarkClick(id)}
             />
             <Button
               size="2"
               text={t("common.schedule-add")}
-              onClick={handleAddScheduleClick}
+              handleClick={() => handleAddScheduleClick(id)}
             />
           </Flex>
         </Flex>

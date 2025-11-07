@@ -4,6 +4,7 @@ import CardHead from "@/app/components/Card/style/base/card-head";
 import CardBody from "@/app/components/Card/style/base/card-body";
 
 export default function CardBase({
+  id,
   title,
   imgSrc,
   tags,
@@ -11,7 +12,10 @@ export default function CardBase({
   children,
 }: ICardBaseProps) {
   return (
-    <div className="space-y-2 cursor-pointer" onClick={handleCardClick}>
+    <div
+      className="space-y-2 cursor-pointer"
+      onClick={() => handleCardClick(id, title)}
+    >
       <CardHead imgSrc={imgSrc} title={title} />
       <CardBody title={title} tags={tags}>
         {children}

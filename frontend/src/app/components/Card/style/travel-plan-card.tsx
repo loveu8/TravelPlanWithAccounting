@@ -12,7 +12,15 @@ import {
 import PinpointIcon from "@/app/assets/pinpoint.svg";
 
 export default function TravelPlanCard(props: ITravelPlanCardProps) {
-  const { location, author, isBookmarked = false, handleBookmarkClick } = props;
+  const {
+    id,
+    title,
+    location,
+    author,
+    isBookmarked = false,
+    handleBookmarkClick,
+    handleCardClick,
+  } = props;
   return (
     <div className="relative group">
       <div className="absolute top-3 right-3 z-[1] hidden group-hover:block">
@@ -25,10 +33,10 @@ export default function TravelPlanCard(props: ITravelPlanCardProps) {
               <BookmarkIcon width={18} height={18} />
             )
           }
-          handleClick={handleBookmarkClick}
+          handleClick={() => handleBookmarkClick(id)}
         />
       </div>
-      <CardBase {...props}>
+      <CardBase {...props} handleCardClick={() => handleCardClick(id, title)}>
         <Badge
           text={location}
           icon={<PinpointIcon className="text-blue-9" />}
