@@ -173,6 +173,51 @@ flowchart TD
 
 ---
 
+- ### 4.1 分頁取得主行程列表 `POST /listTravelMains`
+- **目的**：以分頁方式取得登入會員的主行程清單，回傳結構與景點收藏列表一致（含 `PageMeta`）。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
+- **請求範例**
+```json
+{
+  "page": 1,
+  "size": 10
+}
+```
+- **成功回應**
+```json
+{
+  "data": {
+    "list": [
+      {
+        "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+        "title": "東京五日遊",
+        "startDate": "2024-09-01",
+        "endDate": "2024-09-05",
+        "isPrivate": false,
+        "createdAt": "2024-06-01T08:00:00Z",
+        "updatedAt": "2024-06-05T08:00:00Z"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "size": 10,
+      "totalPages": 3,
+      "totalElements": 24,
+      "hasNext": true,
+      "hasPrev": false
+    }
+  },
+  "meta": null,
+  "error": null
+}
+```
+- **備註**：
+  - `page` 預設為 1，需大於等於 1。
+  - `size` 預設為 10，允許範圍 1~50。
+  - 回應由 `ResponseBodyWrapperAdvice` 自動包裝成標準 `RestResponse` 格式。
+
+---
+
 - ### 5. 複製主行程 `POST /copyTravelPlan`
 - **目的**：將某主行程複製給目前登入會員，建立新的主行程及相關資料。
 - **授權**：需要帶入 `Authorization: Bearer <token>`
@@ -430,6 +475,56 @@ flowchart TD
 ```
 
 ---
+
+## TravelFavoriteController (`/api/travelFavorites`)
+
+### 1. 分頁取得收藏行程列表 `POST /list`
+- **目的**：以分頁方式取得會員收藏的公開主行程摘要，回傳 `list` + `meta` 結構。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
+- **請求範例**
+```json
+{
+  "page": 1,
+  "size": 10
+}
+```
+- **成功回應**
+```json
+{
+  "data": {
+    "list": [
+      {
+        "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+        "title": "台北兩日遊",
+        "startDate": "2024-08-01",
+        "endDate": "2024-08-02",
+        "isPrivate": false,
+        "createdAt": "2024-05-20T07:00:00Z",
+        "updatedAt": "2024-05-22T07:00:00Z",
+        "favoritedAt": "2024-06-01T08:00:00Z",
+        "ownerMemberId": "a3d2e7b4-1234-4321-9abc-5678def01234"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "size": 10,
+      "totalPages": 2,
+      "totalElements": 15,
+      "hasNext": true,
+      "hasPrev": false
+    }
+  },
+  "meta": null,
+  "error": null
+}
+```
+- **備註**：
+  - 僅回傳仍為公開的收藏行程；若行程改為私人會自動排除。
+  - `page` 預設為 1，`size` 預設為 10，範圍 1~50。
+  - `favoritedAt` 表示收藏時間，預設排序為收藏時間新到舊。
+
+---
+
 
 ## TransController (`/api/trans`)
 

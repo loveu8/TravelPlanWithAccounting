@@ -13,6 +13,8 @@ import lombok.Getter;
 public enum TravelMessageCode implements MessageCode {
     TRAVEL_MAIN_ID_REQUIRED(HttpStatus.BAD_REQUEST),
     TRAVEL_MEMBER_ID_REQUIRED(HttpStatus.BAD_REQUEST),
+    TRAVEL_LIST_PAGE_INVALID(HttpStatus.BAD_REQUEST),
+    TRAVEL_LIST_SIZE_INVALID(HttpStatus.BAD_REQUEST),
     TRAVEL_MAIN_NOT_FOUND(HttpStatus.NOT_FOUND),
     TRAVEL_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND),
     TRAVEL_DATE_ID_REQUIRED(HttpStatus.BAD_REQUEST),
