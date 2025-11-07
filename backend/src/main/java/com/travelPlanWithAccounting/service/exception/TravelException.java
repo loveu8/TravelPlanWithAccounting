@@ -20,6 +20,18 @@ public class TravelException extends ApiException {
         }
     }
 
+    public static class TravelListPageInvalid extends ApiException {
+        public TravelListPageInvalid(Integer value) {
+            super(TravelMessageCode.TRAVEL_LIST_PAGE_INVALID, new Object[] {value});
+        }
+    }
+
+    public static class TravelListSizeInvalid extends ApiException {
+        public TravelListSizeInvalid(Integer value) {
+            super(TravelMessageCode.TRAVEL_LIST_SIZE_INVALID, new Object[] {value});
+        }
+    }
+
     public static class TravelMainNotFound extends ApiException {
         public TravelMainNotFound() {
             super(TravelMessageCode.TRAVEL_MAIN_NOT_FOUND);

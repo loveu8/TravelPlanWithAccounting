@@ -15,13 +15,21 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainSummary;
 import com.travelPlanWithAccounting.service.entity.TransI18n;
 import com.travelPlanWithAccounting.service.entity.TravelDate;
 import com.travelPlanWithAccounting.service.entity.TravelDetail;
@@ -37,6 +45,10 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class TravelService {
+
+  private static final int DEFAULT_PAGE = 1;
+  private static final int DEFAULT_SIZE = 10;
+  private static final int MAX_PAGE_SIZE = 50;
 
   private final TravelMainRepository travelMainRepository;
   private final TravelDateRepository travelDateRepository;
@@ -110,6 +122,25 @@ public class TravelService {
           throw new TravelException.TravelMemberIdRequired();
       } 
       return travelMainRepository.findByMemberId(memberId);
+  }
+
+  public TravelMainListResponse listTravelMains(UUID memberId, TravelMainListRequest request) {
+      if (memberId == null) {
+          throw new TravelException.TravelMemberIdRequired();
+      }
+
+      int page = resolvePage(request != null ? request.getPage() : null);
+      int size = resolveSize(request != null ? request.getSize() : null);
+
+      Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+      Page<TravelMain> travelPage = travelMainRepository.findByMemberId(memberId, pageable);
+
+      List<TravelMainSummary> list =
+          travelPage.getContent().stream().map(this::toSummary).toList();
+
+      PageMeta meta = buildMeta(travelPage);
+
+      return TravelMainListResponse.builder().list(list).meta(meta).build();
   }
 
   /**
@@ -603,5 +634,48 @@ public class TravelService {
     }
 
     return new TravelMainResponse(newTravelMain, newDates);
+  }
+
+  private TravelMainSummary toSummary(TravelMain travelMain) {
+    return TravelMainSummary.builder()
+        .travelMainId(travelMain.getId())
+        .title(travelMain.getTitle())
+        .startDate(travelMain.getStartDate())
+        .endDate(travelMain.getEndDate())
+        .isPrivate(travelMain.getIsPrivate())
+        .createdAt(travelMain.getCreatedAt())
+        .updatedAt(travelMain.getUpdatedAt())
+        .build();
+  }
+
+  private int resolvePage(Integer page) {
+    if (page == null) {
+      return DEFAULT_PAGE;
+    }
+    if (page < 1) {
+      throw new TravelException.TravelListPageInvalid(page);
+    }
+    return page;
+  }
+
+  private int resolveSize(Integer size) {
+    if (size == null) {
+      return DEFAULT_SIZE;
+    }
+    if (size < 1 || size > MAX_PAGE_SIZE) {
+      throw new TravelException.TravelListSizeInvalid(size);
+    }
+    return size;
+  }
+
+  private PageMeta buildMeta(Page<?> page) {
+    return PageMeta.builder()
+        .page(page.getNumber() + 1)
+        .size(page.getSize())
+        .totalPages(page.getTotalPages())
+        .totalElements(page.getTotalElements())
+        .hasNext(page.hasNext())
+        .hasPrev(page.hasPrevious())
+        .build();
   }
 }

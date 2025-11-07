@@ -17,6 +17,8 @@ import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
 import com.travelPlanWithAccounting.service.entity.TravelDate;
@@ -77,6 +79,16 @@ public class TravelController {
         UUID memberId = authContext.getCurrentMemberId();
         List<TravelMain> travelMains = travelService.getTravelMainsByMemberId(memberId);
         return RestResponseUtils.success(travelMains);
+    }
+
+    @PostMapping("/listTravelMains")
+    @AccessTokenRequired
+    @Operation(summary = "分頁取得會員主行程列表")
+    public TravelMainListResponse listTravelMains(
+        @RequestBody(required = false) TravelMainListRequest request
+    ) {
+        UUID memberId = authContext.getCurrentMemberId();
+        return travelService.listTravelMains(memberId, request);
     }
 
     @PostMapping("/copyTravelPlan")
