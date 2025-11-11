@@ -21,6 +21,13 @@
   "visitPlace": "{\"country\":\"JP\"}"
 }
 ```
+- **欄位說明**
+  - `isPrivate`（Boolean，非必填，預設 `false`）：控制行程是否為私人行程。
+  - `startDate`（ISO `yyyy-MM-dd`，必填）：行程開始日期。
+  - `endDate`（ISO `yyyy-MM-dd`，必填）：行程結束日期，必須晚於或等於 `startDate`。
+  - `title`（String，必填）：主行程標題。
+  - `notes`（String，非必填）：行程備註。
+  - `visitPlace`（JSON String，非必填）：儲存地點資訊，格式為字串化的 JSON，例如 `{"country":"JP"}`。
 - **成功回應**
 ```json
 {
@@ -86,6 +93,14 @@ flowchart TD
   "visitPlace": "{\"country\":\"JP\"}"
 }
 ```
+- **欄位說明**
+  - `id`（UUID，必填）：欲更新的主行程 ID。
+  - `isPrivate`（Boolean，非必填）：為 `null` 時維持原設定。
+  - `startDate`（ISO `yyyy-MM-dd`，必填）：調整後的開始日期。
+  - `endDate`（ISO `yyyy-MM-dd`，必填）：調整後的結束日期。
+  - `title`（String，必填）：主行程標題。
+  - `notes`（String，非必填）：行程備註。
+  - `visitPlace`（JSON String，非必填）：地點資訊字串化 JSON。
 - **成功回應**
 ```json
 {
@@ -183,6 +198,9 @@ flowchart TD
   "size": 10
 }
 ```
+- **欄位說明**
+  - `page`（Integer，非必填，預設 `1`）：頁碼，需大於等於 1。
+  - `size`（Integer，非必填，預設 `10`）：每頁筆數，允許範圍 1~50。
 - **成功回應**
 ```json
 {
@@ -212,8 +230,7 @@ flowchart TD
 }
 ```
 - **備註**：
-  - `page` 預設為 1，需大於等於 1。
-  - `size` 預設為 10，允許範圍 1~50。
+  - 如未帶入 `page`/`size`，後端會套用預設值。
   - 回應由 `ResponseBodyWrapperAdvice` 自動包裝成標準 `RestResponse` 格式。
 
 ---
@@ -251,6 +268,9 @@ flowchart TD
   "travelDate": "2024-09-05"
 }
 ```
+- **欄位說明**
+  - `travelMainId`（UUID，必填）：主行程 ID。
+  - `travelDate`（ISO `yyyy-MM-dd`，必填）：要新增的行程日期。
 - **成功回應**：`data` 為新增的 `TravelDate`。
 - **失敗回應 (範例：TRAVEL_MAIN_NOT_FOUND)**
 ```json
@@ -346,6 +366,14 @@ flowchart TD
   "notes": "參觀景點"
 }
 ```
+- **欄位說明**
+  - `travelMainId`（UUID，必填）：主行程 ID。
+  - `travelDateId`（UUID，必填）：行程日期 ID。
+  - `poiId`（UUID，必填）：對應景點或地點 ID。
+  - `sort`（Integer，非必填，忽略輸入）：後端會自動決定排序值。
+  - `startTime`（ISO `HH:mm`，必填）：明細開始時間。
+  - `endTime`（ISO `HH:mm`，必填）：明細結束時間，需晚於 `startTime`。
+  - `notes`（String，非必填）：明細備註。
 - **成功回應**：`data` 為新建 `TravelDetail`。
 - **失敗回應 (範例：TRAVEL_DETAIL_TIME_CONFLICT)**
 ```json
@@ -366,6 +394,11 @@ flowchart TD
 - **目的**：修改既有明細。
 - **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**：同 `createTravelDetail` 但需帶 `id`。
+- **欄位補充**：
+  - `id`（UUID，必填）：要更新的明細 ID。
+  - `poiId`（UUID，非必填）：調整景點時傳入新值；不變更可省略。
+  - `sort`（Integer，非必填）：若需手動指定排序可傳入，否則保持現值。
+  - `notes`（String，非必填）：明細備註內容。
 - **成功回應**：`data` 為更新後 `TravelDetail`。
 - **失敗回應 (範例：TRAVEL_DETAIL_NOT_FOUND)**
 ```json
@@ -392,6 +425,9 @@ flowchart TD
   { "id": "detail-2-uuid", "sort": 2 }
 ]
 ```
+- **欄位說明**
+  - `id`（UUID，必填）：行程明細 ID。
+  - `sort`（Integer，必填）：排序值，1 起跳。
 - **成功回應**：`data` 為 `null`。
 - **失敗回應 (範例：TRAVEL_DETAILS_NOT_SAME_TRAVEL)**
 ```json
@@ -443,6 +479,10 @@ flowchart TD
 - **目的**：確認明細時間是否與同日其他明細衝突。
 - **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**：同 `createTravelDetail` 格式。
+- **欄位補充**：
+  - 若僅檢查衝突，可省略 `id`（UUID，非必填）；提供 `id` 時代表排除該筆既有明細後進行檢查。
+  - `travelDateId`（UUID，必填）需提供，以鎖定同一天的其他明細。
+  - `startTime` 與 `endTime`（ISO `HH:mm`，必填）需為有效區間。
 - **成功回應**：`data` 為布林值或詳細資訊（Service 回傳結果）。
 - **失敗回應 (範例：TRAVEL_DETAIL_INVALID_TIME)**
 ```json
@@ -488,6 +528,9 @@ flowchart TD
   "size": 10
 }
 ```
+- **欄位說明**
+  - `page`（Integer，非必填，預設 `1`）：頁碼，需大於等於 1。
+  - `size`（Integer，非必填，預設 `10`）：每頁筆數，允許範圍 1~50。
 - **成功回應**
 ```json
 {
@@ -520,7 +563,7 @@ flowchart TD
 ```
 - **備註**：
   - 僅回傳仍為公開的收藏行程；若行程改為私人會自動排除。
-  - `page` 預設為 1，`size` 預設為 10，範圍 1~50。
+  - 如未帶入 `page`/`size`，後端會套用預設值。
   - `favoritedAt` 表示收藏時間，預設排序為收藏時間新到舊。
 
 ---
@@ -545,6 +588,16 @@ flowchart TD
   "notes": "備註"
 }
 ```
+- **欄位說明**
+  - `id`（UUID，非必填）：建立時填 `null` 或省略；有值時視為更新既有資料。
+  - `langType`（String，必填）：語系代碼，如 `zh`、`en`。
+  - `startDetailId`（UUID，必填）：起點明細 ID。
+  - `endDetailId`（UUID，必填）：終點明細 ID。
+  - `infosRaw`（JSON String，非必填）：交通資訊原始 JSON 字串。
+  - `transType`（String，必填）：交通工具類型（如 `CAR`、`WALK`）。
+  - `transTime`（ISO `HH:mm`，必填）：交通所需時間。
+  - `summary`（String，非必填）：摘要說明。
+  - `notes`（String，非必填）：備註內容。
 - **成功回應**：`data` 為 `TransI18n`。
 - **失敗回應 (範例：TRAVEL_DETAIL_NOT_FOUND / TRAVEL_DETAILS_NOT_SAME_TRAVEL)**
 ```json
