@@ -23,10 +23,22 @@ export default function OTPDialog({
   title,
   buttonText,
   ref,
+  email,
+  onSubmitOtp,
+  onResend,
+  loading,
+  serverError,
+  onClearServerError,
 }: {
   title?: string;
   buttonText?: string;
   ref?: React.RefObject<OTPImperativeHandle | null>;
+  email?: string;
+  onSubmitOtp: (otp: string) => Promise<boolean | void>;
+  onResend: () => Promise<void>;
+  loading?: boolean;
+  serverError?: string;
+  onClearServerError?: () => void;
 }) {
   const { t } = useT("common");
   const ERROR_EXPIRED = t("login.error-otp-expired");
@@ -44,7 +56,6 @@ export default function OTPDialog({
   } = useDialogWithForm({
     timeout: 60,
     onSubmit: async (e: React.FormEvent) => {
-      console.log("onSubmit called");
       e.preventDefault();
       const formData = new FormData(e.currentTarget as HTMLFormElement);
       const otp = formData.get("otp") as string;
@@ -55,16 +66,8 @@ export default function OTPDialog({
           }),
         );
       }
-      /**
-       * @todo 處理 OTP 驗證邏輯
-       * 這裡可以加入 API 呼叫來驗證 OTP
-       * 如果 OTP 為 "000000"，則模擬 OTP 過期錯誤
-       * 這只是示範，實際情況應根據後端邏輯來處理
-       */
-      if (otp === "000000") {
-        throw new Error(ERROR_EXPIRED);
-      }
-      return true;
+      const res = await onSubmitOtp(otp);
+      return res ?? true;
     },
   });
 
@@ -82,17 +85,16 @@ export default function OTPDialog({
     try {
       formRef.current?.reset();
       setError("");
+      onClearServerError?.();
+      if (!email) return;
+      await onResend();
       startCountdown();
-      /**
-       * @todo 處理重新發送 OTP 的邏輯
-       * 這裡可以加入 API 呼叫來重新發送 OTP
-       */
-    } catch (error) {
-      if (!error || !(error instanceof Error)) {
-        console.error("Unexpected error:", error);
+    } catch (err) {
+      if (!err || !(err instanceof Error)) {
+        console.error("Unexpected error:", err);
         return;
       }
-      console.error("Error resending OTP:", error.message);
+      console.error("Error resending OTP:", err.message);
     }
   };
   return (
@@ -116,9 +118,11 @@ export default function OTPDialog({
                 <OneTimePasswordField.HiddenInput />
               </OneTimePasswordField.Root>
               <ErrorProcess
-                error={error}
+                error={serverError || error}
                 buttonText={
-                  error === ERROR_EXPIRED || countdown === 0
+                  serverError === ERROR_EXPIRED ||
+                  error === ERROR_EXPIRED ||
+                  countdown === 0
                     ? t("login.otp-resend")
                     : undefined
                 }
@@ -140,6 +144,7 @@ export default function OTPDialog({
               <Button
                 type="submit"
                 text={buttonText || t("login.button-login")}
+                disabled={!!loading}
               ></Button>
             </DialogFooter>
           </Grid>
