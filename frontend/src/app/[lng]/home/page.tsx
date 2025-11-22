@@ -1,5 +1,5 @@
 "use client";
-import { use, useState } from "react";
+import { use, useState, useRef } from "react";
 import { Section, Heading, Text } from "@radix-ui/themes";
 import Button from "@/app/components/Button";
 import {
@@ -8,8 +8,15 @@ import {
   LandScapeCard,
 } from "@/app/components/Card";
 import CardSection from "./card-section";
-import ViewLandscapeDetailModal from "./view-landscape-detail-modal";
-import AddScheduleModal from "./add-schedule-modal";
+import ViewLandscapeDetailModal, {
+  IViewLandscapeDetailImperativeHandle,
+} from "./view-landscape-detail-modal";
+import AddScheduleModal, {
+  IAddScheduleImperativeHandle,
+} from "./add-schedule-modal";
+import CreateScheduleModal, {
+  ICreateScheduleImperativeHandle,
+} from "./create-schedule-modal";
 
 import { useT } from "@/app/i18n/client";
 
@@ -22,49 +29,103 @@ const countries = [
 
 const travelPlans = [
   {
-    title: "日本",
+    id: "1",
+    title: "東京賞櫻全攻略六天五夜",
     imgSrc: "/img/Japan.jpg",
     tags: ["六日遊"],
     location: "東京",
     author: "安安莎莉",
     isBookmarked: true,
-    handleBookmarkClick: () => {},
-    handleCardClick: () => {},
   },
-  // ...其他行程
+  {
+    id: "2",
+    title: "大阪美食全攻略六天五夜",
+    imgSrc: "/img/Japan.jpg",
+    tags: ["四日遊"],
+    location: "大阪",
+    author: "安安莎莉",
+    isBookmarked: true,
+  },
 ];
 
 const landscapes = [
   {
-    title: "日本",
+    id: "1",
+    title: "東京鐵塔",
     imgSrc: "/img/Japan.jpg",
-    tags: ["六日遊"],
+    tags: ["文化活動", "觀光景點"],
     location: "東京",
     score: 5.5,
     evaluateCount: 1300,
     isBookmarked: false,
-    handleBookmarkClick: () => {},
-    handleAddScheduleClick: () => {},
-    handleCardClick: () => {},
   },
-  // ...其他景點
+  {
+    id: "2",
+    title: "淺草寺",
+    imgSrc: "/img/Japan.jpg",
+    tags: ["文化活動"],
+    location: "京都",
+    score: 5.5,
+    evaluateCount: 1300,
+    isBookmarked: false,
+  },
+  {
+    id: "3",
+    title: "東京迪士尼",
+    imgSrc: "/img/Japan.jpg",
+    tags: ["觀光景點"],
+    location: "東京",
+    score: 5.5,
+    evaluateCount: 1300,
+    isBookmarked: false,
+  },
+  {
+    id: "4",
+    title: "東京環球影城",
+    imgSrc: "/img/Japan.jpg",
+    tags: ["觀光景點"],
+    location: "大阪",
+    score: 5.5,
+    evaluateCount: 1300,
+    isBookmarked: false,
+  },
 ];
 
 export default function Home({ params }: { params: Promise<{ lng: string }> }) {
   const { lng } = use(params);
-  const { t } = useT("common");
+  const { t: homeTranslate } = useT("home");
+  const viewLandscapeDetailModalRef =
+    useRef<IViewLandscapeDetailImperativeHandle>(null);
+  const addScheduleModalRef = useRef<IAddScheduleImperativeHandle>(null);
+  const createScheduleModalRef = useRef<ICreateScheduleImperativeHandle>(null);
+  const [title, setTitle] = useState<string>("");
 
-  const [isViewDetailModalOpen, setIsViewDetailModalOpen] = useState(true);
-  const [isAddScheduleModalOpen, setIsAddScheduleModalOpen] = useState(false);
-
-  const handleAddScheduleClick = () => {
-    // TODO: 取得個人所有的行程表API
-    toggleDetailAndScheduleModals();
+  const handleCardClick = (id: string, title: string) => {
+    viewLandscapeDetailModalRef.current?.toggle(id);
+    setTitle(title);
   };
 
-  const toggleDetailAndScheduleModals = () => {
-    setIsViewDetailModalOpen((pre) => !pre);
-    setIsAddScheduleModalOpen((pre) => !pre);
+  const toggleViewAndAddModal = (id: string) => {
+    viewLandscapeDetailModalRef.current?.toggle(id);
+    addScheduleModalRef.current?.toggle(id);
+  };
+
+  const handleBookmarkClick = (id: string) => {
+    if (!id) {
+      console.error("No ID provided for bookmarking.");
+      return;
+    }
+    // TODO: 串接API來處理收藏
+    console.log(`Bookmarking item with ID: ${id}`);
+  };
+
+  const handleCreateScheduleClick = (open: boolean) => {
+    createScheduleModalRef.current?.toggle();
+    if (open) {
+      addScheduleModalRef.current?.close();
+      return;
+    }
+    addScheduleModalRef.current?.open();
   };
 
   return (
@@ -85,56 +146,46 @@ export default function Home({ params }: { params: Promise<{ lng: string }> }) {
         </div>
       </Section>
       <CardSection
-        title={t("home.explore-countries")}
+        title={homeTranslate("explore-countries")}
         data={countries}
         CardComponent={CountryCard}
       />
       {/* TODO:修改正確url路徑 */}
       <CardSection
-        title={t("home.popular-travel-plans")}
+        title={homeTranslate("popular-travel-plans")}
         data={travelPlans}
         CardComponent={TravelPlanCard}
-        buttonText={`${t("home.view-more")}${t("home.popular-travel-plans")}`}
+        buttonText={`${homeTranslate("view-more")}${homeTranslate("popular-travel-plans")}`}
         viewMoreUrl={`/${lng}/popular-list`}
+        handleCardClick={handleCardClick}
+        handleBookmarkClick={handleBookmarkClick}
       />
 
       {/* TODO:修改正確url路徑 */}
       <CardSection
-        title={t("home.recommend-landscapes")}
+        title={homeTranslate("recommend-landscapes")}
         data={landscapes}
         CardComponent={LandScapeCard}
-        buttonText={`${t("home.view-more")}${t("home.recommend-landscapes")}`}
+        buttonText={`${homeTranslate("view-more")}${homeTranslate("recommend-landscapes")}`}
         viewMoreUrl={`/${lng}/landscapes-list`}
+        handleCardClick={handleCardClick}
+        handleBookmarkClick={handleBookmarkClick}
+      />
+
+      <ViewLandscapeDetailModal
+        ref={viewLandscapeDetailModalRef}
+        handleAddScheduleClick={toggleViewAndAddModal}
+        handleBookmarkClick={handleBookmarkClick}
       />
       <AddScheduleModal
-        open={isAddScheduleModalOpen}
-        onOpenChange={setIsAddScheduleModalOpen}
+        ref={addScheduleModalRef}
+        location={title}
+        viewDetailClick={toggleViewAndAddModal}
+        handleCreateScheduleClick={handleCreateScheduleClick}
       />
-      <ViewLandscapeDetailModal
-        open={isViewDetailModalOpen}
-        onOpenChange={setIsViewDetailModalOpen}
-        title="東京迪士尼"
-        imgSrc="/img/Japan.jpg"
-        iframeSrc="https://www.google.com/maps?q=東京迪士尼&output=embed"
-        score={4.5}
-        evaluateCount={100}
-        isBookmarked={true}
-        handleBookmarkClick={() => {}}
-        handleAddScheduleClick={handleAddScheduleClick}
-        details={{
-          description:
-            "著名主題公園的東京分支，以遊樂設施、現場表演和古裝人物聞名",
-          address: "1-1 Maihama, Urayasu, Chiba 279-0031日本",
-          phone: "+81453305211",
-          website: "https://www.tokyodisneyresort.jp/tdl/",
-          hours: [
-            "星期日 08:00–22:00",
-            "星期六 08:00–22:00",
-            "星期六 08:00–22:00",
-            "星期六 08:00–22:00",
-            "星期六 08:00–22:00",
-          ],
-        }}
+      <CreateScheduleModal
+        ref={createScheduleModalRef}
+        handleCreateScheduleClick={handleCreateScheduleClick}
       />
     </>
   );

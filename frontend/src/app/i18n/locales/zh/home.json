@@ -1,0 +1,30 @@
+{
+  "explore-countries": "探索區域",
+  "popular-travel-plans": "人氣行程",
+  "recommend-landscapes": "推薦景點",
+  "view-more": "查看更多",
+  "add-schedule": {
+    "title": "加入到哪一個行程",
+    "schedule-list": "行程列表",
+    "add-schedule-to": "加到「{{schedule}}」的哪一日",
+    "button-create-schedule": "創建新行程",
+    "button-confirm-add": "確認加入",
+    "button-view-info": "查看景點資訊"
+  },
+  "create-schedule": {
+    "title": "建立行程",
+    "fields": {
+      "schedule-name": "行程名稱",
+      "start-date": "開始日期",
+      "end-date": "結束日期",
+      "location": "旅行地點",
+      "description": "行程簡介",
+      "share-schedule": "公開行程"
+    },
+    "validation": {
+      "required": "請輸入{{field}}",
+      "end-date-after-start-date": "結束日期必須在開始日期之後"
+    },
+    "button-create": "建立"
+  }
+}
