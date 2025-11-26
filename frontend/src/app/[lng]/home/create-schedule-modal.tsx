@@ -42,18 +42,6 @@ const CreateScheduleModal = forwardRef(
     const visitPlaceRef = useRef<HTMLInputElement>(null);
     const isPrivateRef = useRef<HTMLButtonElement>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-
-      const formData = new FormData(e.currentTarget as HTMLFormElement);
-      const isValid = requiredValidate(formData) && dateValidate(formData);
-      if (!isValid) return;
-      /**
-       * @todo 處理 API 存資料
-       */
-    };
-
-    // 必填欄位驗證
     const requiredValidate = (formData: FormData) => {
       const fieldsCheck = [
         { name: "title", ref: titleRef.current },
@@ -107,6 +95,29 @@ const CreateScheduleModal = forwardRef(
       return true;
     };
 
+    const fetchAutoCompleteList = async (query: string) => {
+      /**
+       * TODO: 處理 API 取資料
+       */
+      console.log(query);
+      return ["123", "234", "345"];
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") e.preventDefault();
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.currentTarget as HTMLFormElement);
+      const isValid = requiredValidate(formData) && dateValidate(formData);
+      if (!isValid) return;
+      /**
+       * TODO: 處理 API 存資料
+       */
+    };
+
     useImperativeHandle(ref, () => ({
       open: () => setOpen(true),
       close: () => setOpen(false),
@@ -118,12 +129,12 @@ const CreateScheduleModal = forwardRef(
           <form
             name="createSchedule"
             onSubmit={open ? handleSubmit : (e) => e.preventDefault()}
+            onKeyDown={handleKeyDown}
           >
             <Grid columns="1" gap="5">
               <DialogHeader title={translateHome("create-schedule.title")} />
               <DialogBody>
                 <Grid columns="1" gap="2">
-                  <Autocomplete />
                   <TextField
                     ref={titleRef}
                     label={translateHome(
@@ -135,6 +146,7 @@ const CreateScheduleModal = forwardRef(
                     size="2"
                     type="text"
                     required
+                    defaultValue={456}
                   />
                   <Flex justify="between" gap="2">
                     <DatePicker
@@ -160,7 +172,7 @@ const CreateScheduleModal = forwardRef(
                       required
                     />
                   </Flex>
-                  <TextField
+                  <Autocomplete
                     ref={visitPlaceRef}
                     label={translateHome("create-schedule.fields.location")}
                     name="visitPlace"
@@ -169,6 +181,7 @@ const CreateScheduleModal = forwardRef(
                     size="2"
                     type="text"
                     required
+                    getSuggestions={fetchAutoCompleteList}
                   />
                   <TextArea
                     label={translateHome("create-schedule.fields.description")}
