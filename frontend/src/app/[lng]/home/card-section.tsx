@@ -25,7 +25,7 @@ export default function CardSection<T>({
 }: CardSectionProps<T>) {
   const router = useRouter();
   return (
-    <Section maxWidth="1440px" mx="auto" size="2">
+    <Section maxWidth="1440px" mx="auto" size="2" className="px-8">
       <Heading mb="4" as="h6">
         {title}
       </Heading>
