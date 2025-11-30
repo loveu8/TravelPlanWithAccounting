@@ -17,6 +17,8 @@ import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelEditPermissionRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelEditPermissionResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
@@ -25,12 +27,15 @@ import com.travelPlanWithAccounting.service.entity.TravelDate;
 import com.travelPlanWithAccounting.service.entity.TravelDetail;
 import com.travelPlanWithAccounting.service.entity.TravelMain;
 import com.travelPlanWithAccounting.service.security.AccessTokenRequired;
+import com.travelPlanWithAccounting.service.security.OptionalAccessToken;
+import com.travelPlanWithAccounting.service.service.TravelPermissionService;
 import com.travelPlanWithAccounting.service.service.TravelPopularityService;
 import com.travelPlanWithAccounting.service.service.TravelService;
 import com.travelPlanWithAccounting.service.util.RestResponseUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @Tag(name = "Travel", description = "旅遊行程")
@@ -39,11 +44,13 @@ public class TravelController {
 
     private final TravelService travelService;
     private final AuthContext authContext;
+    private final TravelPermissionService travelPermissionService;
     private final TravelPopularityService travelPopularityService;
 
-    public TravelController(TravelService travelService, AuthContext authContext, TravelPopularityService travelPopularityService) {
+    public TravelController(TravelService travelService, AuthContext authContext, TravelPermissionService travelPermissionService,TravelPopularityService travelPopularityService) {
         this.travelService = travelService;
         this.authContext = authContext;
+        this.travelPermissionService = travelPermissionService;
         this.travelPopularityService = travelPopularityService;
     }
 
@@ -71,6 +78,17 @@ public class TravelController {
     public RestResponse<Object, Object> getTravelMain(@RequestBody UuidRequest request) {
         TravelMain travelMain = travelService.getTravelMainById(request.getId());
         return RestResponseUtils.success(travelMain);
+    }
+
+    @PostMapping("/checkEditPermission")
+    @OptionalAccessToken
+    @Operation(summary = "判斷行程是否可編輯")
+    public RestResponse<Object, Object> checkEditPermission(
+        @Valid @RequestBody TravelEditPermissionRequest request
+    ) {
+        UUID memberId = authContext.getCurrentMemberId();
+        TravelEditPermissionResponse response = travelPermissionService.checkEditPermission(request, memberId);
+        return RestResponseUtils.success(response);
     }
 
     @PostMapping("/getTravelMainsByMemberId")

@@ -516,6 +516,63 @@ flowchart TD
 
 ---
 
+- ### 17. 行程編輯權限判斷（版本 1） `POST /checkEditPermission`
+- **目的**：進入行程編輯頁前判斷是否具備編輯權限，供前端決定是否鎖定編輯功能。
+- **版本**：v1（版本 1）
+- **授權**：可選。帶入 `Authorization: Bearer <token>` 時依登入會員判斷；未帶入視為訪客。
+- **請求範例**
+```json
+{ "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456" }
+```
+- **欄位說明**
+  - `travelMainId`（UUID，必填）：欲檢查的主行程 ID。
+- **成功回應範例（創建者或允許者）**
+```json
+{
+  "data": {
+    "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+    "canEdit": true,
+    "reason": "ALLOWED",
+    "grantedBy": "OWNER"
+  },
+  "meta": null,
+  "error": null
+}
+```
+- **成功回應範例（訪客或未受允許者）**
+```json
+{
+  "data": {
+    "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+    "canEdit": false,
+    "reason": "NO_AUTH",
+    "grantedBy": "NONE"
+  },
+  "meta": null,
+  "error": null
+}
+```
+- **失敗回應範例（行程不存在）**
+```json
+{
+  "data": null,
+  "meta": null,
+  "error": {
+    "code": "TRAVEL_MAIN_NOT_FOUND",
+    "message": "Travel main not found",
+    "timestamp": "2024-09-01T00:00:00Z",
+    "details": null
+  }
+}
+```
+- **備註**：
+  - `reason` 用於前端提示，預期值：`NO_AUTH`（未登入）、`ALLOWED`（可編輯）、`NOT_ALLOWED`（已登入但未被允許）。
+  - `grantedBy` 表示權限來源：`OWNER`（創建者）、`PERMISSION`（受邀允許）、`NONE`（無權限）。
+  - 私有行程仍依創建者或允許者判斷可編輯狀態。
+
+---
+
+
 ## TravelFavoriteController (`/api/travelFavorites`)
 
 ### 1. 分頁取得收藏行程列表 `POST /list`
