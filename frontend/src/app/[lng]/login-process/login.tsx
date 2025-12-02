@@ -14,42 +14,48 @@ import TextField from "@/app/components/TextField";
 import { useT } from "@/app/i18n/client";
 import useDialogWithForm from "./useDialogWithForm";
 import ErrorProcess from "./error-process";
+import type { PreAuthFlowResponse } from "@/app/lib/types";
+import { useAuth } from "@/app/lib/useAuth";
 
 export type LoginImperativeHandle = {
-  openDialogWithPromise: () => Promise<boolean | undefined>;
+  openDialogWithPromise: () => Promise<PreAuthFlowResponse | undefined>;
 };
 
 export default function LoginDialog({
   ref,
   openSignUp,
+  onPreAuthSuccess,
 }: {
   ref?: React.RefObject<LoginImperativeHandle | null>;
   openSignUp: (e: React.MouseEvent | React.TouchEvent) => void;
+  onPreAuthSuccess: (data: PreAuthFlowResponse) => void;
 }) {
   const { t } = useT("common");
   const ERROR_NOT_FOUND = t("login.error-not-found");
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { preAuthFlow, preAuthorizing } = useAuth();
+
   const { open, error, openDialogWithPromise, handleSubmit, handleOpenChange } =
-    useDialogWithForm({
+    useDialogWithForm<PreAuthFlowResponse>({
       onSubmit: async (e: React.FormEvent) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget as HTMLFormElement);
         const email = formData.get("email") as string;
         const emailField = inputRef.current;
         if (!emailField) {
-          console.error("Email input field not found");
-          return;
+          throw new Error("Email input field not found");
         }
         emailField.setCustomValidity("");
         if (!email) {
-          // 用 setCustomValidity 可以在表單提交時顯示錯誤訊息
           emailField.setCustomValidity(
             t("validation.required", {
               label: t("login.placeholder"),
             }),
           );
           emailField.reportValidity();
-          return;
+          throw new Error(
+            t("validation.required", { label: t("login.placeholder") }),
+          );
         }
         if (!emailField.validity.valid) {
           emailField.setCustomValidity(
@@ -58,20 +64,14 @@ export default function LoginDialog({
             }),
           );
           emailField.reportValidity();
-          return;
+          throw new Error(
+            t("validation.pattern", { label: t("login.placeholder") }),
+          );
         }
 
-        /**
-         * @todo 這裡應該是發送請求到後端進行登入驗證
-         * 這裡模擬一個請求，實際情況應該是使用 fetch 或 axios 等庫來發送請求
-         * 如果請求成功，返回 true
-         * 如果請求失敗，根據錯誤類型返回不同的錯誤信息
-         */
-        if (email === "none@test.com") {
-          // 模擬一個錯誤情況
-          throw new Error(ERROR_NOT_FOUND);
-        }
-        return true;
+        const result = await preAuthFlow(email);
+        onPreAuthSuccess(result);
+        return result;
       },
     });
 
@@ -101,9 +101,10 @@ export default function LoginDialog({
                 pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
                 required
                 autoFocus
+                disabled={preAuthorizing}
               />
               <ErrorProcess
-                error={error}
+                error={error || ""}
                 buttonText={
                   error === ERROR_NOT_FOUND ? t("login.sign-up") : undefined
                 }
@@ -111,7 +112,11 @@ export default function LoginDialog({
               />
             </DialogBody>
             <DialogFooter justify="center" withCloseBtn>
-              <Button type="submit" text={t("login.button-login")}></Button>
+              <Button
+                type="submit"
+                text={t("login.button-login")}
+                disabled={preAuthorizing}
+              ></Button>
             </DialogFooter>
           </Grid>
         </form>
