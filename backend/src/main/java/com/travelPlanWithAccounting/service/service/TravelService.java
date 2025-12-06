@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailPoiCreateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListRequest;
@@ -36,6 +37,7 @@ import com.travelPlanWithAccounting.service.entity.TravelDetail;
 import com.travelPlanWithAccounting.service.entity.TravelMain;
 import com.travelPlanWithAccounting.service.exception.TravelException;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
+import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.TransI18nRepository;
 import com.travelPlanWithAccounting.service.repository.TravelDateRepository;
 import com.travelPlanWithAccounting.service.repository.TravelDetailRepository;
@@ -49,12 +51,15 @@ public class TravelService {
   private static final int DEFAULT_PAGE = 1;
   private static final int DEFAULT_SIZE = 10;
   private static final int MAX_PAGE_SIZE = 50;
+  private static final long DEFAULT_DETAIL_DURATION_HOURS = 1L;
+  private static final LocalTime DEFAULT_DETAIL_START_TIME = LocalTime.of(9, 0);
 
   private final TravelMainRepository travelMainRepository;
   private final TravelDateRepository travelDateRepository;
   private final TravelDetailRepository travelDetailRepository;
   private final MemberRepository memberRepository; // 注入 MemberRepository
   private final TransI18nRepository transI18nRepository;
+  private final PoiRepository poiRepository;
 
   @Autowired
   public TravelService(
@@ -62,12 +67,14 @@ public class TravelService {
       TravelDateRepository travelDateRepository,
       TravelDetailRepository travelDetailRepository,
       MemberRepository memberRepository,
-      TransI18nRepository transI18nRepository) { // 在建構子中注入
+      TransI18nRepository transI18nRepository,
+      PoiRepository poiRepository) { // 在建構子中注入
     this.travelMainRepository = travelMainRepository;
     this.travelDateRepository = travelDateRepository;
     this.travelDetailRepository = travelDetailRepository;
     this.memberRepository = memberRepository; // 賦值
     this.transI18nRepository = transI18nRepository;
+    this.poiRepository = poiRepository;
   }
 
   /**
@@ -390,6 +397,70 @@ public class TravelService {
     travelDetail.setNotes(request.getNotes());
     travelDetail.setCreatedBy(request.getCreatedBy());
     // createdAt and updatedAt are handled by the database with DEFAULT CURRENT_TIMESTAMP
+
+    TravelDetail saved = travelDetailRepository.save(travelDetail);
+    checkTimeConflict(saved.getTravelDateId());
+    return travelDetailRepository.findById(saved.getId()).orElse(saved);
+  }
+
+  @Transactional
+  public TravelDetail createTravelDetailByPoi(TravelDetailPoiCreateRequest request) {
+    if (request.getTravelMainId() == null
+        || request.getTravelDateId() == null
+        || request.getPoiId() == null) {
+      throw new TravelException.TravelDetailTargetRequired();
+    }
+
+    TravelMain travelMain =
+        travelMainRepository
+            .findById(request.getTravelMainId())
+            .orElseThrow(TravelException.TravelMainNotFound::new);
+
+    if (request.getCreatedBy() == null || !travelMain.getMemberId().equals(request.getCreatedBy())) {
+      throw new TravelException.TravelMainNotFound();
+    }
+
+    TravelDate travelDate =
+        travelDateRepository
+            .findById(request.getTravelDateId())
+            .orElseThrow(TravelException.TravelDateNotFound::new);
+
+    if (!travelDate.getTravelMainId().equals(travelMain.getId())) {
+      throw new TravelException.TravelDateNotFound();
+    }
+
+    poiRepository.findById(request.getPoiId()).orElseThrow(TravelException.TravelPoiNotFound::new);
+
+    List<TravelDetail> details =
+        travelDetailRepository.findByTravelDateIdOrderBySort(request.getTravelDateId());
+    details.sort(Comparator.comparing(TravelDetail::getSort).thenComparing(TravelDetail::getStartTime));
+
+    int nextSort;
+    LocalTime startTime;
+    if (details.isEmpty()) {
+      nextSort = 1;
+      startTime = DEFAULT_DETAIL_START_TIME;
+    } else {
+      TravelDetail lastDetail = details.get(details.size() - 1);
+      nextSort = lastDetail.getSort() + 1;
+      LocalTime baseStart =
+          lastDetail.getEndTime() != null
+              ? lastDetail.getEndTime()
+              : lastDetail.getStartTime().plusHours(DEFAULT_DETAIL_DURATION_HOURS);
+      startTime = baseStart;
+    }
+
+    LocalTime endTime = startTime.plusHours(DEFAULT_DETAIL_DURATION_HOURS);
+
+    TravelDetail travelDetail = new TravelDetail();
+    travelDetail.setTravelMainId(request.getTravelMainId());
+    travelDetail.setTravelDateId(request.getTravelDateId());
+    travelDetail.setPoiId(request.getPoiId());
+    travelDetail.setSort(nextSort);
+    travelDetail.setStartTime(startTime);
+    travelDetail.setEndTime(endTime);
+    travelDetail.setTimeConflict(false);
+    travelDetail.setCreatedBy(request.getCreatedBy());
 
     TravelDetail saved = travelDetailRepository.save(travelDetail);
     checkTimeConflict(saved.getTravelDateId());

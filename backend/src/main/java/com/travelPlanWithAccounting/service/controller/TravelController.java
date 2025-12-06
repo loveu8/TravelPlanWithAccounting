@@ -15,6 +15,7 @@ import com.travelPlanWithAccounting.service.dto.system.RestResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResult;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailPoiCreateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelEditPermissionRequest;
@@ -152,6 +153,18 @@ public class TravelController {
         UUID memberId = authContext.getCurrentMemberId();
         request.setCreatedBy(memberId);
         TravelDetail newTravelDetail = travelService.createTravelDetail(request);
+        return RestResponseUtils.success(newTravelDetail);
+    }
+
+    @PostMapping("/createTravelDetailByPoi")
+    @AccessTokenRequired
+    @Operation(summary = "建立景點行程明細")
+    public RestResponse<Object, Object> createTravelDetailByPoi(
+        @RequestBody TravelDetailPoiCreateRequest request
+    ) {
+        UUID memberId = authContext.getCurrentMemberId();
+        request.setCreatedBy(memberId);
+        TravelDetail newTravelDetail = travelService.createTravelDetailByPoi(request);
         return RestResponseUtils.success(newTravelDetail);
     }
 
