@@ -114,6 +114,12 @@ public class TravelException extends ApiException {
         }
     }
 
+    public static class TravelPoiNotFound extends ApiException {
+        public TravelPoiNotFound() {
+            super(TravelMessageCode.TRAVEL_POI_NOT_FOUND);
+        }
+    }
+
     public static class PopularStrategyInvalid extends ApiException {
         public PopularStrategyInvalid(String strategy) {
             super(TravelMessageCode.POPULAR_STRATEGY_INVALID, new Object[] {strategy});

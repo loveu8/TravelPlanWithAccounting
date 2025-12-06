@@ -390,6 +390,45 @@ flowchart TD
 
 ---
 
+### 10.1 建立景點行程明細 `POST /createTravelDetailByPoi`
+- **目的**：依主行程 ID、行程日期 ID 與 POI ID，自動在該日期下新增行程明細，排序與時間由後端推算。
+- **授權**：需要帶入 `Authorization: Bearer <token>`，系統會以 Token 中的會員 ID 作為 `createdBy`。
+- **請求範例**
+```json
+{
+  "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+  "travelDateId": "5d5e5e5e-e9c2-4d0a-81d2-4f2a07123456",
+  "poiId": "99999999-e9c2-4d0a-81d2-4f2a07123456"
+}
+```
+- **欄位說明**
+  - `travelMainId`（UUID，必填）：主行程 ID，必須為當前登入會員所擁有。
+  - `travelDateId`（UUID，必填）：行程日期 ID，需隸屬於 `travelMainId`。
+  - `poiId`（UUID，必填）：欲新增的景點/地點 ID，必須存在。
+- **新增規則**
+  - 若該日期尚無任何明細，建立首筆明細，`sort` 預設為 `1`，`startTime` 為 `09:00`，`endTime` 為 `10:00`，`timeConflict` 預設 `false`。
+  - 若該日期已有明細，依 `sort` 與開始時間排序後，於最後一筆之後新增，`sort` 以最後一筆 +1；新明細的 `startTime` 取最後一筆的 `endTime`（若 `endTime` 為空則以 `startTime+1h`），`endTime` 再向後 1 小時。
+- **成功回應**：`data` 為新建的 `TravelDetail`，時間與排序由後端計算。
+- **失敗回應 (範例：TRAVEL_POI_NOT_FOUND / TRAVEL_MAIN_NOT_FOUND / TRAVEL_DATE_NOT_FOUND)**
+```json
+{ "data": null, "error": { "code": "TRAVEL_POI_NOT_FOUND", "message": "Travel poi not found" } }
+```
+- **流程圖**
+```mermaid
+flowchart TD
+  A --> B[POST /api/travels/createTravelDetailByPoi]
+  B --> C[驗證主行程與日期歸屬、POI 是否存在]
+  C --> D{當日已有明細?}
+  D -->|否| E[使用 09:00~10:00 並設 sort=1]
+  D -->|是| F[取最後一筆 endTime 作為新 startTime，sort 續增]
+  E --> G[TravelService.createTravelDetailByPoi -> 儲存]
+  F --> G[TravelService.createTravelDetailByPoi -> 儲存]
+  G --> H[回傳成功 RestResponse]
+```
+
+---
+
+
 ### 11. 更新行程明細 `POST /updateTravelDetail`
 - **目的**：修改既有明細。
 - **授權**：需要帶入 `Authorization: Bearer <token>`
