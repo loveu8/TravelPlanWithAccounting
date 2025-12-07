@@ -12,6 +12,7 @@ export default function UnderlineTab({
   underlineColor = "blue",
   size = "2",
   underlineHeight,
+  className = "",
   ...props
 }: IUnderlineTabProps) {
   const [activeTab, setActiveTab] = useState(defaultValue || items[0]?.value);
@@ -44,7 +45,7 @@ export default function UnderlineTab({
           <Tabs.Trigger
             key={item.value}
             value={item.value}
-            className="cursor-pointer flex-1 text-center min-w-[100px]"
+            className={`cursor-pointer text-center px-4 ${className}`}
           >
             {item.label}
           </Tabs.Trigger>
