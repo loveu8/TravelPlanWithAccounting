@@ -1,5 +1,7 @@
 package com.travelPlanWithAccounting.service.repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -14,4 +16,6 @@ import com.travelPlanWithAccounting.service.entity.TravelFav;
 public interface TravelFavRepository extends JpaRepository<TravelFav, UUID> {
     @EntityGraph(attributePaths = "travelMain")
     Page<TravelFav> findByMember_IdAndTravelMain_IsPrivateFalse(UUID memberId, Pageable pageable);
+
+    List<TravelFav> findByMember_IdAndTravelMain_IdIn(UUID memberId, Collection<UUID> travelMainIds);
 }
