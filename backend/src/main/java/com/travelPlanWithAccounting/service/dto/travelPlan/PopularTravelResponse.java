@@ -13,7 +13,8 @@ public record PopularTravelResponse(
     LocalDate endDate,
     String visitPlace,
     long favoritesCount,
-    boolean isPrivate
+    boolean isPrivate,
+    boolean isFavorited
 ) {
 
 }
