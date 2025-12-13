@@ -213,11 +213,13 @@ public class TravelController {
 
     @GetMapping("/popular")
     @Operation(summary = "取得人氣行程", description = "依據收藏數回傳最多四筆公開人氣行程")
+    @OptionalAccessToken
     public RestResponse<Object, Object> getPopularTravels(
         @RequestParam(name = "strategy", defaultValue = "top") String strategy,
         @RequestParam(name = "minFavorites", required = false) Integer minFavorites
     ) {
-        PopularTravelResult result = travelPopularityService.getPopularTravels(strategy, minFavorites);
+        UUID memberId = authContext.getCurrentMemberId();
+        PopularTravelResult result = travelPopularityService.getPopularTravels(strategy, minFavorites, memberId);
         return RestResponseUtils.successWithMeta(result.travels(), result.meta());
     }
 }

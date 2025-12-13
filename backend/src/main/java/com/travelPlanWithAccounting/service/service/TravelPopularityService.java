@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -15,6 +17,7 @@ import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelMeta;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResult;
 import com.travelPlanWithAccounting.service.exception.TravelException;
+import com.travelPlanWithAccounting.service.repository.TravelFavRepository;
 import com.travelPlanWithAccounting.service.repository.TravelMainRepository;
 import com.travelPlanWithAccounting.service.repository.projection.PopularTravelAggregate;
 
@@ -28,13 +31,15 @@ public class TravelPopularityService {
     private static final int DEFAULT_MIN_FAVORITES = 5;
 
     private final TravelMainRepository travelMainRepository;
+    private final TravelFavRepository travelFavRepository;
 
-    public TravelPopularityService(TravelMainRepository travelMainRepository) {
+    public TravelPopularityService(TravelMainRepository travelMainRepository, TravelFavRepository travelFavRepository) {
         this.travelMainRepository = travelMainRepository;
+        this.travelFavRepository = travelFavRepository;
     }
 
     @Transactional(readOnly = true)
-    public PopularTravelResult getPopularTravels(String strategyParam, Integer minFavoritesParam) {
+    public PopularTravelResult getPopularTravels(String strategyParam, Integer minFavoritesParam, UUID memberId) {
         Strategy strategy = Strategy.fromParam(strategyParam);
         Integer effectiveMinFavorites = null;
 
@@ -43,6 +48,7 @@ public class TravelPopularityService {
         }
 
         List<PopularTravelAggregate> aggregates = travelMainRepository.findPopularPublicTravels();
+        Set<UUID> favoritedTravelIds = resolveFavoritedTravelIds(memberId, aggregates);
 
         if (aggregates.isEmpty()) {
             return new PopularTravelResult(
@@ -62,7 +68,7 @@ public class TravelPopularityService {
                 Collections.shuffle(thresholdCandidates, ThreadLocalRandom.current());
                 List<PopularTravelAggregate> selected = thresholdCandidates.subList(0, POPULAR_LIMIT);
                 return new PopularTravelResult(
-                    selected.stream().map(this::toResponse).collect(Collectors.toList()),
+                    selected.stream().map(item -> toResponse(item, favoritedTravelIds)).collect(Collectors.toList()),
                     new PopularTravelMeta(strategy.value(), minFavorites, totalCandidates)
                 );
             }
@@ -70,7 +76,7 @@ public class TravelPopularityService {
 
         List<PopularTravelResponse> topTravels = aggregates.stream()
             .limit(POPULAR_LIMIT)
-            .map(this::toResponse)
+            .map(item -> toResponse(item, favoritedTravelIds))
             .collect(Collectors.toList());
 
         return new PopularTravelResult(
@@ -87,7 +93,7 @@ public class TravelPopularityService {
         return minFavorites;
     }
 
-    private PopularTravelResponse toResponse(PopularTravelAggregate aggregate) {
+    private PopularTravelResponse toResponse(PopularTravelAggregate aggregate, Set<UUID> favoritedTravelIds) {
         return new PopularTravelResponse(
             aggregate.travelMainId(),
             aggregate.title(),
@@ -95,8 +101,23 @@ public class TravelPopularityService {
             aggregate.endDate(),
             aggregate.visitPlace(),
             aggregate.favoritesCount(),
-            Boolean.TRUE.equals(aggregate.isPrivate())
+            Boolean.TRUE.equals(aggregate.isPrivate()),
+            favoritedTravelIds.contains(aggregate.travelMainId())
         );
+    }
+
+    private Set<UUID> resolveFavoritedTravelIds(UUID memberId, List<PopularTravelAggregate> aggregates) {
+        if (memberId == null || aggregates.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        List<UUID> travelMainIds =
+            aggregates.stream().map(PopularTravelAggregate::travelMainId).collect(Collectors.toList());
+
+        return travelFavRepository.findByMember_IdAndTravelMain_IdIn(memberId, travelMainIds).stream()
+            .map(fav -> fav.getTravelMain() != null ? fav.getTravelMain().getId() : null)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
     }
 
     private enum Strategy {

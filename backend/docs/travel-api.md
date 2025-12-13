@@ -611,6 +611,43 @@ flowchart TD
 
 ---
 
+- ### 18. 取得人氣行程 `GET /popular`
+- **目的**：依據收藏數回傳最多四筆公開人氣行程，支援 Top 與 Threshold 兩種策略。
+- **授權**：可選。帶入 `Authorization: Bearer <token>` 時，回應中的 `isFavorited` 會標示該登入會員是否已收藏；未登入一律為 `false`。
+- **查詢參數**
+  - `strategy`（String，非必填，預設 `top`）：`top` 代表依收藏數高到低取前四筆；`threshold` 代表從收藏數大於等於 `minFavorites` 的候選中隨機取四筆。
+  - `minFavorites`（Integer，非必填）：僅在 `strategy=threshold` 時使用，未提供時預設為 `5`，需為 0 或正整數。
+- **成功回應範例（攜帶 Token，可辨識收藏狀態）**
+```json
+{
+  "data": [
+    {
+      "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+      "title": "東京五日遊",
+      "startDate": "2024-09-01",
+      "endDate": "2024-09-05",
+      "visitPlace": "{\"country\":\"JP\"}",
+      "favoritesCount": 18,
+      "isPrivate": false,
+      "isFavorited": true
+    }
+  ],
+  "meta": {
+    "strategy": "threshold",
+    "minFavorites": 3,
+    "totalCandidates": 5
+  },
+  "error": null
+}
+```
+- **錯誤回應範例**
+  - `POPULAR_STRATEGY_INVALID`：`strategy` 不是 `top` 或 `threshold`。
+  - `POPULAR_MIN_FAVORITES_INVALID`：`minFavorites` 為負數。
+- **備註**：
+  - 當採用 `threshold` 且候選不足四筆時會回退為 `top` 策略，`meta.strategy` 會回報實際採用的策略。
+  - 回應以 `RestResponse` 標準格式包裝，`meta.totalCandidates` 表示符合當前策略的候選數量。
+
+---
 
 ## TravelFavoriteController (`/api/travelFavorites`)
 
