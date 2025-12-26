@@ -24,7 +24,7 @@ export default function AutoComplete({
     setHighlightedIndex(-1);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleTextKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
     if (!isOpen || suggestions.length === 0) return;
 
@@ -86,7 +86,7 @@ export default function AutoComplete({
       onChange={handleTextChange}
       onFocus={() => setIsOpen(true)}
       onBlur={handleTextBlur}
-      onKeyUp={handleKeyDown}
+      onKeyUp={handleTextKeyDown}
       {...props}
     >
       {isOpen && suggestions.length > 0 && (
