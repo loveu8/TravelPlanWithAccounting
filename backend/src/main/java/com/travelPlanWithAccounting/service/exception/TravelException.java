@@ -68,6 +68,12 @@ public class TravelException extends ApiException {
         }
     }
 
+    public static class TravelDateExceedsMaxDays extends ApiException {
+        public TravelDateExceedsMaxDays(int maxDays) {
+            super(TravelMessageCode.TRAVEL_DATE_EXCEEDS_MAX_DAYS, new Object[] {maxDays});
+        }
+    }
+
     public static class TravelDetailIdRequired extends ApiException {
         public TravelDetailIdRequired() {
             super(TravelMessageCode.TRAVEL_DETAIL_ID_REQUIRED);

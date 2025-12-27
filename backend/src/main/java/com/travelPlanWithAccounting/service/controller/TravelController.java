@@ -125,7 +125,7 @@ public class TravelController {
         UUID memberId = authContext.getCurrentMemberId();
         request.setCreatedBy(memberId);
         TravelDate nextTravelDate =
-            travelService.addTravelDate(request.getTravelMainId(), request.getTravelDate(), request.getCreatedBy());
+            travelService.addTravelDate(request.getTravelMainId(), request.getCreatedBy());
         return RestResponseUtils.success(nextTravelDate);
     }
 

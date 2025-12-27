@@ -28,6 +28,7 @@
   - `title`（String，必填）：主行程標題。
   - `notes`（String，非必填）：行程備註。
   - `visitPlace`（JSON String，非必填）：儲存地點資訊，格式為字串化的 JSON，例如 `{"country":"JP"}`。
+  - **行程天數限制**：`startDate` 至 `endDate`（含首尾）不可超過系統設定的最大天數（預設 31 天，可在設定檔 `travel.max-days` 調整）。
 - **成功回應**
 ```json
 {
@@ -264,15 +265,14 @@ flowchart TD
 - **請求範例**
 ```json
 {
-  "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
-  "travelDate": "2024-09-05"
+  "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456"
 }
 ```
 - **欄位說明**
   - `travelMainId`（UUID，必填）：主行程 ID。
-  - `travelDate`（ISO `yyyy-MM-dd`，必填）：要新增的行程日期。
-- **成功回應**：`data` 為新增的 `TravelDate`。
-- **失敗回應 (範例：TRAVEL_MAIN_NOT_FOUND)**
+  - **行為**：系統會查詢該行程現有最後一天，自動往後新增一天；若新增後超過行程天數上限（預設 31 天，可透過 `travel.max-days` 調整），會回傳錯誤。
+- **成功回應**：`data` 為新增的 `TravelDate`（系統計算出的下一天）。
+- **失敗回應 (範例：TRAVEL_MAIN_NOT_FOUND，或超過天數上限 TRAVEL_DATE_EXCEEDS_MAX_DAYS)**
 ```json
 { "data": null, "error": { "code": "TRAVEL_MAIN_NOT_FOUND", "message": "Travel main not found" } }
 ```
@@ -281,9 +281,10 @@ flowchart TD
 flowchart TD
   A --> B[POST /api/travels/addTravelDate]
   B --> C[TravelService.addTravelDate]
-  C -->|travelMainId 存在| D[建立日期並更新 main endDate]
+  C -->|travelMainId 存在| D[取得最後一天 + 1 並檢查天數上限]
   D --> E[成功]
   C -->|找不到 main| F[TRAVEL_MAIN_NOT_FOUND -> Error]
+  C -->|超過天數上限| G[TRAVEL_DATE_EXCEEDS_MAX_DAYS -> Error]
 ```
 
 ---
