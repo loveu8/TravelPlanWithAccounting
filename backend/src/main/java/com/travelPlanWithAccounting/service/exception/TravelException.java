@@ -20,6 +20,18 @@ public class TravelException extends ApiException {
         }
     }
 
+    public static class TravelListPageInvalid extends ApiException {
+        public TravelListPageInvalid(Integer value) {
+            super(TravelMessageCode.TRAVEL_LIST_PAGE_INVALID, new Object[] {value});
+        }
+    }
+
+    public static class TravelListSizeInvalid extends ApiException {
+        public TravelListSizeInvalid(Integer value) {
+            super(TravelMessageCode.TRAVEL_LIST_SIZE_INVALID, new Object[] {value});
+        }
+    }
+
     public static class TravelMainNotFound extends ApiException {
         public TravelMainNotFound() {
             super(TravelMessageCode.TRAVEL_MAIN_NOT_FOUND);
@@ -53,6 +65,12 @@ public class TravelException extends ApiException {
     public static class TravelDateUnexpectedState extends ApiException {
         public TravelDateUnexpectedState() {
             super(TravelMessageCode.TRAVEL_DATE_UNEXPECTED_STATE);
+        }
+    }
+
+    public static class TravelDateExceedsMaxDays extends ApiException {
+        public TravelDateExceedsMaxDays(int maxDays) {
+            super(TravelMessageCode.TRAVEL_DATE_EXCEEDS_MAX_DAYS, new Object[] {maxDays});
         }
     }
 
@@ -99,6 +117,24 @@ public class TravelException extends ApiException {
     public static class DetailsNotSameTravel extends ApiException {
         public DetailsNotSameTravel() {
             super(TravelMessageCode.TRAVEL_DETAILS_NOT_SAME_TRAVEL);
+        }
+    }
+
+    public static class TravelPoiNotFound extends ApiException {
+        public TravelPoiNotFound() {
+            super(TravelMessageCode.TRAVEL_POI_NOT_FOUND);
+        }
+    }
+
+    public static class PopularStrategyInvalid extends ApiException {
+        public PopularStrategyInvalid(String strategy) {
+            super(TravelMessageCode.POPULAR_STRATEGY_INVALID, new Object[] {strategy});
+        }
+    }
+
+    public static class PopularMinFavoritesInvalid extends ApiException {
+        public PopularMinFavoritesInvalid(Integer value) {
+            super(TravelMessageCode.POPULAR_MIN_FAVORITES_INVALID, new Object[] {value});
         }
     }
 }
