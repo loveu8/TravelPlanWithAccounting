@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import AsideMenu from "./iternerary/index";
 import Button from "@/app/components/Button";
+import { Day } from "./aside-menu.types";
+import { AsideMenuContainerProps } from "./aside-menu.types";
 
-interface AsideMenuContainerProps {
-  lng: string;
-}
-
-export default function AsideMenuContainer({}: AsideMenuContainerProps) {
+export default function AsideMenuContainer({
+  travelMainId,
+}: AsideMenuContainerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Tab 主要項目
@@ -30,7 +30,7 @@ export default function AsideMenuContainer({}: AsideMenuContainerProps) {
   ];
 
   const [activeNavigation, setActiveNavigation] = useState("itinerary");
-  const [activeDay, setActiveDay] = useState("day1");
+  const [selectedDay, setSelectedDay] = useState("day1");
 
   const handleToggle = () => {
     setIsOpen(!isOpen);
@@ -41,13 +41,9 @@ export default function AsideMenuContainer({}: AsideMenuContainerProps) {
     console.log("切換導航:", itemId);
   };
 
-  const handleDaySelect = (dayId: string) => {
-    setActiveDay(dayId);
-    console.log("選擇日期:", dayId);
-  };
-
-  const handleAddDay = () => {
-    console.log("新增日期");
+  const handleDaySelect = (day: Day) => {
+    setSelectedDay(day.id);
+    console.log("選擇日期:", day);
   };
 
   return (
@@ -75,9 +71,9 @@ export default function AsideMenuContainer({}: AsideMenuContainerProps) {
           activeNavigation={activeNavigation}
           onNavigationChange={handleNavigationChange}
           days={days}
-          activeDay={activeDay}
+          activeDay={selectedDay}
+          travelMainId={travelMainId}
           onDaySelect={handleDaySelect}
-          onAddDay={handleAddDay}
         />
       </div>
     </>

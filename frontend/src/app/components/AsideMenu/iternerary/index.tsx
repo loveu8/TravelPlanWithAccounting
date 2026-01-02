@@ -10,8 +10,8 @@ export default function AsideMenu({
   onNavigationChange,
   days,
   activeDay,
+  travelMainId,
   onDaySelect,
-  onAddDay,
 }: AsideMenuProps) {
   return (
     <div className="flex w-full h-full max-w-[660px] flex-col">
@@ -34,8 +34,8 @@ export default function AsideMenu({
       <DateSidebar
         days={days}
         activeDay={activeDay}
+        travelMainId={travelMainId}
         onDaySelect={onDaySelect}
-        onAddDay={onAddDay}
       />
     </div>
   );

@@ -6,6 +6,10 @@ export interface Day {
   itemsCount?: number;
 }
 
+export interface AsideMenuContainerProps {
+  travelMainId: string;
+}
+
 export interface AsideMenuProps {
   navigationItems: ITabItem[];
   activeNavigation: string;
@@ -13,6 +17,5 @@ export interface AsideMenuProps {
   activeDay: string;
   travelMainId: string;
   onNavigationChange: (itemId: string) => void;
-  onDaySelect: (dayId: string) => void;
-  onAddDay: () => void;
+  onDaySelect: (day: Day) => void;
 }
