@@ -2,7 +2,7 @@ import React from "react";
 import { AsideMenuProps } from "../aside-menu.types";
 import { UnderlineTab } from "@/app/components/Tab";
 import Card from "./ItineraryCard";
-import DateSidebar from "./DateSidebar";
+import DateSidebar from "@/app/components/DateSidebar";
 
 export default function AsideMenu({
   navigationItems,

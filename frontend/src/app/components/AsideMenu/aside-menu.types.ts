@@ -11,14 +11,8 @@ export interface AsideMenuProps {
   activeNavigation: string;
   days: Day[];
   activeDay: string;
+  travelMainId: string;
   onNavigationChange: (itemId: string) => void;
-  onDaySelect: (dayId: string) => void;
-  onAddDay: () => void;
-}
-
-export interface DateSidebarProps {
-  days: Day[];
-  activeDay: string;
   onDaySelect: (dayId: string) => void;
   onAddDay: () => void;
 }
