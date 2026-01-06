@@ -1,5 +1,16 @@
 package com.travelPlanWithAccounting.service.entity;
 
+import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,17 +18,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
-import java.io.Serializable;
-import java.time.Instant;
-import java.time.LocalTime;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Valid
@@ -40,11 +44,12 @@ public class TravelDetail implements Serializable {
   @Column(name = "travel_date_id", nullable = false)
   private UUID travelDateId; // 不建立雙向關聯
 
-  @Column(name = "extend_id", nullable = false)
-  private UUID extendId; // 不建立雙向關聯
+  @Column(name = "poi_id", nullable = false)
+  private UUID poiId; // 不建立雙向關聯
 
-  @Column(name = "type", nullable = false, length = 3)
-  private String type;
+  @Column(name = "sort", nullable = false)
+  @JdbcTypeCode(SqlTypes.SMALLINT)
+  private Integer sort;
 
   @Column(name = "start_time", nullable = false)
   private LocalTime startTime;
@@ -54,6 +59,9 @@ public class TravelDetail implements Serializable {
 
   @Column(name = "notes", columnDefinition = "TEXT")
   private String notes;
+
+  @Column(name = "is_time_conflict", nullable = false)
+  private boolean timeConflict;
 
   @Column(name = "created_by")
   private UUID createdBy;

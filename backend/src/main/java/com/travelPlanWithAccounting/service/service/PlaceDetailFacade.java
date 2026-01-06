@@ -6,6 +6,7 @@ import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailRespo
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -30,9 +31,10 @@ public class PlaceDetailFacade {
     this.mapper = mapper;
   }
 
-  public PlaceDetailResponse fetch(String placeId, String langType) {
+  public PlaceDetailResponse fetch(String placeId) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
     validator.validate(placeId, langType);
-    PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
+    PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId);
     JsonNode json = mapService.getPlaceDetails(req);
     return mapper.toDto(json, true);
   }

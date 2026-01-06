@@ -39,7 +39,7 @@ export default function SignUpDialog({
 }: {
   ref?: React.RefObject<SignUpImperativeHandle | null>;
 }) {
-  const { lng } = useParams();
+  const { lng } = useParams<{ lng: string }>();
   const { t } = useT("common");
   const { open, error, openDialogWithPromise, handleSubmit, handleOpenChange } =
     useDialogWithForm({
@@ -96,7 +96,7 @@ export default function SignUpDialog({
                   label={t("account.birthday")}
                   name="birthday"
                   id="birthday"
-                  localeType={lng === "zh" ? "zh-TW" : "en-US"}
+                  lng={lng}
                   calendarOptions={{
                     captionLayout: "dropdown",
                   }}

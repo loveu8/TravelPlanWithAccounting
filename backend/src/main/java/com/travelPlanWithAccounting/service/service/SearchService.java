@@ -5,6 +5,9 @@ import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
 import com.travelPlanWithAccounting.service.dto.google.PlaceDetailRequestPost;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListResponse;
+import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
@@ -12,17 +15,21 @@ import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
+import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.entity.Location;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.entity.MemberPoi;
 import com.travelPlanWithAccounting.service.entity.TxPoiResult;
 import com.travelPlanWithAccounting.service.entity.TxResult;
+import com.travelPlanWithAccounting.service.exception.MemberException;
 import com.travelPlanWithAccounting.service.exception.MemberPoiException;
 import com.travelPlanWithAccounting.service.factory.GoogleRequestFactory;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceDetailMapper;
 import com.travelPlanWithAccounting.service.mapper.GooglePlaceMapper;
 import com.travelPlanWithAccounting.service.mapper.InfoAggregator;
 import com.travelPlanWithAccounting.service.repository.MemberPoiRepository;
+import com.travelPlanWithAccounting.service.repository.MemberPoiRepository.MemberPoiProjection;
 import com.travelPlanWithAccounting.service.repository.PoiI18nRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
@@ -34,23 +41,36 @@ import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
 import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
+import com.travelPlanWithAccounting.service.validator.MemberPoiListValidator;
+import com.travelPlanWithAccounting.service.validator.MemberPoiFavoritesValidator;
 import com.travelPlanWithAccounting.service.validator.SearchRequestValidator;
 import com.travelPlanWithAccounting.service.validator.Validator;
 import jakarta.transaction.Transactional;
+import org.springframework.context.i18n.LocaleContextHolder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SearchService {
 
   private static final Logger log = LoggerFactory.getLogger(SearchService.class);
+
+  private static final List<String> OTHER_POI_TYPES =
+      List.of("P008", "P009", "P010", "P011", "P012", "P013", "P014", "P015", "P016", "P017", "P018");
 
   @Autowired private SearchCountryRepository searchCountryRepository;
 
@@ -80,8 +100,11 @@ public class SearchService {
   @Autowired private PoiLanguageEnrichmentPublisher enrichmentPublisher;
   @Autowired private PlaceDetailFacade placeDetailFacade;
   @Autowired private JsonHelper jsonHelper;
+  @Autowired private MemberPoiListValidator memberPoiListValidator;
+  @Autowired private MemberPoiFavoritesValidator memberPoiFavoritesValidator;
 
-  public List<Region> searchRegions(String countryCode, String langType) {
+  public List<Region> searchRegions(String countryCode) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
     // 1) 驗證資料
     coommonValidator.validate(countryCode, langType);
@@ -93,7 +116,8 @@ public class SearchService {
     return infoAggregator.searchRegions(results);
   }
 
-  public List<Country> searchCountries(String langType) {
+  public List<Country> searchCountries() {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
     // 1) 驗證資料
     coommonValidator.validate(langType);
 
@@ -202,7 +226,8 @@ public class SearchService {
    * @return PlaceDetailResponse
    */
   @Transactional
-  public PlaceDetailResponse getPlaceDetailById(String placeId, String langType) {
+  public PlaceDetailResponse getPlaceDetailById(String placeId) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
     // 1) 驗證
     placeDetailValidator.validate(placeId, langType);
@@ -212,35 +237,109 @@ public class SearchService {
     Optional<String> cachedJson = poiRepository.findCachedRawJson(placeId, langCode);
     JsonNode json;
     boolean hit = cachedJson.isPresent();
+    UUID poiId = null;
 
     if (hit) {
       log.debug("Cache‑hit placeId={} langType={}", placeId, langType);
       json = jsonHelper.deserializeToNode(cachedJson.get());
+      poiId =
+          poiRepository.findByExternalId(placeId).map(p -> p.getId()).orElse(null);
     } else {
       log.debug("Call api placeId={} langType={}", placeId, langType);
-      PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId, langType);
+      PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId);
       json = mapService.getPlaceDetails(req);
 
       // 2.3) API 成功 → 立即 upsert 進 DB
       PlaceDetailResponse dto = placeDetailMapper.toDto(json, false);
-      upsertPoiAndI18n(dto, langCode); // 共用方法，避免重複
+      TxPoiResult tx = upsertPoiAndI18n(dto, langCode); // 共用方法，避免重複
+      poiId = tx.getPoiId();
     }
 
-    return placeDetailMapper.toDto(json, false);
+    PlaceDetailResponse resp = placeDetailMapper.toDto(json, false);
+    resp.setPoiId(poiId);
+    return resp;
+  }
+
+  public MemberPoiListResponse getMemberPoiList(UUID memberId, MemberPoiListRequest req) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
+    String langCode = langTypeMapper.toCode(langType);
+
+    memberPoiListValidator.validate(req.getPoiType(), req.getPage(), req.getMaxResultCount());
+
+    int page = req.getPage() == null ? 1 : req.getPage();
+    int size = req.getMaxResultCount() == null ? 5 : req.getMaxResultCount();
+
+    Pageable pageable = PageRequest.of(page - 1, size);
+    String poiType = req.getPoiType();
+    List<String> poiTypes =
+        OTHER_POI_TYPES.contains(poiType) ? OTHER_POI_TYPES : List.of(poiType);
+
+    Page<MemberPoiProjection> result =
+        memberPoiRepository.findMemberPoiList(memberId, poiTypes, langCode, pageable);
+
+    List<LocationSearch> list =
+        result.getContent().stream()
+            .map(
+                p -> {
+                  LocationSearch loc = new LocationSearch();
+                  loc.setPoiId(p.getPoiId());
+                  loc.setPlaceId(p.getPlaceId());
+                  loc.setName(p.getName());
+                  loc.setCity(p.getCity());
+                  loc.setPhotoUrl(p.getPhotoUrl());
+                  loc.setRating(p.getRating());
+                  return loc;
+                })
+            .toList();
+
+    PageMeta meta =
+        PageMeta.builder()
+            .page(result.getNumber() + 1)
+            .size(result.getSize())
+            .totalPages(result.getTotalPages())
+            .totalElements(result.getTotalElements())
+            .hasNext(result.hasNext())
+            .hasPrev(result.hasPrevious())
+            .build();
+
+    MemberPoiListResponse resp = new MemberPoiListResponse();
+    resp.setList(list);
+    resp.setMeta(meta);
+    return resp;
+  }
+
+  public Map<String, Boolean> checkPoisFavorites(UUID memberId, List<String> placeIds) {
+    memberPoiFavoritesValidator.validate(placeIds);
+    List<String> saved = memberPoiRepository.findFavoritePlaceIds(memberId, placeIds);
+    Set<String> savedSet = new HashSet<>(saved);
+    Map<String, Boolean> result = new LinkedHashMap<>();
+    for (String id : placeIds) {
+      result.put(id, savedSet.contains(id));
+    }
+    return result;
   }
 
   @Transactional
-  public SaveMemberPoiResponse saveMemberPoi(UUID authMemberId, SaveMemberPoiRequest req) {
-    // 1) 確認會員存在
-    memberService.assertActiveMember(authMemberId, req.getMemberId());
+  public SaveMemberPoiResponse saveMemberPoi(UUID tokenMemberId, SaveMemberPoiRequest req) {
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
+
+    /* 1) 取最終 memberId：使用 Access-Token */
+    UUID memberId = tokenMemberId;
+
+    if (memberId == null) {
+      throw new MemberException.MemberNotFound();
+    }
+
+    /* 1.1) 只驗證「存在 + active」，不再比對 body */
+    memberService.assertActiveMember(memberId);
 
     // 2) 確認 語言傳遞正確
-    String langCode = langTypeMapper.toCode(req.getLangType());
+    String langCode = langTypeMapper.toCode(langType);
 
     // 3) 查詢API確認存在此地點
     PlaceDetailResponse dto;
     try {
-      dto = placeDetailFacade.fetch(req.getPlaceId(), req.getLangType());
+      dto = placeDetailFacade.fetch(req.getPlaceId());
     } catch (Exception ex) {
       throw new MemberPoiException.PlaceNotFound();
     }
@@ -249,10 +348,10 @@ public class SearchService {
     }
 
     // 4) 確認儲存
-    TxResult tx = doSaveTx(authMemberId, dto, langCode);
+    TxResult tx = doSaveTx(memberId, dto, langCode);
 
     // 5) 背景處理其他語系
-    enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), req.getLangType());
+    enrichmentPublisher.publish(tx.poiId(), dto.getPlaceId(), langType);
 
     return SaveMemberPoiResponse.builder()
         .code(1)
@@ -262,6 +361,19 @@ public class SearchService {
         .langInserted(tx.langInserted())
         .alreadySaved(tx.alreadySaved())
         .build();
+  }
+
+  @Transactional
+  public SimpleResult cancelMemberPoi(UUID memberId, UUID poiId) {
+    if (memberId == null) {
+      throw new MemberException.MemberNotFound();
+    }
+    MemberPoi mp =
+        memberPoiRepository
+            .findByMemberIdAndPoi_Id(memberId, poiId)
+            .orElseThrow(MemberPoiException.MemberPoiNotFound::new);
+    memberPoiRepository.delete(mp);
+    return new SimpleResult(true);
   }
 
   @Transactional

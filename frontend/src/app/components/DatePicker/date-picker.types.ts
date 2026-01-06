@@ -31,7 +31,7 @@ interface IDatePickerBaseProps {
   /**
    * 多語系支援
    */
-  localeType?: SupportLocaleType;
+  lng?: string;
   /**
    * 覆寫日曆元件屬性
    * @todo 這裡 exclude mode 因為目前沒有支援多型

@@ -1,6 +1,9 @@
 package com.travelPlanWithAccounting.service.controller;
 
+import com.travelPlanWithAccounting.service.dto.auth.SimpleResult;
 import com.travelPlanWithAccounting.service.dto.google.NearbySearchRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListRequest;
+import com.travelPlanWithAccounting.service.dto.memberpoi.MemberPoiListResponse;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
@@ -11,19 +14,21 @@ import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.dto.search.response.Region;
 import com.travelPlanWithAccounting.service.dto.setting.SettingResponse;
+import com.travelPlanWithAccounting.service.security.AccessTokenRequired;
 import com.travelPlanWithAccounting.service.service.SearchService;
 import com.travelPlanWithAccounting.service.service.SettingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +40,7 @@ public class SearchController {
 
   @Autowired private SearchService searchService;
   @Autowired private SettingService settingService;
+  @Autowired private AuthContext authContext;
 
   // ==================== 設定相關 API ====================
 
@@ -47,21 +53,21 @@ public class SearchController {
   @GetMapping("/settings/language-types")
   @Operation(summary = "查詢所有語言類型設定")
   public List<SettingResponse> getAllLanguageTypes() {
-    return settingService.getAllLanguageTypes();
+    return settingService.getSettingsByCategory("LANG_TYPE");
   }
 
   // ==================== 原有的搜尋 API ====================
 
-  @GetMapping("/countries/{langType}")
+  @GetMapping("/countries")
   @Operation(summary = "取得國家列表 (DTO 格式)")
-  public List<Country> searchCountries(@PathVariable String langType) {
-    return searchService.searchCountries(langType);
+  public List<Country> searchCountries() {
+    return searchService.searchCountries();
   }
 
   @PostMapping("/regions")
   @Operation(summary = "取得地區和城市 (DTO 格式)")
   public List<Region> searchRegions(@RequestBody SearchRequest request) {
-    return searchService.searchRegions(request.getCode(), request.getLangType());
+    return searchService.searchRegions(request.getCode());
   }
 
   @GetMapping("/allLocations")
@@ -90,15 +96,36 @@ public class SearchController {
 
   @GetMapping("/placeDetails")
   @Operation(summary = "取得地點詳細資訊 (含照片)")
-  public PlaceDetailResponse getPlaceDetails(
-      @RequestParam String placeId, @RequestParam(defaultValue = "zh-TW") String langType) {
-    return searchService.getPlaceDetailById(placeId, langType);
+  public PlaceDetailResponse getPlaceDetails(@RequestParam String placeId) {
+    return searchService.getPlaceDetailById(placeId);
+  }
+
+  @PostMapping("/memberPois")
+  @AccessTokenRequired
+  @Operation(summary = "取得會員收藏景點清單")
+  public MemberPoiListResponse getMemberPoiList(
+      @Valid @RequestBody MemberPoiListRequest req) {
+    return searchService.getMemberPoiList(authContext.getCurrentMemberId(), req);
+  }
+
+  @PostMapping("/poisFavoritesCheck")
+  @AccessTokenRequired
+  @Operation(summary = "批量查詢會員收藏景點狀態")
+  public Map<String, Boolean> poisFavoritesCheck(@RequestBody List<String> placeIds) {
+    return searchService.checkPoisFavorites(authContext.getCurrentMemberId(), placeIds);
   }
 
   @PostMapping("/saveMemberPoi")
-  @Operation(summary = "儲存會員景點")
-  public SaveMemberPoiResponse save(
-      @RequestHeader("X-member-id") UUID memberId, @Valid @RequestBody SaveMemberPoiRequest req) {
-    return searchService.saveMemberPoi(memberId, req);
+  @AccessTokenRequired
+  @Operation(summary = "儲存會員景點（優先取 Access-Token 的 sub）")
+  public SaveMemberPoiResponse saveMemberPoi(@Valid @RequestBody SaveMemberPoiRequest req) {
+    return searchService.saveMemberPoi(authContext.getCurrentMemberId(), req);
+  }
+
+  @DeleteMapping("/cancelMemberPois")
+  @AccessTokenRequired
+  @Operation(summary = "取消會員收藏景點")
+  public SimpleResult cancelMemberPoi(@RequestParam UUID poiId) {
+    return searchService.cancelMemberPoi(authContext.getCurrentMemberId(), poiId);
   }
 }

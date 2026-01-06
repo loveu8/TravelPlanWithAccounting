@@ -25,4 +25,46 @@ public class MemberPoiException extends ApiException {
       super(MemberPoiMessageCode.PLACE_REQUIRED_MISSING);
     }
   }
+
+  public static class InvalidPoiType extends ApiException {
+    public InvalidPoiType() {
+      super(MemberPoiMessageCode.INVALID_POI_TYPE);
+    }
+  }
+
+  public static class InvalidMaxResultCount extends ApiException {
+    public InvalidMaxResultCount() {
+      super(MemberPoiMessageCode.INVALID_MAX_RESULT_COUNT);
+    }
+  }
+
+  public static class InvalidPage extends ApiException {
+    public InvalidPage() {
+      super(MemberPoiMessageCode.INVALID_PAGE);
+    }
+  }
+
+  public static class MemberPoiNotFound extends ApiException {
+    public MemberPoiNotFound() {
+      super(MemberPoiMessageCode.MEMBER_POI_NOT_FOUND);
+    }
+  }
+
+  public static class FavoritesIdsEmpty extends ApiException {
+    public FavoritesIdsEmpty() {
+      super(MemberPoiMessageCode.FAVORITES_IDS_EMPTY);
+    }
+  }
+
+  public static class FavoritesIdsTooMany extends ApiException {
+    public FavoritesIdsTooMany() {
+      super(MemberPoiMessageCode.FAVORITES_IDS_TOO_MANY);
+    }
+  }
+
+  public static class FavoriteIdEmpty extends ApiException {
+    public FavoriteIdEmpty() {
+      super(MemberPoiMessageCode.FAVORITES_ID_EMPTY);
+    }
+  }
 }

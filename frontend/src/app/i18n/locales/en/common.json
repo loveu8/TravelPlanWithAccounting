@@ -17,6 +17,10 @@
     "bookmark-already": "Bookmarked",
     "schedule-add": "Add to Schedule"
   },
+  "lang": {
+    "zh": "繁體中文",
+    "en": "English"
+  },
   "validation": {
     "required": "Please fill in {{label}}.",
     "min-length": "At least {{min}} characters.",
@@ -37,11 +41,18 @@
     "otp-resend": "Resend OTP",
     "valid-time": "Valid for: {{time}} seconds."
   },
+  "logout": "Logout",
   "account": {
     "surname": "Surname",
     "given-name": "Given Name",
     "nickname": "Nickname",
     "birthday": "Birthday",
     "email": "Email"
+  },
+  "header": {
+    "my-travel-plan": "My Travel Plan",
+    "explore": "Explore",
+    "login": "Login",
+    "language": "Language"
   }
 }

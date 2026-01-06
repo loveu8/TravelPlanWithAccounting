@@ -1,152 +1,373 @@
 package com.travelPlanWithAccounting.service.service;
 
-import com.travelPlanWithAccounting.service.dto.member.MemberRegisterRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
+import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
+import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeOtpRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeResponse;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyRequest;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
+import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
+import com.travelPlanWithAccounting.service.entity.AuthInfo;
 import com.travelPlanWithAccounting.service.entity.Member;
+import com.travelPlanWithAccounting.service.entity.Setting;
+import com.travelPlanWithAccounting.service.exception.InvalidOtpException;
 import com.travelPlanWithAccounting.service.exception.MemberException;
+import com.travelPlanWithAccounting.service.model.OtpData;
+import com.travelPlanWithAccounting.service.model.OtpPurpose;
+import com.travelPlanWithAccounting.service.repository.AuthInfoRepository;
 import com.travelPlanWithAccounting.service.repository.MemberRepository;
+import com.travelPlanWithAccounting.service.repository.SettingRepository;
 import com.travelPlanWithAccounting.service.util.EmailValidatorUtil;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 會員服務，處理會員註冊等相關業務邏輯。<br>
- * Service for member operations, including registration.<br>
+ * 會員相關服務。
  *
- * <p>註冊需經過 OTP 驗證，並檢查 email 是否重複。<br>
- * Registration requires OTP verification and email duplication check.
+ * <p>參考 {@link com.travelPlanWithAccounting.service.service.SearchService} 的錯誤處理模式， 以一致的方式拋出對應的
+ * {@link MemberException} 或 {@link InvalidOtpException}。
  */
 @Service
 @RequiredArgsConstructor
 public class MemberService {
 
   private final MemberRepository memberRepository;
-  private final OtpCacheService otpCacheService;
+  private final OtpService otpService;
+  private final RefreshTokenService refreshTokenService;
+  private final SettingRepository settingRepository;
+  private final AuthInfoRepository authInfoRepository;
+  private final MessageSource messageSource;
 
-  /**
-   * 會員註冊。<br>
-   * Register a new member.<br>
-   *
-   * <p>必須先通過 OTP 驗證並取得驗證 token，註冊時 email、givenName、familyName、nickName、birthday 為可填欄位。<br>
-   * Must pass OTP verification and provide the token. Only required fields are included.
-   *
-   * @param req 會員註冊請求 (Member registration request)
-   * @return 註冊成功的會員資料與預留 JWT 欄位 (Registered member and reserved JWT field)
-   * @throws MemberException.EmailRequired 若 email 未填 (if email is missing)
-   * @throws MemberException.EmailAlreadyExists 若 email 已存在 (if email already exists)
-   * @throws MemberException.OtpTokenInvalid 若 OTP token 驗證失敗 (if OTP token is invalid)
-   */
+  /** 判斷 purpose 並發送 OTP */
   @Transactional
-  public MemberResponse register(MemberRegisterRequest req) {
-    validateEmail(req.getEmail());
-    checkEmailDuplicate(req.getEmail());
-    validateOtpToken(req.getOtpToken(), req.getEmail());
+  public PreAuthFlowResponse preAuthFlow(PreAuthFlowRequest req) {
+    validatePreAuthReq(req);
+    String email = req.getEmail();
+    boolean exists = memberRepository.existsByEmail(email);
+    OtpPurpose purpose = exists ? OtpPurpose.LOGIN : OtpPurpose.REGISTRATION;
+    OtpData otpData = otpService.generateOtp(email, purpose);
+    return new PreAuthFlowResponse(email, exists, purpose.name(), purpose.actionCode(), otpData.getToken().toString());
+  }
+
+  /** 驗證 OTP → 登入或註冊 → 回 cookies envelope（AT/RT） */
+  @Transactional
+  public AuthResponse authFlow(AuthFlowRequest req) {
+    validateAuthReq(req);
+    String email = req.getEmail();
+
+    boolean exists = memberRepository.existsByEmail(email);
+    OtpPurpose purpose = exists ? OtpPurpose.LOGIN : OtpPurpose.REGISTRATION;
+
+    AuthInfo authInfo;
+    Member member;
+    if (exists) {
+      try {
+        authInfo = otpService.verifyOtp(req.getToken(), req.getOtpCode(), purpose);
+      } catch (InvalidOtpException ex) {
+        throw new MemberException.OtpTokenInvalid();
+      }
+      if (!authInfo.getEmail().equals(email)) {
+        throw new MemberException.OtpTokenInvalid();
+      }
+      member =
+          memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
+    } else {
+      member = Member.builder().email(email).status(Short.valueOf("1")).subscribe(true).build();
+      MemberProfileUpdateRequest profileReq = new MemberProfileUpdateRequest();
+      profileReq.setGivenName(req.getGivenName());
+      profileReq.setFamilyName(req.getFamilyName());
+      profileReq.setNickName(req.getNickName());
+      profileReq.setBirthday(req.getBirthday());
+      validateAndApplyProfile(member, profileReq);
+      try {
+        authInfo = otpService.verifyOtp(req.getToken(), req.getOtpCode(), purpose);
+      } catch (InvalidOtpException ex) {
+        throw new MemberException.OtpTokenInvalid();
+      }
+      if (!authInfo.getEmail().equals(email)) {
+        throw new MemberException.OtpTokenInvalid();
+      }
+      memberRepository.save(member);
+    }
+    
+    String clientId = resolveClientId(req.getClientId());
+    return refreshTokenService.issueForMember(member.getId(), clientId, req.getIp(), req.getUa());
+  }
+
+  /** 發送舊信箱 OTP */
+  @Transactional
+  public OtpTokenResponse sendIdentityOtp(UUID memberId) {
     Member member =
-        Member.builder()
-            .givenName(req.getGivenName())
-            .familyName(req.getFamilyName())
-            .nickName(req.getNickName())
-            .birthday(req.getBirthday())
-            .email(req.getEmail())
-            .subscribe(false)
-            .status(Short.valueOf("1"))
-            .build();
-    Member saved = memberRepository.save(member);
-    otpCacheService.evictOtpVerifiedToken(req.getOtpToken());
-    String jwt = generateJwt(saved);
-    return new MemberResponse(saved.getEmail(), jwt);
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    OtpData otpData = otpService.generateOtp(member.getEmail(), OtpPurpose.IDENTITY_VERIFICATION);
+    return new OtpTokenResponse(
+        otpData.getToken().toString(), otpData.getExpiryTime().atOffset(ZoneOffset.UTC));
   }
 
-  /**
-   * 驗證 email 是否為空。<br>
-   * Validate that email is not empty.<br>
-   *
-   * @param email 電子郵件 (email)
-   */
-  private void validateEmail(String email) {
-    if (email == null || email.isEmpty()) {
-      throw new MemberException.EmailRequired();
+  /** 驗證舊信箱 OTP，回傳 identity token */
+  @Transactional
+  public IdentityOtpVerifyResponse verifyIdentityOtp(UUID memberId, IdentityOtpVerifyRequest req) {
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
     }
-    if (!EmailValidatorUtil.isValid(email)) {
-      throw new MemberException.EmailFormatInvalid();
+    AuthInfo authInfo;
+    try {
+      authInfo =
+          otpService.verifyOtp(
+              req.getOtpToken(), req.getOtpCode(), OtpPurpose.IDENTITY_VERIFICATION);
+    } catch (InvalidOtpException ex) {
+      throw new MemberException.OtpTokenInvalid();
     }
+    if (!authInfo.getMemberId().equals(member.getId())) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    OffsetDateTime updatedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    authInfo.setValidation(true);
+    authInfo.setUpdatedAt(updatedAt);
+    authInfoRepository.save(authInfo);
+    return new IdentityOtpVerifyResponse(req.getOtpToken(), authInfo.getExpireAt(), true);
   }
 
-  /**
-   * 檢查 email 是否已存在。<br>
-   * Check if email already exists.<br>
-   *
-   * @param email 電子郵件 (email)
-   */
-  private void checkEmailDuplicate(String email) {
-    if (memberRepository.existsByEmail(email)) {
+  /** 發送新信箱 OTP */
+  @Transactional
+  public OtpTokenResponse sendEmailChangeOtp(UUID memberId, EmailChangeOtpRequest req) {
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    validateEmail(req.getEmail());
+    if (memberRepository.existsByEmail(req.getEmail())) {
       throw new MemberException.EmailAlreadyExists();
     }
+    UUID identityId;
+    try {
+      identityId = UUID.fromString(req.getIdentityOtpToken());
+    } catch (IllegalArgumentException e) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
+    AuthInfo identityAuth =
+        authInfoRepository
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
+            .orElseThrow(MemberException.OtpTokenInvalid::new);
+    if (!identityAuth.getMemberId().equals(member.getId())
+        || identityAuth.getUpdatedAt() == null
+        || !identityAuth.getUpdatedAt().plusMinutes(10).isAfter(nowUtc)) {
+      throw new MemberException.MemberVerifyExpired();
+    }
+    OtpData otpData = otpService.generateOtp(req.getEmail(), OtpPurpose.EMAIL_CHANGE);
+    return new OtpTokenResponse(
+        otpData.getToken().toString(), otpData.getExpiryTime().atOffset(ZoneOffset.UTC));
   }
 
-  /**
-   * 驗證 OTP token 是否有效。<br>
-   * Validate OTP token.<br>
-   *
-   * @param otpToken OTP 驗證 token (OTP verification token)
-   * @param email 電子郵件 (email)
-   */
-  private void validateOtpToken(String otpToken, String email) {
-    String verifiedEmail = otpCacheService.getOtpVerifiedEmailByToken(otpToken);
-    if (verifiedEmail == null || !verifiedEmail.equals(email)) {
+  /** 更新信箱 */
+  @Transactional
+  public EmailChangeResponse changeEmail(UUID memberId, EmailChangeRequest req) {
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    UUID identityId;
+    try {
+      identityId = UUID.fromString(req.getIdentityOtpToken());
+    } catch (IllegalArgumentException e) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
+    AuthInfo identityAuth =
+        authInfoRepository
+            .findByIdAndActionAndValidationTrueAndExpireAtAfter(
+                identityId, OtpPurpose.IDENTITY_VERIFICATION.actionCode(), nowUtc)
+            .orElseThrow(MemberException.OtpTokenInvalid::new);
+    if (!identityAuth.getMemberId().equals(member.getId())
+        || identityAuth.getUpdatedAt() == null
+        || !identityAuth.getUpdatedAt().plusMinutes(10).isAfter(nowUtc)) {
+      throw new MemberException.MemberVerifyExpired();
+    }
+    AuthInfo emailAuth;
+    try {
+      emailAuth =
+          otpService.verifyOtp(req.getOtpToken(), req.getOtpCode(), OtpPurpose.EMAIL_CHANGE);
+    } catch (InvalidOtpException ex) {
+      throw new MemberException.OtpTokenInvalid();
+    }
+    String newEmail = emailAuth.getEmail();
+    if (memberRepository.existsByEmail(newEmail)) {
+      throw new MemberException.EmailAlreadyExists();
+    }
+    member.setEmail(newEmail);
+    memberRepository.save(member);
+    identityAuth.setExpireAt(nowUtc);
+    emailAuth.setExpireAt(nowUtc);
+    authInfoRepository.save(identityAuth);
+    authInfoRepository.save(emailAuth);
+    return new EmailChangeResponse(true);
+  }
+
+  private String resolveClientId(String clientId) {
+    return (clientId == null || clientId.isBlank()) ? "web" : clientId;
+  }
+
+  private void validateEmail(String email) {
+    if (email == null || email.isEmpty()) throw new MemberException.EmailRequired();
+    if (!EmailValidatorUtil.isValid(email)) throw new MemberException.EmailFormatInvalid();
+  }
+
+  private void validatePreAuthReq(PreAuthFlowRequest req) {
+    if (req == null) throw new MemberException.EmailRequired();
+    validateEmail(req.getEmail());
+  }
+
+  private void validateAuthReq(AuthFlowRequest req) {
+    if (req == null) throw new MemberException.EmailRequired();
+    validateEmail(req.getEmail());
+    if (req.getOtpCode() == null
+        || req.getOtpCode().isBlank()
+        || req.getToken() == null
+        || req.getToken().isBlank()) {
       throw new MemberException.OtpTokenInvalid();
     }
   }
 
+  /** 仍保留原有方法（若其他地方共用） */
+  @Transactional(readOnly = true)
+  public Member assertActiveMember(UUID memberId) {
+    return memberRepository
+        .findStatusById(memberId)
+        .orElseThrow(MemberException.MemberNotFound::new);
+  }
+
+  /* ==================== 新增會員資料相關 API ==================== */
+
   /**
-   * 會員登入。<br>
-   * Login member.<br>
-   *
-   * <p>檢查 email 是否存在。<br>
-   * Check if email exists.
-   *
-   * @param email 電子郵件 (email)
-   * @return 登入成功的會員資料與預留 JWT 欄位 (Logged-in member and reserved JWT field)
-   * @throws MemberException.EmailRequired 若 email 未填 (if email is missing)
-   * @throws MemberException.EmailNotFound 若 email 不存在 (if email not found)
+   * 查詢會員資料。
    */
   @Transactional(readOnly = true)
-  public MemberResponse login(String email, String otpToken) {
-    validateEmail(email);
-    validateOtpToken(otpToken, email);
+  public MemberProfileResponse getProfile(UUID memberId) {
     Member member =
-        memberRepository.findByEmail(email).orElseThrow(MemberException.EmailNotFound::new);
-    String jwt = generateJwt(member);
-    return new MemberResponse(member.getEmail(), jwt);
-  }
-
-  // 範例 JWT 產生方法（請依實際專案替換）
-  private String generateJwt(Member member) {
-    // TODO: 串接 JWT 工具類別
-    return "mock-jwt-token";
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
+    }
+    return toProfileResponse(member);
   }
 
   /**
-   * 驗證：body.memberId (若不為 null) 必須與 authMemberId 相同；會員必須存在且為 active。
-   *
-   * @return Member (active)
+   * 修改會員資料。
    */
-  public Member assertActiveMember(UUID authMemberId, String bodyMemberIdOpt) {
-    if (bodyMemberIdOpt != null) {
-      UUID bodyId;
-      try {
-        bodyId = UUID.fromString(bodyMemberIdOpt);
-      } catch (Exception ex) {
-        throw new MemberException.MemberIdInvalid();
-      }
-      if (!bodyId.equals(authMemberId)) {
-        throw new MemberException.MemberIdMismatch();
-      }
+  @Transactional
+  public MemberProfileResponse updateProfile(
+      UUID memberId, MemberProfileUpdateRequest req) {
+    Member member =
+        memberRepository.findById(memberId).orElseThrow(MemberException.MemberNotFound::new);
+    if (member.getStatus() == null || member.getStatus() != 1) {
+      throw new MemberException.MemberNotActive();
     }
-    return memberRepository
-        .findStatusById(authMemberId)
-        .orElseThrow(MemberException.MemberNotFound::new);
+    validateAndApplyProfile(member, req);
+    memberRepository.save(member);
+    return toProfileResponse(member);
+  }
+
+  private void validateAndApplyProfile(Member member, MemberProfileUpdateRequest req) {
+    Locale locale = LocaleContextHolder.getLocale();
+    Map<String, String> fieldErrors = validateProfile(req, locale);
+    if (!fieldErrors.isEmpty()) {
+      throw new MemberException.ProfileFieldsInvalid(fieldErrors);
+    }
+
+    if (req.getGivenName() != null) member.setGivenName(req.getGivenName());
+    if (req.getFamilyName() != null) member.setFamilyName(req.getFamilyName());
+    if (req.getNickName() != null) member.setNickName(req.getNickName());
+    if (req.getBirthday() != null) member.setBirthday(req.getBirthday());
+    if (req.getSubscribe() != null) member.setSubscribe(req.getSubscribe());
+
+    String code =
+        settingRepository
+            .findByCategoryAndName("LANG_TYPE", locale.toLanguageTag())
+            .map(Setting::getCodeName)
+            .orElse(member.getLangType() == null ? "001" : member.getLangType());
+    member.setLangType(code);
+  }
+
+  private MemberProfileResponse toProfileResponse(Member member) {
+    String code = member.getLangType() == null ? "001" : member.getLangType();
+    String langType =
+        settingRepository
+            .findByCategoryAndCodeName("LANG_TYPE", code)
+            .map(Setting::getName)
+            .orElse(code);
+    return new MemberProfileResponse(
+        member.getGivenName(),
+        member.getFamilyName(),
+        member.getNickName(),
+        member.getBirthday(),
+        member.getSubscribe(),
+        langType,
+        member.getEmail());
+  }
+
+  private Map<String, String> validateProfile(MemberProfileUpdateRequest req, Locale locale) {
+    Map<String, String> errors = new LinkedHashMap<>();
+    Pattern namePattern = Pattern.compile("^[\\p{L}0-9\\s]+$");
+
+    if (req.getGivenName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
+      if (req.getGivenName().length() > 30)
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.givenName.length", null, locale));
+      if (!namePattern.matcher(req.getGivenName()).matches())
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.givenName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("givenName", String.join("; ", fieldErrors));
+    }
+
+    if (req.getFamilyName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
+      if (req.getFamilyName().length() > 30)
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.familyName.length", null, locale));
+      if (!namePattern.matcher(req.getFamilyName()).matches())
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.familyName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("familyName", String.join("; ", fieldErrors));
+    }
+
+    if (req.getNickName() != null) {
+      List<String> fieldErrors = new ArrayList<>();
+      if (req.getNickName().length() > 30)
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.nickName.length", null, locale));
+      if (!namePattern.matcher(req.getNickName()).matches())
+        fieldErrors.add(
+            messageSource.getMessage("member.profile.nickName.invalid", null, locale));
+      if (!fieldErrors.isEmpty()) errors.put("nickName", String.join("; ", fieldErrors));
+    }
+
+    return errors;
   }
 }

@@ -62,6 +62,8 @@ public class RestResponseUtils {
             .size(page.getSize())
             .totalPages(page.getTotalPages())
             .totalElements(page.getTotalElements())
+            .hasNext(page.hasNext())
+            .hasPrev(page.hasPrevious())
             .build();
 
     return RestResponse.builder().data(page.getContent()).meta(pageMeta).build();

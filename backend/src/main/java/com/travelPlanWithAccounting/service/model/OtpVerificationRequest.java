@@ -1,22 +1,42 @@
 package com.travelPlanWithAccounting.service.model;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotNull;
 
-/** OtpVerificationRequest 用於驗證用戶輸入的 OTP 碼。 包含電子郵件和 OTP 碼兩個字段，並進行相應的驗證。 */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+/** 驗證 OTP 的請求物件 */
 public class OtpVerificationRequest {
-  @NotBlank(message = "電子郵件不能為空")
-  @Email(message = "請輸入有效的電子郵件格式")
-  private String email;
 
-  @NotBlank(message = "OTP驗證碼不能為空")
-  @Pattern(regexp = "\\d{6}", message = "OTP驗證碼必須是6位數字")
+  @NotBlank(message = "token 不能為空")
+  private String token;
+
+  @NotBlank(message = "OTP 驗證碼不能為空")
   private String otpCode;
+
+  /** 必須與發送時的 purpose 一致 */
+  @NotNull(message = "purpose 不能為空")
+  private OtpPurpose purpose;
+
+  public String getToken() {
+    return token;
+  }
+
+  public void setToken(String token) {
+    this.token = token;
+  }
+
+  public String getOtpCode() {
+    return otpCode;
+  }
+
+  public void setOtpCode(String otpCode) {
+    this.otpCode = otpCode;
+  }
+
+  public OtpPurpose getPurpose() {
+    return purpose;
+  }
+
+  public void setPurpose(OtpPurpose purpose) {
+    this.purpose = purpose;
+  }
 }

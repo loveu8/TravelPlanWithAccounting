@@ -19,4 +19,9 @@ public interface TravelDetailRepository extends JpaRepository<TravelDetail, UUID
     void deleteByTravelDateId(@Param("travelDateId") UUID travelDateId);
 
     List<TravelDetail> findByTravelDateId(UUID travelDateId);
+
+    @Query("SELECT COALESCE(MAX(td.sort),0) FROM TravelDetail td WHERE td.travelDateId = :travelDateId")
+    Integer findMaxSortByTravelDateId(@Param("travelDateId") UUID travelDateId);
+
+    List<TravelDetail> findByTravelDateIdOrderBySort(UUID travelDateId);
 }

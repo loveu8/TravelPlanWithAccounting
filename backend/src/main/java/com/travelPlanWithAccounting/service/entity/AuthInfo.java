@@ -1,51 +1,78 @@
 package com.travelPlanWithAccounting.service.entity;
 
-import java.time.Instant;
-
-import org.hibernate.annotations.DynamicUpdate;
-
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+import lombok.*;
 
 @Entity
-@Valid
-@Data
-@Builder
-@DynamicUpdate
+@Table(name = "auth_info")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-@Table(name = "auth_info")
-public class AuthInfo extends BaseEntity {
+@Builder
+@ToString(exclude = "member")
+public class AuthInfo {
 
-    @Column(name = "code", length = 6)
-    private String code;
+  @Id
+  @GeneratedValue
+  @Column(columnDefinition = "uuid")
+  private UUID id;
 
-    @Column(name = "email", length = 255)
-    private String email;
+  @Column(length = 6, nullable = false)
+  private String code;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+  @Column(length = 255, nullable = false)
+  private String email;
 
-    @Column(name = "action", length = 3)
-    private String action;
+  /** 對應 member_id 外鍵（可為 null；註冊前沒有 member） */
+  @ManyToOne(fetch = FetchType.LAZY, optional = true)
+  @JoinColumn(name = "member_id") // 對應你資料表的 member_id 欄位
+  private Member member;
 
-    @Column(name = "validation")
-    private Boolean validation;
+  /** 若想要直接讀取 UUID 而不 join，可保留唯讀欄位（可選） */
+  @Column(name = "member_id", insertable = false, updatable = false)
+  private UUID memberId;
 
-    @Schema(description = "到期時間")
-    @Column(name = "expire_at", columnDefinition = "timestamp with time zone not null")
-    private Instant expireAt;
+  @Column(length = 3, nullable = false)
+  private String action;
+
+  @Column(nullable = false)
+  private Boolean validation;
+
+  @Column(name = "attempt_count", nullable = false)
+  private Integer attemptCount;
+
+  @Column(name = "last_sent_at", nullable = false, columnDefinition = "timestamptz")
+  private OffsetDateTime lastSentAt;
+
+  @Column(name = "verified_at", columnDefinition = "timestamptz")
+  private OffsetDateTime verifiedAt;
+
+  @Version
+  private Long version;
+
+  @Column(name = "expire_at", nullable = false, columnDefinition = "timestamptz")
+  private OffsetDateTime expireAt;
+
+  @Column(name = "created_by", columnDefinition = "uuid")
+  private UUID createdBy;
+
+  @Column(
+      name = "created_at",
+      columnDefinition = "timestamptz",
+      insertable = false,
+      updatable = false)
+  private OffsetDateTime createdAt;
+
+  @Column(name = "updated_by", columnDefinition = "uuid")
+  private UUID updatedBy;
+
+  @Column(
+      name = "updated_at",
+      columnDefinition = "timestamptz",
+      insertable = false,
+      updatable = false)
+  private OffsetDateTime updatedAt;
 }

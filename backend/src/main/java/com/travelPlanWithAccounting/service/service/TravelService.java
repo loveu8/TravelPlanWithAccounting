@@ -1,48 +1,84 @@
 package com.travelPlanWithAccounting.service.service;
 
-import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
-import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
-import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
-import com.travelPlanWithAccounting.service.entity.TravelDate;
-import com.travelPlanWithAccounting.service.entity.TravelDetail;
-import com.travelPlanWithAccounting.service.entity.TravelMain;
-import com.travelPlanWithAccounting.service.repository.MemberRepository;
-import com.travelPlanWithAccounting.service.repository.TravelDateRepository;
-import com.travelPlanWithAccounting.service.repository.TravelDetailRepository;
-import com.travelPlanWithAccounting.service.repository.TravelMainRepository;
-import jakarta.transaction.Transactional;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import com.travelPlanWithAccounting.service.config.TravelProperties;
+import com.travelPlanWithAccounting.service.dto.system.PageMeta;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailPoiCreateRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainListResponse;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainSummary;
+import com.travelPlanWithAccounting.service.entity.TransI18n;
+import com.travelPlanWithAccounting.service.entity.TravelDate;
+import com.travelPlanWithAccounting.service.entity.TravelDetail;
+import com.travelPlanWithAccounting.service.entity.TravelMain;
+import com.travelPlanWithAccounting.service.exception.TravelException;
+import com.travelPlanWithAccounting.service.repository.MemberRepository;
+import com.travelPlanWithAccounting.service.repository.PoiRepository;
+import com.travelPlanWithAccounting.service.repository.TransI18nRepository;
+import com.travelPlanWithAccounting.service.repository.TravelDateRepository;
+import com.travelPlanWithAccounting.service.repository.TravelDetailRepository;
+import com.travelPlanWithAccounting.service.repository.TravelMainRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class TravelService {
+
+  private static final int DEFAULT_PAGE = 1;
+  private static final int DEFAULT_SIZE = 10;
+  private static final int MAX_PAGE_SIZE = 50;
+  private static final long DEFAULT_DETAIL_DURATION_HOURS = 1L;
+  private static final LocalTime DEFAULT_DETAIL_START_TIME = LocalTime.of(9, 0);
 
   private final TravelMainRepository travelMainRepository;
   private final TravelDateRepository travelDateRepository;
   private final TravelDetailRepository travelDetailRepository;
   private final MemberRepository memberRepository; // 注入 MemberRepository
+  private final TransI18nRepository transI18nRepository;
+  private final PoiRepository poiRepository;
+  private final TravelProperties travelProperties;
 
   @Autowired
   public TravelService(
       TravelMainRepository travelMainRepository,
       TravelDateRepository travelDateRepository,
       TravelDetailRepository travelDetailRepository,
-      MemberRepository memberRepository) { // 在建構子中注入
+      MemberRepository memberRepository,
+      TransI18nRepository transI18nRepository,
+      PoiRepository poiRepository,
+      TravelProperties travelProperties) { // 在建構子中注入
     this.travelMainRepository = travelMainRepository;
     this.travelDateRepository = travelDateRepository;
     this.travelDetailRepository = travelDetailRepository;
     this.memberRepository = memberRepository; // 賦值
+    this.transI18nRepository = transI18nRepository;
+    this.poiRepository = poiRepository;
+    this.travelProperties = travelProperties;
   }
 
   /**
@@ -54,6 +90,7 @@ public class TravelService {
    */
   @Transactional // 確保操作的原子性
   public TravelMainResponse createTravelMain(TravelMainRequest request) {
+    validateMaxDays(request.getStartDate(), request.getEndDate());
     // 1. 創建 TravelMain 實體並儲存
     TravelMain travelMain = new TravelMain();
     travelMain.setMemberId(request.getMemberId());
@@ -86,11 +123,36 @@ public class TravelService {
   }
 
   public TravelMain getTravelMainById(UUID id) {
-    return travelMainRepository.findById(id).orElse(null);
+      if (id == null) {
+          throw new TravelException.TravelMainIdRequired();
+      }
+      return travelMainRepository.findById(id).orElseThrow(TravelException.TravelMainNotFound::new);
   }
 
   public List<TravelMain> getTravelMainsByMemberId(UUID memberId) {
-    return travelMainRepository.findByMemberId(memberId);
+      if (memberId == null) {
+          throw new TravelException.TravelMemberIdRequired();
+      } 
+      return travelMainRepository.findByMemberId(memberId);
+  }
+
+  public TravelMainListResponse listTravelMains(UUID memberId, TravelMainListRequest request) {
+      if (memberId == null) {
+          throw new TravelException.TravelMemberIdRequired();
+      }
+
+      int page = resolvePage(request != null ? request.getPage() : null);
+      int size = resolveSize(request != null ? request.getSize() : null);
+
+      Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+      Page<TravelMain> travelPage = travelMainRepository.findByMemberId(memberId, pageable);
+
+      List<TravelMainSummary> list =
+          travelPage.getContent().stream().map(this::toSummary).toList();
+
+      PageMeta meta = buildMeta(travelPage);
+
+      return TravelMainListResponse.builder().list(list).meta(meta).build();
   }
 
   /**
@@ -98,25 +160,25 @@ public class TravelService {
    *
    * @param request 包含要更新的 TravelMain ID 及新資訊的請求 DTO。
    * @return 更新後的 TravelMain 實體。
-   * @throws NoSuchElementException 如果找不到指定 ID 的 TravelMain。
    */
   @Transactional
   public TravelMain updateTravelMain(TravelMainRequest request) {
     // 確保 request 中有 ID
     if (request.getId() == null) {
-      throw new IllegalArgumentException("更新 TravelMain 時，ID 不能為空。");
+        throw new TravelException.TravelMainIdRequired();
     }
 
     // 找出現有的 TravelMain
     TravelMain existingTravelMain =
         travelMainRepository
             .findById(request.getId())
-            .orElseThrow(
-                () -> new NoSuchElementException("找不到 ID 為 " + request.getId() + " 的行程主表。"));
+            .orElseThrow(TravelException.TravelMainNotFound::new);
 
     // 記錄舊的日期範圍
     LocalDate oldStartDate = existingTravelMain.getStartDate();
     LocalDate oldEndDate = existingTravelMain.getEndDate();
+
+    validateMaxDays(request.getStartDate(), request.getEndDate());
 
     // 更新 TravelMain 的屬性
     existingTravelMain.setIsPrivate(request.getIsPrivate());
@@ -146,36 +208,74 @@ public class TravelService {
   }
 
   @Transactional
-  public TravelDate addTravelDate(UUID travelMainId, LocalDate baseDate, UUID createdBy) {
-    LocalDate nextDay = baseDate.plusDays(1);
-    TravelDate travelDate = new TravelDate();
-    // UUID id will be automatically generated by @PrePersist or @GeneratedValue
-    travelDate.setTravelMainId(travelMainId);
-    travelDate.setTravelDate(nextDay);
-    travelDate.setCreatedBy(createdBy);
-    // createdAt and updatedAt are handled by the database with DEFAULT CURRENT_TIMESTAMP
-    TravelDate savedTravelDate = travelDateRepository.save(travelDate);
-
+  public TravelDate addTravelDate(UUID travelMainId, UUID createdBy) {
+    if (travelMainId == null) {
+      throw new TravelException.TravelMainIdRequired();
+    }
     TravelMain travelMain =
         travelMainRepository
             .findById(travelMainId)
-            .orElseThrow(
-                () -> new NoSuchElementException("找不到行程主表 ID 為 " + travelMainId + " 的記錄。"));
+            .orElseThrow(TravelException.TravelMainNotFound::new);
 
-    if (null != travelMain.getEndDate()
-        && savedTravelDate.getTravelDate().isAfter(travelMain.getEndDate())) {
-      travelMain.setEndDate(savedTravelDate.getTravelDate());
+    LocalDate lastDate =
+        travelDateRepository
+            .findTopByTravelMainIdOrderByTravelDateDesc(travelMainId)
+            .map(TravelDate::getTravelDate)
+            .orElseGet(
+                () -> {
+                  if (travelMain.getEndDate() != null) {
+                    return travelMain.getEndDate();
+                  }
+                  if (travelMain.getStartDate() != null) {
+                    return travelMain.getStartDate();
+                  }
+                  throw new TravelException.TravelDateUnexpectedState();
+                });
+
+    LocalDate nextDay = lastDate.plusDays(1);
+
+    LocalDate startDate = travelMain.getStartDate();
+    LocalDate prospectiveEndDate =
+        travelMain.getEndDate() == null || nextDay.isAfter(travelMain.getEndDate())
+            ? nextDay
+            : travelMain.getEndDate();
+
+    validateMaxDays(startDate, prospectiveEndDate);
+
+    TravelDate travelDate = new TravelDate();
+    travelDate.setTravelMainId(travelMainId);
+    travelDate.setTravelDate(nextDay);
+    travelDate.setCreatedBy(createdBy);
+    TravelDate savedTravelDate = travelDateRepository.save(travelDate);
+
+    boolean shouldUpdateEndDate =
+        travelMain.getEndDate() == null || prospectiveEndDate.isAfter(travelMain.getEndDate());
+    if (shouldUpdateEndDate) {
+      travelMain.setEndDate(prospectiveEndDate);
       travelMain.setUpdatedBy(createdBy);
       travelMainRepository.save(travelMain);
     }
-    return travelDateRepository.save(travelDate);
+    return savedTravelDate;
+  }
+
+  private void validateMaxDays(LocalDate startDate, LocalDate endDate) {
+    if (startDate == null || endDate == null) {
+      throw new TravelException.TravelDateUnexpectedState();
+    }
+    long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+    if (days > travelProperties.getMaxDays()) {
+      throw new TravelException.TravelDateExceedsMaxDays(travelProperties.getMaxDays());
+    }
   }
 
   @Transactional
   public void deleteTravelDate(UUID travelDateId) {
+    if (travelDateId == null) {
+      throw new TravelException.TravelDateIdRequired();
+    }
     Optional<TravelDate> travelDateOptional = travelDateRepository.findById(travelDateId);
     if (travelDateOptional.isEmpty()) {
-      throw new NoSuchElementException("找不到 ID 為 " + travelDateId + " 的行程日期，無法刪除。");
+      throw new TravelException.TravelDateNotFound();
     }
     TravelDate travelDateToDelete = travelDateOptional.get();
 
@@ -186,7 +286,7 @@ public class TravelService {
     // 防呆：檢查是否為最後一個 travel_date，如果是，則不允許刪除
     if (remainingTravelDatesBeforeDeletion.size() == 1
         && remainingTravelDatesBeforeDeletion.get(0).getId().equals(travelDateId)) {
-      throw new IllegalStateException("無法刪除最後一個行程日期，行程主表至少需要保留一天。");
+      throw new TravelException.TravelDateDeleteLastForbidden();
     }
 
     // 1. First, delete all associated TravelDetail records for this travelDateId
@@ -199,8 +299,7 @@ public class TravelService {
     TravelMain travelMain =
         travelMainRepository
             .findById(travelMainId)
-            .orElseThrow(
-                () -> new NoSuchElementException("找不到行程主表 ID 為 " + travelMainId + " 的記錄。"));
+            .orElseThrow(TravelException.TravelMainNotFound::new);
 
     List<TravelDate> remainingTravelDatesAfterDeletion =
         travelDateRepository.findByTravelMainId(travelMainId);
@@ -211,7 +310,7 @@ public class TravelService {
         remainingTravelDatesAfterDeletion.stream()
             .map(TravelDate::getTravelDate)
             .min(Comparator.naturalOrder())
-            .orElseThrow(() -> new IllegalStateException("剩餘行程日期不應為空，但無法找到最小日期。")); // 這行現在理論上不會被觸發
+            .orElseThrow(TravelException.TravelDateUnexpectedState::new); // 這行理論上不會被觸發
 
     // 根據日期對剩餘的 TravelDate 實體進行排序
     Collections.sort(
@@ -235,11 +334,17 @@ public class TravelService {
   }
 
   public TravelDate getTravelDateById(UUID id) {
-    return travelDateRepository.findById(id).orElse(null);
+    if (id == null) {
+      throw new TravelException.TravelDateIdRequired();
+    }
+    return travelDateRepository.findById(id).orElseThrow(TravelException.TravelDateNotFound::new);
   }
 
   // You might want to retrieve all travel dates for a specific travel main
   public List<TravelDate> getTravelDatesByTravelMainId(UUID travelMainId) {
+    if (travelMainId == null) {
+      throw new TravelException.TravelMainIdRequired();
+    }
     return travelDateRepository.findByTravelMainId(travelMainId);
   }
 
@@ -311,11 +416,21 @@ public class TravelService {
 
   @Transactional
   public TravelDetail createTravelDetail(TravelDetailRequest request) {
+    validateTime(request.getStartTime(), request.getEndTime());
+    if (request.getTravelMainId() == null || request.getTravelDateId() == null) {
+      throw new TravelException.TravelDetailTargetRequired();
+    }
     TravelDetail travelDetail = new TravelDetail();
     // UUID id will be automatically generated by @PrePersist or @GeneratedValue
     travelDetail.setTravelMainId(request.getTravelMainId());
     travelDetail.setTravelDateId(request.getTravelDateId());
-    travelDetail.setType(request.getType());
+    travelDetail.setPoiId(request.getPoiId());
+    int nextSort =
+        Optional.ofNullable(
+                travelDetailRepository.findMaxSortByTravelDateId(request.getTravelDateId()))
+            .orElse(0)
+            + 1;
+    travelDetail.setSort(nextSort);
     travelDetail.setStartTime(request.getStartTime());
     travelDetail.setEndTime(request.getEndTime());
     // TODO extend_id
@@ -323,23 +438,138 @@ public class TravelService {
     travelDetail.setCreatedBy(request.getCreatedBy());
     // createdAt and updatedAt are handled by the database with DEFAULT CURRENT_TIMESTAMP
 
-    return travelDetailRepository.save(travelDetail);
+    TravelDetail saved = travelDetailRepository.save(travelDetail);
+    checkTimeConflict(saved.getTravelDateId());
+    return travelDetailRepository.findById(saved.getId()).orElse(saved);
+  }
+
+  @Transactional
+  public TravelDetail createTravelDetailByPoi(TravelDetailPoiCreateRequest request) {
+    if (request.getTravelMainId() == null
+        || request.getTravelDateId() == null
+        || request.getPoiId() == null) {
+      throw new TravelException.TravelDetailTargetRequired();
+    }
+
+    TravelMain travelMain =
+        travelMainRepository
+            .findById(request.getTravelMainId())
+            .orElseThrow(TravelException.TravelMainNotFound::new);
+
+    if (request.getCreatedBy() == null || !travelMain.getMemberId().equals(request.getCreatedBy())) {
+      throw new TravelException.TravelMainNotFound();
+    }
+
+    TravelDate travelDate =
+        travelDateRepository
+            .findById(request.getTravelDateId())
+            .orElseThrow(TravelException.TravelDateNotFound::new);
+
+    if (!travelDate.getTravelMainId().equals(travelMain.getId())) {
+      throw new TravelException.TravelDateNotFound();
+    }
+
+    poiRepository.findById(request.getPoiId()).orElseThrow(TravelException.TravelPoiNotFound::new);
+
+    List<TravelDetail> details =
+        travelDetailRepository.findByTravelDateIdOrderBySort(request.getTravelDateId());
+    details.sort(Comparator.comparing(TravelDetail::getSort).thenComparing(TravelDetail::getStartTime));
+
+    int nextSort;
+    LocalTime startTime;
+    if (details.isEmpty()) {
+      nextSort = 1;
+      startTime = DEFAULT_DETAIL_START_TIME;
+    } else {
+      TravelDetail lastDetail = details.get(details.size() - 1);
+      nextSort = lastDetail.getSort() + 1;
+      LocalTime baseStart =
+          lastDetail.getEndTime() != null
+              ? lastDetail.getEndTime()
+              : lastDetail.getStartTime().plusHours(DEFAULT_DETAIL_DURATION_HOURS);
+      startTime = baseStart;
+    }
+
+    LocalTime endTime = startTime.plusHours(DEFAULT_DETAIL_DURATION_HOURS);
+
+    TravelDetail travelDetail = new TravelDetail();
+    travelDetail.setTravelMainId(request.getTravelMainId());
+    travelDetail.setTravelDateId(request.getTravelDateId());
+    travelDetail.setPoiId(request.getPoiId());
+    travelDetail.setSort(nextSort);
+    travelDetail.setStartTime(startTime);
+    travelDetail.setEndTime(endTime);
+    travelDetail.setTimeConflict(false);
+    travelDetail.setCreatedBy(request.getCreatedBy());
+
+    TravelDetail saved = travelDetailRepository.save(travelDetail);
+    checkTimeConflict(saved.getTravelDateId());
+    return travelDetailRepository.findById(saved.getId()).orElse(saved);
   }
 
   public TravelDetail getTravelDetailById(UUID id) {
-    return travelDetailRepository.findById(id).orElse(null);
+    if (id == null) {
+      throw new TravelException.TravelDetailIdRequired();
+    }
+    return travelDetailRepository.findById(id).orElseThrow(TravelException.TravelDetailNotFound::new);
   }
 
   public List<TravelDetail> getTravelDetailsByTravelDateId(UUID travelDateId) {
+    if (travelDateId == null) {
+      throw new TravelException.TravelDateIdRequired();
+    }
     return travelDetailRepository.findByTravelDateId(travelDateId);
   }
 
   @Transactional
   public void deleteTravelDetailById(UUID id) {
-    if (!travelDetailRepository.existsById(id)) {
-      throw new NoSuchElementException("找不到 ID 為 " + id + " 的行程詳情，無法刪除。");
+    if (id == null) {
+      throw new TravelException.TravelDetailIdRequired();
     }
+    TravelDetail detail =
+        travelDetailRepository
+            .findById(id)
+            .orElseThrow(TravelException.TravelDetailNotFound::new);
+    transI18nRepository.deleteByStartDetailIdOrEndDetailId(id, id);
     travelDetailRepository.deleteById(id);
+    resortTravelDetails(detail.getTravelDateId());
+  }
+
+  @Transactional
+  public void reorderTravelDetails(List<TravelDetailSortRequest> requests) {
+    if (requests == null || requests.isEmpty()) {
+      return;
+    }
+    List<UUID> ids = requests.stream().map(TravelDetailSortRequest::getId).collect(Collectors.toList());
+    List<TravelDetail> details = travelDetailRepository.findAllById(ids);
+    if (details.size() != requests.size()) {
+      throw new TravelException.TravelDetailNotFound();
+    }
+    UUID travelDateId = details.get(0).getTravelDateId();
+    for (TravelDetail d : details) {
+      if (!d.getTravelDateId().equals(travelDateId)) {
+        throw new TravelException.TravelDetailSameDayRequired();
+      }
+    }
+    requests.sort(Comparator.comparing(TravelDetailSortRequest::getSort));
+    int index = 1;
+    for (TravelDetailSortRequest req : requests) {
+      TravelDetail detail = details.stream().filter(d -> d.getId().equals(req.getId())).findFirst().get();
+      detail.setSort(index++);
+      travelDetailRepository.save(detail);
+    }
+  }
+
+  private void resortTravelDetails(UUID travelDateId) {
+    List<TravelDetail> details = travelDetailRepository.findByTravelDateIdOrderBySort(travelDateId);
+    int index = 1;
+    for (TravelDetail detail : details) {
+      if (!detail.getSort().equals(index)) {
+        detail.setSort(index);
+        travelDetailRepository.save(detail);
+      }
+      index++;
+    }
   }
 
   /**
@@ -347,30 +577,216 @@ public class TravelService {
    *
    * @param request 包含要更新的 TravelDetail ID 及新資訊的請求 DTO。
    * @return 更新後的 TravelDetail 實體。
-   * @throws NoSuchElementException 如果找不到指定 ID 的 TravelDetail。
    */
   @Transactional
   public TravelDetail updateTravelDetail(TravelDetailRequest request) {
     // 確保 request 中有 ID
     if (request.getId() == null) {
-      throw new IllegalArgumentException("更新 TravelDetail 時，ID 不能為空。");
+      throw new TravelException.TravelDetailIdRequired();
     }
 
     // 找出現有的 TravelDetail
     TravelDetail existingTravelDetail =
         travelDetailRepository
             .findById(request.getId())
-            .orElseThrow(
-                () -> new NoSuchElementException("找不到 ID 為 " + request.getId() + " 的行程詳情。"));
+            .orElseThrow(TravelException.TravelDetailNotFound::new);
 
+    validateTime(request.getStartTime(), request.getEndTime());
     // 更新 TravelDetail 的屬性
-    existingTravelDetail.setType(request.getType());
     existingTravelDetail.setStartTime(request.getStartTime());
     existingTravelDetail.setEndTime(request.getEndTime());
     // TODO extend_id
-    existingTravelDetail.setNotes(request.getNotes());
-        existingTravelDetail.setUpdatedBy(request.getCreatedBy()); // 假設 request.createdBy 是更新人
-
-        return travelDetailRepository.save(existingTravelDetail);
+    if (request.getPoiId() != null && !request.getPoiId().equals(existingTravelDetail.getPoiId())) {
+      existingTravelDetail.setPoiId(request.getPoiId());
+      transI18nRepository.deleteByStartDetailIdOrEndDetailId(existingTravelDetail.getId(), existingTravelDetail.getId());
     }
+    
+    if (request.getSort() != null && !request.getSort().equals(existingTravelDetail.getSort())) {
+      existingTravelDetail.setSort(request.getSort());
+      resortTravelDetails(existingTravelDetail.getTravelDateId());
+    }
+    existingTravelDetail.setUpdatedBy(request.getCreatedBy()); // 假設 request.createdBy 是更新人
+
+    TravelDetail saved = travelDetailRepository.save(existingTravelDetail);
+    checkTimeConflict(saved.getTravelDateId());
+    return travelDetailRepository.findById(saved.getId()).orElse(saved);
+  }
+
+  public Map<String, Object> checkTimeConflict(TravelDetailRequest request) {
+    validateTime(request.getStartTime(), request.getEndTime());
+    List<TravelDetail> details = travelDetailRepository.findByTravelDateId(request.getTravelDateId());
+    if (request.getId() != null) {
+      details =
+          details.stream().filter(d -> !d.getId().equals(request.getId())).collect(Collectors.toList());
+    }
+    TravelDetail tempDetail =
+        TravelDetail.builder().startTime(request.getStartTime()).endTime(request.getEndTime()).build();
+    details.add(tempDetail);
+    details.sort(Comparator.comparing(TravelDetail::getStartTime));
+    LocalTime lastEnd = null;
+    for (TravelDetail detail : details) {
+      boolean conflict = lastEnd != null && detail.getStartTime().isBefore(lastEnd);
+      detail.setTimeConflict(conflict);
+      if (lastEnd == null || detail.getEndTime().isAfter(lastEnd)) {
+        lastEnd = detail.getEndTime();
+      }
+    }
+    boolean hasConflict = details.stream().anyMatch(TravelDetail::isTimeConflict);
+    if (hasConflict) {
+      throw new TravelException.TravelDetailTimeConflict(
+          details.stream().filter(TravelDetail::isTimeConflict).collect(Collectors.toList()));
+    }
+    Map<String, Object> result = new HashMap<>();
+    result.put("timeConflict", false);
+    return result;
+  }
+
+  private void validateTime(LocalTime start, LocalTime end) {
+    if (start == null || end == null || !start.isBefore(end)) {
+      throw new TravelException.TravelDetailInvalidTime();
+    }
+  }
+
+  private void checkTimeConflict(UUID travelDateId) {
+    List<TravelDetail> details = travelDetailRepository.findByTravelDateId(travelDateId);
+    if (details == null || details.isEmpty()) {
+      return;
+    }
+    details.sort(Comparator.comparing(TravelDetail::getStartTime));
+    LocalTime lastEnd = null;
+    for (TravelDetail detail : details) {
+      boolean conflict = lastEnd != null && detail.getStartTime().isBefore(lastEnd);
+      detail.setTimeConflict(conflict);
+      if (lastEnd == null || detail.getEndTime().isAfter(lastEnd)) {
+        lastEnd = detail.getEndTime();
+      }
+    }
+    travelDetailRepository.saveAll(details);
+  }
+
+  @Transactional
+  public TravelMainResponse copyTravelPlan(TravelCopyRequest request) {
+    if (request.getId() == null) {
+      throw new TravelException.TravelMainIdRequired();
+    }
+    if (request.getMemberId() == null) {
+      throw new TravelException.TravelMemberIdRequired();
+    }
+
+    if (!memberRepository.existsById(request.getMemberId())) {
+      throw new TravelException.TravelMemberNotFound();
+    }
+
+    TravelMain sourceTravelMain =
+        travelMainRepository
+            .findById(request.getId())
+            .orElseThrow(TravelException.TravelMainNotFound::new);
+
+    TravelMain newTravelMain = new TravelMain();
+    newTravelMain.setMemberId(request.getMemberId());
+    newTravelMain.setIsPrivate(sourceTravelMain.getIsPrivate());
+    newTravelMain.setStartDate(sourceTravelMain.getStartDate());
+    newTravelMain.setEndDate(sourceTravelMain.getEndDate());
+    newTravelMain.setTitle(sourceTravelMain.getTitle());
+    newTravelMain.setNotes(sourceTravelMain.getNotes());
+    newTravelMain.setVisitPlace(sourceTravelMain.getVisitPlace());
+    newTravelMain.setCreatedBy(request.getCreatedBy());
+    newTravelMain = travelMainRepository.save(newTravelMain);
+
+    List<TravelDate> sourceDates = travelDateRepository.findByTravelMainId(sourceTravelMain.getId());
+    Map<UUID, UUID> dateIdMap = new HashMap<>();
+    List<TravelDate> newDates = new ArrayList<>();
+    for (TravelDate date : sourceDates) {
+      TravelDate newDate = new TravelDate();
+      newDate.setTravelMainId(newTravelMain.getId());
+      newDate.setTravelDate(date.getTravelDate());
+      newDate.setCreatedBy(request.getCreatedBy());
+      newDate = travelDateRepository.save(newDate);
+      dateIdMap.put(date.getId(), newDate.getId());
+      newDates.add(newDate);
+    }
+
+    Map<UUID, UUID> detailIdMap = new HashMap<>();
+    for (TravelDate date : sourceDates) {
+      List<TravelDetail> details = travelDetailRepository.findByTravelDateId(date.getId());
+      UUID newDateId = dateIdMap.get(date.getId());
+      for (TravelDetail detail : details) {
+        TravelDetail newDetail = new TravelDetail();
+        newDetail.setTravelMainId(newTravelMain.getId());
+        newDetail.setTravelDateId(newDateId);
+        newDetail.setPoiId(detail.getPoiId());
+        newDetail.setSort(detail.getSort());
+        newDetail.setStartTime(detail.getStartTime());
+        newDetail.setEndTime(detail.getEndTime());
+        newDetail.setNotes(detail.getNotes());
+        newDetail.setCreatedBy(request.getCreatedBy());
+        newDetail = travelDetailRepository.save(newDetail);
+        detailIdMap.put(detail.getId(), newDetail.getId());
+      }
+    }
+
+    if (!detailIdMap.isEmpty()) {
+      List<UUID> detailIds = new ArrayList<>(detailIdMap.keySet());
+      List<TransI18n> transList =
+          transI18nRepository.findByStartDetailIdInOrEndDetailIdIn(detailIds, detailIds);
+      for (TransI18n trans : transList) {
+        TransI18n newTrans = new TransI18n();
+        newTrans.setLangType(trans.getLangType());
+        newTrans.setStartDetailId(detailIdMap.get(trans.getStartDetailId()));
+        newTrans.setEndDetailId(detailIdMap.get(trans.getEndDetailId()));
+        newTrans.setInfosRaw(trans.getInfosRaw());
+        newTrans.setTransType(trans.getTransType());
+        newTrans.setTransTime(trans.getTransTime());
+        newTrans.setSummary(trans.getSummary());
+        newTrans.setNotes(trans.getNotes());
+        newTrans.setCreatedBy(request.getCreatedBy());
+        transI18nRepository.save(newTrans);
+      }
+    }
+
+    return new TravelMainResponse(newTravelMain, newDates);
+  }
+
+  private TravelMainSummary toSummary(TravelMain travelMain) {
+    return TravelMainSummary.builder()
+        .travelMainId(travelMain.getId())
+        .title(travelMain.getTitle())
+        .startDate(travelMain.getStartDate())
+        .endDate(travelMain.getEndDate())
+        .isPrivate(travelMain.getIsPrivate())
+        .createdAt(travelMain.getCreatedAt())
+        .updatedAt(travelMain.getUpdatedAt())
+        .build();
+  }
+
+  private int resolvePage(Integer page) {
+    if (page == null) {
+      return DEFAULT_PAGE;
+    }
+    if (page < 1) {
+      throw new TravelException.TravelListPageInvalid(page);
+    }
+    return page;
+  }
+
+  private int resolveSize(Integer size) {
+    if (size == null) {
+      return DEFAULT_SIZE;
+    }
+    if (size < 1 || size > MAX_PAGE_SIZE) {
+      throw new TravelException.TravelListSizeInvalid(size);
+    }
+    return size;
+  }
+
+  private PageMeta buildMeta(Page<?> page) {
+    return PageMeta.builder()
+        .page(page.getNumber() + 1)
+        .size(page.getSize())
+        .totalPages(page.getTotalPages())
+        .totalElements(page.getTotalElements())
+        .hasNext(page.hasNext())
+        .hasPrev(page.hasPrevious())
+        .build();
+  }
 }

@@ -18,6 +18,10 @@
     "bookmark-already": "已收藏",
     "schedule-add": "新增至行程"
   },
+  "lang": {
+    "zh": "繁體中文",
+    "en": "English"
+  },
   "validation": {
     "required": "請填寫 {{label}}",
     "min-length": "最少 {{min}} 個字元",
@@ -38,11 +42,18 @@
     "otp-resend": "重新取得驗證碼",
     "valid-time": "有效時間: {{time}} 秒"
   },
+  "logout": "登出",
   "account": {
     "surname": "姓氏",
     "given-name": "名字",
     "nickname": "暱稱",
     "birthday": "生日",
     "email": "電子信箱"
+  },
+  "header": {
+    "my-travel-plan": "我的行程",
+    "explore": "探索",
+    "login": "登入",
+    "language": "使用語系"
   }
 }

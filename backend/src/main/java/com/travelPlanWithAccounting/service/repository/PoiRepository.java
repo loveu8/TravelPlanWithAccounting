@@ -2,6 +2,8 @@ package com.travelPlanWithAccounting.service.repository;
 
 import com.travelPlanWithAccounting.service.entity.Poi;
 import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.*;
@@ -34,4 +36,58 @@ public interface PoiRepository extends JpaRepository<Poi, UUID> {
       nativeQuery = true)
   Optional<String> findCachedRawJson(
       @Param("placeId") String placeId, @Param("langType") String langType);
+
+  @Query(
+      """
+      select p.id as id,
+             p.externalId as externalId,
+             p.rating as rating,
+             p.photoUrls as photoUrls,
+             p.lat as lat,
+             p.lon as lon,
+             i.name as name,
+             i.countryName as countryName,
+             i.cityName as cityName
+        from Poi p
+        join PoiI18n i on i.poi = p
+       where p.id in :poiIds
+         and i.langType = :langType
+      """)
+  java.util.List<LocationSummary> findAllWithI18nByIdInAndLangType(
+      @Param("poiIds") Collection<UUID> poiIds, @Param("langType") String langType);
+
+  @Query(
+      """
+      select p.id as id,
+             p.externalId as externalId
+        from Poi p
+       where p.id in :poiIds
+      """)
+  java.util.List<PoiExternalId> findAllExternalIdsByIdIn(@Param("poiIds") Collection<UUID> poiIds);
+
+  interface LocationSummary {
+    UUID getId();
+
+    String getExternalId();
+
+    BigDecimal getRating();
+
+    String getPhotoUrls();
+
+    BigDecimal getLat();
+
+    BigDecimal getLon();
+
+    String getName();
+
+    String getCountryName();
+
+    String getCityName();
+  }
+
+  interface PoiExternalId {
+    UUID getId();
+
+    String getExternalId();
+  }
 }

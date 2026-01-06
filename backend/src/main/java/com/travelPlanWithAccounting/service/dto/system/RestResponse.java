@@ -45,6 +45,7 @@ public class RestResponse<D, M> {
             .code(exception.getMessageCode().getCode())
             .message(exception.getMessageCode().getMessage(exception.getArgs()))
             .timestamp(Instant.now())
+            .details(exception.getData())
             .originalException(exception)
             .build();
   }
@@ -58,6 +59,7 @@ public class RestResponse<D, M> {
     private String code;
     private String message;
     private Instant timestamp;
+    private Object details;
 
     @JsonIgnore private Exception originalException;
   }

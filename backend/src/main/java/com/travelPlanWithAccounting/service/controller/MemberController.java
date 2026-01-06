@@ -1,61 +1,86 @@
 package com.travelPlanWithAccounting.service.controller;
 
-import com.travelPlanWithAccounting.service.dto.member.MemberLoginRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberRegisterRequest;
-import com.travelPlanWithAccounting.service.dto.member.MemberResponse;
+import com.travelPlanWithAccounting.service.dto.auth.AuthResponse;
+import com.travelPlanWithAccounting.service.dto.member.AuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeOtpRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeRequest;
+import com.travelPlanWithAccounting.service.dto.member.EmailChangeResponse;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyRequest;
+import com.travelPlanWithAccounting.service.dto.member.IdentityOtpVerifyResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileResponse;
+import com.travelPlanWithAccounting.service.dto.member.MemberProfileUpdateRequest;
+import com.travelPlanWithAccounting.service.dto.member.OtpTokenResponse;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowRequest;
+import com.travelPlanWithAccounting.service.dto.member.PreAuthFlowResponse;
 import com.travelPlanWithAccounting.service.service.MemberService;
+import com.travelPlanWithAccounting.service.security.AccessTokenRequired;
+import com.travelPlanWithAccounting.service.controller.AuthContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * 會員註冊 API Controller。<br>
- * Member registration API controller.<br>
- *
- * <p>提供會員註冊功能，需經過 OTP 驗證並帶入驗證 token。<br>
- * Provides member registration, requires OTP verification and token.
- */
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
-@Tag(name = "會員註冊", description = "會員註冊與查詢 API")
+@Tag(name = "Member/Otp", description = "登入註冊流程 + Token 驗證")
 public class MemberController {
 
   private final MemberService memberService;
+  private final AuthContext authContext;
 
-  /**
-   * 會員註冊。<br>
-   * Register a new member.<br>
-   *
-   * <p>必須先通過 OTP 驗證並取得驗證 token，註冊時 email 為必填，其餘欄位選填。<br>
-   * Must pass OTP verification and provide the token. Email is required, other fields are optional.
-   * <br>
-   * 註冊成功後預留回傳 JWT 欄位，供未來登入使用。<br>
-   * After registration, reserves a JWT field for future login use.
-   *
-   * @param req 會員註冊請求 (Member registration request)
-   * @return 註冊成功的會員資料與預留 JWT 欄位 (Registered member and reserved JWT field)
-   */
-  @PostMapping("/register")
-  @Operation(summary = "會員註冊 (Register member)")
-  public MemberResponse register(@RequestBody MemberRegisterRequest req) {
-    return memberService.register(req);
+  @PostMapping("/pre-auth-flow")
+  @Operation(summary = "判斷登入/註冊並發送 OTP")
+  public PreAuthFlowResponse preAuthFlow(@RequestBody PreAuthFlowRequest req) {
+    return memberService.preAuthFlow(req);
   }
 
-  /**
-   * 會員登入。<br>
-   * Login member.<br>
-   *
-   * @param req 會員登入請求 (Member login request)
-   * @return 登入成功的會員資料與預留 JWT 欄位 (Logged-in member and reserved JWT field)
-   */
-  @PostMapping("/login")
-  @Operation(summary = "會員登入 (Login member)")
-  public MemberResponse login(@RequestBody MemberLoginRequest req) {
-    return memberService.login(req.getEmail(), req.getOtpToken());
+  @PostMapping("/auth-flow")
+  @Operation(summary = "驗證 OTP -> 登入/註冊 -> 回 AT/RT（只回一層 data）")
+  public AuthResponse authFlow(@RequestBody AuthFlowRequest req) {
+    return memberService.authFlow(req);
   }
+
+  @GetMapping("/profile")
+  @AccessTokenRequired
+  @Operation(summary = "查詢會員資料")
+  public MemberProfileResponse getProfile() {
+    return memberService.getProfile(authContext.getCurrentMemberId());
+  }
+
+  @PostMapping("/profile")
+  @AccessTokenRequired
+  @Operation(summary = "修改會員資料")
+  public MemberProfileResponse updateProfile(@RequestBody MemberProfileUpdateRequest req) {
+    return memberService.updateProfile(authContext.getCurrentMemberId(), req);
+  }
+
+  @PostMapping("/email/identity-otp")
+  @AccessTokenRequired
+  @Operation(summary = "發送信箱 OTP")
+  public OtpTokenResponse sendIdentityOtp() {
+    return memberService.sendIdentityOtp(authContext.getCurrentMemberId());
+  }
+
+  @PostMapping("/email/identity-otp/verify")
+  @AccessTokenRequired
+  @Operation(summary = "驗證信箱 OTP")
+  public IdentityOtpVerifyResponse verifyIdentityOtp(@RequestBody IdentityOtpVerifyRequest req) {
+    return memberService.verifyIdentityOtp(authContext.getCurrentMemberId(), req);
+  }
+
+  @PostMapping("/email/change-otp")
+  @AccessTokenRequired
+  @Operation(summary = "發送新信箱 OTP")
+  public OtpTokenResponse sendEmailChangeOtp(@RequestBody EmailChangeOtpRequest req) {
+    return memberService.sendEmailChangeOtp(authContext.getCurrentMemberId(), req);
+  }
+
+  @PostMapping("/email")
+  @AccessTokenRequired
+  @Operation(summary = "更新信箱")
+  public EmailChangeResponse changeEmail(@RequestBody EmailChangeRequest req) {
+    return memberService.changeEmail(authContext.getCurrentMemberId(), req);
+  }
+
 }
