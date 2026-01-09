@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import AsideMenu from "./iternerary/index";
+import Iternerary from "./iternerary/index";
 import Button from "@/app/components/Button";
 
 interface AsideMenuContainerProps {
@@ -70,7 +70,8 @@ export default function AsideMenuContainer({}: AsideMenuContainerProps) {
             : "-left-[660px]"
         }`}
       >
-        <AsideMenu
+        <Iternerary
+          travelMainId={""}
           navigationItems={navigationItems}
           activeNavigation={activeNavigation}
           onNavigationChange={handleNavigationChange}
