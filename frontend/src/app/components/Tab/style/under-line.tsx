@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Tabs } from "@radix-ui/themes";
 import { IUnderlineTabProps } from "../tab.types";
+import { cn } from "@/app/lib/utils";
 import styles from "../tab.module.css";
 
 export default function UnderlineTab({
@@ -45,7 +46,7 @@ export default function UnderlineTab({
           <Tabs.Trigger
             key={item.value}
             value={item.value}
-            className={`cursor-pointer text-center px-4 ${className}`}
+            className={cn("cursor-pointer text-center px-4", className)}
           >
             {item.label}
           </Tabs.Trigger>
