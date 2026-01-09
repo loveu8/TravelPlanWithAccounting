@@ -1,4 +1,5 @@
-import { DateSidebarProps, Day } from "./date-sidebar.types";
+import { DateSidebarProps } from "./date-sidebar.types";
+import { Day } from "@/app/components/AsideMenu/aside-menu.types";
 import Button from "@/app/components/Button";
 import { PlusCircledIcon } from "@radix-ui/react-icons";
 

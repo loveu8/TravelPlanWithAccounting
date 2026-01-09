@@ -4,11 +4,7 @@ import React, { useState } from "react";
 import Iternerary from "./iternerary/index";
 import Button from "@/app/components/Button";
 
-interface AsideMenuContainerProps {
-  lng: string;
-}
-
-export default function AsideMenuContainer({}: AsideMenuContainerProps) {
+export default function AsideMenu() {
   const [isOpen, setIsOpen] = useState(false);
 
   // Tab 主要項目

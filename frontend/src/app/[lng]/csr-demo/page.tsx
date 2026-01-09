@@ -71,8 +71,7 @@ export default function Page() {
             handleCardClick={() => console.log("Card clicked")}
           />
         </div>
-        {/* TODO: check lng */}
-        <AsideMenu lng="zh" />
+        <AsideMenu />
       </main>
     </>
   );
