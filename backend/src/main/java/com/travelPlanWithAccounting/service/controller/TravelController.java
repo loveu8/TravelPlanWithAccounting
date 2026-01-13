@@ -14,6 +14,7 @@ import com.travelPlanWithAccounting.service.dto.UuidRequest;
 import com.travelPlanWithAccounting.service.dto.system.RestResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResult;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateReorderRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailPoiCreateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
@@ -145,6 +146,16 @@ public class TravelController {
     public RestResponse<Object, Object> getTravelDatesByTravelMainId(@RequestBody UuidRequest request) {
         List<TravelDate> travelDates = travelService.getTravelDatesByTravelMainId(request.getId());
         return RestResponseUtils.success(travelDates);
+    }
+
+    @PostMapping("/reorderTravelDates")
+    @AccessTokenRequired
+    @Operation(summary = "調整行程日期順序")
+    public RestResponse<Object, Object> reorderTravelDates(@RequestBody TravelDateReorderRequest request) {
+        UUID memberId = authContext.getCurrentMemberId();
+        request.setUpdatedBy(memberId);
+        travelService.reorderTravelDates(request);
+        return RestResponseUtils.success(null);
     }
 
     @PostMapping("/createTravelDetail")

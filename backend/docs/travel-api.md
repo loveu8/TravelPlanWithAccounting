@@ -43,11 +43,11 @@
     "visitPlace": "{\"country\":\"JP\"}",
     "createdAt": "2024-06-01T08:00:00Z",
     "generatedTravelDates": [
-      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-01" },
-      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-02" },
-      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-03" },
-      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-04" },
-      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-05" }
+      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-01", "sort": 1 },
+      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-02", "sort": 2 },
+      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-03", "sort": 3 },
+      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-04", "sort": 4 },
+      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-05", "sort": 5 }
     ]
   },
   "meta": null,
@@ -271,7 +271,7 @@ flowchart TD
 - **欄位說明**
   - `travelMainId`（UUID，必填）：主行程 ID。
   - **行為**：系統會查詢該行程現有最後一天，自動往後新增一天；若新增後超過行程天數上限（預設 31 天，可透過 `travel.max-days` 調整），會回傳錯誤。
-- **成功回應**：`data` 為新增的 `TravelDate`（系統計算出的下一天）。
+- **成功回應**：`data` 為新增的 `TravelDate`（系統計算出的下一天，含 `sort`）。
 - **失敗回應 (範例：TRAVEL_MAIN_NOT_FOUND，或超過天數上限 TRAVEL_DATE_EXCEEDS_MAX_DAYS)**
 ```json
 { "data": null, "error": { "code": "TRAVEL_MAIN_NOT_FOUND", "message": "Travel main not found" } }
@@ -335,12 +335,12 @@ flowchart TD
 ---
 
 ### 9. 依主行程查詢所有日期 `POST /getTravelDatesByTravelMainId`
-- **目的**：取得主行程下的全部 `TravelDate`。
+- **目的**：取得主行程下的全部 `TravelDate`（依 `sort` 排序）。
 - **請求範例**
 ```json
 { "id": "30c29c31-e9c2-4d0a-81d2-4f2a07123456" }
 ```
-- **成功回應**：`data` 為 `TravelDate` 陣列。
+- **成功回應**：`data` 為 `TravelDate` 陣列（包含 `sort` 欄位）。
 - **失敗回應 (範例：TRAVEL_MAIN_NOT_FOUND)** 同前。
 - **流程圖**
 ```mermaid
@@ -348,6 +348,40 @@ flowchart TD
   A --> B[POST /api/travels/getTravelDatesByTravelMainId]
   B --> C[TravelService.getTravelDatesByTravelMainId]
   C --> D[回傳日期陣列]
+```
+
+---
+
+### 9.1 調整行程日期順序 `POST /reorderTravelDates`
+- **目的**：依前端傳入的排序調整 `TravelDate` 的 `sort`，並同步調換各日期下的 `TravelDetail`。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
+- **請求範例**
+```json
+{
+  "travelMainId": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+  "orders": [
+    { "travelDateId": "5d5e5e5e-e9c2-4d0a-81d2-4f2a07123456", "sort": 1 },
+    { "travelDateId": "7d7e7e7e-e9c2-4d0a-81d2-4f2a07123456", "sort": 2 }
+  ]
+}
+```
+- **欄位說明**
+  - `travelMainId`（UUID，必填）：主行程 ID。
+  - `orders`（Array，必填）：新的排序清單。
+    - `travelDateId`（UUID，必填）：行程日期 ID。
+    - `sort`（Integer，必填）：新的排序值（從 1 開始，需連續且不可重複）。
+- **成功回應**：`data` 為 `null`。
+- **失敗回應 (範例：TRAVEL_DATE_SORT_INVALID)**
+```json
+{ "data": null, "error": { "code": "TRAVEL_DATE_SORT_INVALID", "message": "Travel date sort is invalid" } }
+```
+- **流程圖**
+```mermaid
+flowchart TD
+  A --> B[POST /api/travels/reorderTravelDates]
+  B --> C[TravelService.reorderTravelDates]
+  C --> D[更新 travel_date.sort + 調換 travel_detail]
+  D --> E[成功回應]
 ```
 
 ---

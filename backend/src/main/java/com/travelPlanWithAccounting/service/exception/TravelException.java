@@ -74,6 +74,24 @@ public class TravelException extends ApiException {
         }
     }
 
+    public static class TravelDateRangeInvalid extends ApiException {
+        public TravelDateRangeInvalid() {
+            super(TravelMessageCode.TRAVEL_DATE_RANGE_INVALID);
+        }
+    }
+
+    public static class TravelDateSortInvalid extends ApiException {
+        public TravelDateSortInvalid() {
+            super(TravelMessageCode.TRAVEL_DATE_SORT_INVALID);
+        }
+    }
+
+    public static class TravelDateSortMismatch extends ApiException {
+        public TravelDateSortMismatch() {
+            super(TravelMessageCode.TRAVEL_DATE_SORT_MISMATCH);
+        }
+    }
+
     public static class TravelDetailIdRequired extends ApiException {
         public TravelDetailIdRequired() {
             super(TravelMessageCode.TRAVEL_DETAIL_ID_REQUIRED);
