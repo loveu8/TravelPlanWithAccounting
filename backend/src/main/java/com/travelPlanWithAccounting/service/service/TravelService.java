@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import com.travelPlanWithAccounting.service.config.TravelProperties;
 import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateReorderRequest;
+import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDateSortRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailPoiCreateRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailRequest;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelDetailSortRequest;
@@ -109,10 +111,12 @@ public class TravelService {
     // 2. 根據 start_date 和 end_date 建立 travel_date 列表
     List<TravelDate> travelDates = new ArrayList<>();
     LocalDate currentDate = request.getStartDate();
+    int sort = 1;
     while (!currentDate.isAfter(request.getEndDate())) {
       TravelDate travelDate = new TravelDate();
       travelDate.setTravelMainId(travelMain.getId()); // 關聯 TravelMain
       travelDate.setTravelDate(currentDate);
+      travelDate.setSort(sort++);
       travelDate.setCreatedBy(request.getCreatedBy());
       travelDates.add(travelDate);
       currentDate = currentDate.plus(1, ChronoUnit.DAYS);
@@ -245,6 +249,12 @@ public class TravelService {
     TravelDate travelDate = new TravelDate();
     travelDate.setTravelMainId(travelMainId);
     travelDate.setTravelDate(nextDay);
+    int nextSort =
+        travelDateRepository.findTopByTravelMainIdOrderBySortDesc(travelMainId)
+            .map(TravelDate::getSort)
+            .orElse(0)
+            + 1;
+    travelDate.setSort(nextSort);
     travelDate.setCreatedBy(createdBy);
     TravelDate savedTravelDate = travelDateRepository.save(travelDate);
 
@@ -261,6 +271,9 @@ public class TravelService {
   private void validateMaxDays(LocalDate startDate, LocalDate endDate) {
     if (startDate == null || endDate == null) {
       throw new TravelException.TravelDateUnexpectedState();
+    }
+    if (startDate.isAfter(endDate)) {
+      throw new TravelException.TravelDateRangeInvalid();
     }
     long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
     if (days > travelProperties.getMaxDays()) {
@@ -317,13 +330,18 @@ public class TravelService {
         remainingTravelDatesAfterDeletion, Comparator.comparing(TravelDate::getTravelDate));
 
     LocalDate currentExpectedDate = newStartDate;
+    int sort = 1;
     for (TravelDate td : remainingTravelDatesAfterDeletion) {
       // 只有當當前 TravelDate 的日期與期望日期不同時才更新
       if (!td.getTravelDate().equals(currentExpectedDate)) {
         td.setTravelDate(currentExpectedDate);
-        travelDateRepository.save(td); // 保存更新後的 TravelDate
       }
+      if (!Integer.valueOf(sort).equals(td.getSort())) {
+        td.setSort(sort);
+      }
+      travelDateRepository.save(td); // 保存更新後的 TravelDate
       currentExpectedDate = currentExpectedDate.plusDays(1); // 移到下一天
+      sort++;
     }
 
     // 更新 TravelMain 的 start_date 和 end_date
@@ -345,7 +363,7 @@ public class TravelService {
     if (travelMainId == null) {
       throw new TravelException.TravelMainIdRequired();
     }
-    return travelDateRepository.findByTravelMainId(travelMainId);
+    return travelDateRepository.findByTravelMainIdOrderBySortAsc(travelMainId);
   }
 
   /**
@@ -404,6 +422,8 @@ public class TravelService {
               TravelDate newTravelDate = new TravelDate();
               newTravelDate.setTravelMainId(travelMainId);
               newTravelDate.setTravelDate(dateToAdd);
+              int sort = (int) ChronoUnit.DAYS.between(newStartDate, dateToAdd) + 1;
+              newTravelDate.setSort(sort);
               newTravelDate.setCreatedBy(updatedBy); // 使用更新人 ID
               datesToAdd.add(newTravelDate);
             });
@@ -412,6 +432,115 @@ public class TravelService {
     if (!datesToAdd.isEmpty()) {
       travelDateRepository.saveAll(datesToAdd);
     }
+    assignTravelDateSorts(travelMainId, updatedBy);
+  }
+
+  private void assignTravelDateSorts(UUID travelMainId, UUID updatedBy) {
+    List<TravelDate> travelDates = travelDateRepository.findByTravelMainId(travelMainId);
+    travelDates.sort(Comparator.comparing(TravelDate::getTravelDate));
+    int index = 1;
+    for (TravelDate travelDate : travelDates) {
+      if (!Integer.valueOf(index).equals(travelDate.getSort())) {
+        travelDate.setSort(index);
+        travelDate.setUpdatedBy(updatedBy);
+        travelDateRepository.save(travelDate);
+      }
+      index++;
+    }
+  }
+
+  @Transactional
+  public void reorderTravelDates(TravelDateReorderRequest request) {
+    if (request == null || request.getTravelMainId() == null) {
+      throw new TravelException.TravelMainIdRequired();
+    }
+    if (request.getOrders() == null || request.getOrders().isEmpty()) {
+      throw new TravelException.TravelDateSortInvalid();
+    }
+
+    UUID travelMainId = request.getTravelMainId();
+    TravelMain travelMain =
+        travelMainRepository
+            .findById(travelMainId)
+            .orElseThrow(TravelException.TravelMainNotFound::new);
+
+    List<TravelDate> existingDates = travelDateRepository.findByTravelMainId(travelMainId);
+    if (existingDates.size() != request.getOrders().size()) {
+      throw new TravelException.TravelDateSortMismatch();
+    }
+
+    Map<UUID, TravelDate> dateMap =
+        existingDates.stream().collect(Collectors.toMap(TravelDate::getId, date -> date));
+    Set<Integer> sortSet = request.getOrders().stream().map(TravelDateSortRequest::getSort).collect(Collectors.toSet());
+    Set<UUID> idSet =
+        request.getOrders().stream().map(TravelDateSortRequest::getTravelDateId).collect(Collectors.toSet());
+    if (sortSet.size() != request.getOrders().size()
+        || idSet.size() != request.getOrders().size()
+        || sortSet.contains(null)
+        || idSet.contains(null)) {
+      throw new TravelException.TravelDateSortInvalid();
+    }
+
+    int maxSort = sortSet.stream().mapToInt(Integer::intValue).max().orElse(0);
+    int minSort = sortSet.stream().mapToInt(Integer::intValue).min().orElse(0);
+    if (minSort != 1 || maxSort != request.getOrders().size()) {
+      throw new TravelException.TravelDateSortInvalid();
+    }
+
+    for (TravelDateSortRequest order : request.getOrders()) {
+      if (!dateMap.containsKey(order.getTravelDateId()) || order.getSort() == null) {
+        throw new TravelException.TravelDateSortMismatch();
+      }
+    }
+
+    if (existingDates.stream().anyMatch(date -> date.getSort() == null)) {
+      throw new TravelException.TravelDateSortInvalid();
+    }
+    Set<Integer> existingSortSet =
+        existingDates.stream().map(TravelDate::getSort).collect(Collectors.toSet());
+    if (existingSortSet.size() != existingDates.size()) {
+      throw new TravelException.TravelDateSortInvalid();
+    }
+
+    Map<Integer, UUID> oldSortToDateId =
+        existingDates.stream()
+            .collect(Collectors.toMap(TravelDate::getSort, TravelDate::getId));
+    Map<Integer, UUID> newSortToDateId =
+        request.getOrders().stream()
+            .collect(Collectors.toMap(TravelDateSortRequest::getSort, TravelDateSortRequest::getTravelDateId));
+
+    Map<UUID, List<TravelDetail>> detailsByDate = new HashMap<>();
+    for (UUID dateId : oldSortToDateId.values()) {
+      detailsByDate.put(dateId, travelDetailRepository.findByTravelDateId(dateId));
+    }
+
+    for (int sort = 1; sort <= request.getOrders().size(); sort++) {
+      UUID oldDateId = oldSortToDateId.get(sort);
+      UUID newDateId = newSortToDateId.get(sort);
+      if (oldDateId == null || newDateId == null) {
+        throw new TravelException.TravelDateSortInvalid();
+      }
+      if (!oldDateId.equals(newDateId)) {
+        List<TravelDetail> details = detailsByDate.getOrDefault(oldDateId, Collections.emptyList());
+        for (TravelDetail detail : details) {
+          detail.setTravelDateId(newDateId);
+          detail.setUpdatedBy(request.getUpdatedBy());
+          travelDetailRepository.save(detail);
+        }
+      }
+    }
+
+    for (TravelDateSortRequest order : request.getOrders()) {
+      TravelDate travelDate = dateMap.get(order.getTravelDateId());
+      if (!order.getSort().equals(travelDate.getSort())) {
+        travelDate.setSort(order.getSort());
+        travelDate.setUpdatedBy(request.getUpdatedBy());
+        travelDateRepository.save(travelDate);
+      }
+    }
+
+    travelMain.setUpdatedBy(request.getUpdatedBy());
+    travelMainRepository.save(travelMain);
   }
 
   @Transactional
@@ -694,16 +823,20 @@ public class TravelService {
     newTravelMain = travelMainRepository.save(newTravelMain);
 
     List<TravelDate> sourceDates = travelDateRepository.findByTravelMainId(sourceTravelMain.getId());
+    sourceDates.sort(Comparator.comparing(TravelDate::getTravelDate));
     Map<UUID, UUID> dateIdMap = new HashMap<>();
     List<TravelDate> newDates = new ArrayList<>();
+    int sortIndex = 1;
     for (TravelDate date : sourceDates) {
       TravelDate newDate = new TravelDate();
       newDate.setTravelMainId(newTravelMain.getId());
       newDate.setTravelDate(date.getTravelDate());
+      newDate.setSort(date.getSort() != null ? date.getSort() : sortIndex);
       newDate.setCreatedBy(request.getCreatedBy());
       newDate = travelDateRepository.save(newDate);
       dateIdMap.put(date.getId(), newDate.getId());
       newDates.add(newDate);
+      sortIndex++;
     }
 
     Map<UUID, UUID> detailIdMap = new HashMap<>();

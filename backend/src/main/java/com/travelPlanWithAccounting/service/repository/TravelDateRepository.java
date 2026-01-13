@@ -13,5 +13,9 @@ import com.travelPlanWithAccounting.service.entity.TravelDate;
 public interface TravelDateRepository extends JpaRepository<TravelDate, UUID> {
     List<TravelDate> findByTravelMainId(UUID travelMainId);
 
+    List<TravelDate> findByTravelMainIdOrderBySortAsc(UUID travelMainId);
+
     Optional<TravelDate> findTopByTravelMainIdOrderByTravelDateDesc(UUID travelMainId);
+
+    Optional<TravelDate> findTopByTravelMainIdOrderBySortDesc(UUID travelMainId);
 }
