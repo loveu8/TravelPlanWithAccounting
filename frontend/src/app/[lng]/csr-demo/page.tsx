@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useT } from "@/app/i18n/client";
+import AsideMenu from "@/app/components/AsideMenu/index";
 
 import Button from "@/app/components/Button";
 import {
@@ -70,6 +71,7 @@ export default function Page() {
             handleCardClick={() => console.log("Card clicked")}
           />
         </div>
+        <AsideMenu />
       </main>
     </>
   );
