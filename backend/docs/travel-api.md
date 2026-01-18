@@ -7,6 +7,50 @@
 
 ## TravelController (`/api/travels`)
 
+### 0. 合併建立/更新主行程 `POST /upsertTravelMain`
+- **目的**：依 `travelMainId` 是否存在決定建立或更新主行程。
+- **授權**：需要帶入 `Authorization: Bearer <token>`
+- **請求範例**
+```json
+{
+  "id": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+  "isPrivate": false,
+  "startDate": "2024-09-01",
+  "endDate": "2024-09-05",
+  "title": "東京五日遊",
+  "notes": "備註內容",
+  "visitPlace": "{\"country\":\"JP\"}"
+}
+```
+- **行為**
+  - 未傳 `id` 或 DB 查無此 ID → 建立主行程（行為同 `createTravelMain`）。
+  - 傳入 `id` 且 DB 有值 → 更新主行程（行為同 `updateTravelMain`）。
+- **成功回應**：建立時回傳 `TravelMainResponse`（含 `generatedTravelDates`），更新時回傳 `TravelMain`。
+- **錯誤回應（欄位錯誤陣列固定回傳）**
+  - `error.fieldErrors` 必定包含以下欄位，無錯誤時 `message` 為空字串：
+    - `title`
+    - `start_date`
+    - `end_date`
+    - `visit_place`
+    - `notes`
+```json
+{
+  "data": null,
+  "meta": null,
+  "error": {
+    "code": "TRAVEL_DATE_RANGE_INVALID",
+    "message": "行程日期區間不正確",
+    "fieldErrors": [
+      { "field": "title", "message": "" },
+      { "field": "start_date", "message": "Start date is required" },
+      { "field": "end_date", "message": "" },
+      { "field": "visit_place", "message": "" },
+      { "field": "notes", "message": "" }
+    ]
+  }
+}
+```
+
 ### 1. 建立主行程 `POST /createTravelMain`
 - **目的**：建立新的旅遊主行程並自動產生對應的每日行程 `TravelDate`。
 - **授權**：需要帶入 `Authorization: Bearer <token>`

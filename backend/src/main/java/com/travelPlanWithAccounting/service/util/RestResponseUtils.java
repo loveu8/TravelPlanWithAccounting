@@ -1,10 +1,14 @@
 package com.travelPlanWithAccounting.service.util;
 
+import java.time.Instant;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+
 import com.travelPlanWithAccounting.service.dto.system.ApiException;
 import com.travelPlanWithAccounting.service.dto.system.PageMeta;
 import com.travelPlanWithAccounting.service.dto.system.RestResponse;
 import com.travelPlanWithAccounting.service.message.MessageCode;
-import org.springframework.data.domain.Page;
 
 /**
  * {@code RestResponseUtils} 提供快速建立標準化 API 回應物件的方法。<br>
@@ -81,6 +85,33 @@ public class RestResponseUtils {
   }
 
   /**
+   * 由 {@link ApiException} 建立錯誤回應並補上欄位錯誤資訊。<br>
+   * Builds an error response from {@link ApiException} and attaches field errors.
+   *
+   * @param ex 捕捉到的例外 / The ApiException caught
+   * @param fieldErrors 欄位錯誤資訊 / Field errors
+   * @return 標準化錯誤回應 / Standard error response
+   */
+  public static RestResponse<Object, Object> error(
+      ApiException ex, List<RestResponse.FieldError> fieldErrors) {
+    if (ex == null || ex.getMessageCode() == null) {
+      throw new IllegalArgumentException("ApiException or its MessageCode must not be null");
+    }
+
+    RestResponse.Error error =
+        RestResponse.Error.builder()
+            .code(ex.getMessageCode().getCode())
+            .message(ex.getMessageCode().getMessage(ex.getArgs()))
+            .timestamp(Instant.now())
+            .details(ex.getData())
+            .fieldErrors(fieldErrors)
+            .originalException(ex.getOriginalException())
+            .build();
+
+    return RestResponse.builder().data(null).meta(null).error(error).build();
+  }
+
+  /**
    * 由 {@link MessageCode} 建立錯誤回應（無原始例外）。<br>
    * Builds an error response from {@link MessageCode} without original exception.
    *
@@ -120,5 +151,29 @@ public class RestResponseUtils {
             .args(args)
             .originalException(originalException)
             .build());
+  }
+
+  /**
+   * 由 {@link MessageCode} 及原始例外建立錯誤回應，並補上欄位錯誤資訊。<br>
+   * Builds an error response from {@link MessageCode} with original exception and field errors.
+   *
+   * @param messageCode 錯誤代碼 / Error message code
+   * @param args 替換訊息模板的參數 / Arguments for message formatting
+   * @param originalException 原始例外 / Original exception
+   * @param fieldErrors 欄位錯誤資訊 / Field errors
+   * @return 標準化錯誤回應 / Standard error response
+   */
+  public static RestResponse<Object, Object> error(
+      MessageCode messageCode,
+      Object[] args,
+      Exception originalException,
+      List<RestResponse.FieldError> fieldErrors) {
+    ApiException apiException =
+        ApiException.builder()
+            .messageCode(messageCode)
+            .args(args)
+            .originalException(originalException)
+            .build();
+    return error(apiException, fieldErrors);
   }
 }

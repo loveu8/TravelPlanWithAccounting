@@ -76,6 +76,21 @@ public class TravelController {
         return RestResponseUtils.success(updatedTravelMain);
     }
 
+    @PostMapping("/upsertTravelMain")
+    @AccessTokenRequired
+    @Operation(summary = "建立或更新主行程")
+    public RestResponse<Object, Object> upsertTravelMain(@RequestBody TravelMainRequest request) {
+        UUID memberId = authContext.getCurrentMemberId();
+        request.setMemberId(memberId);
+        request.setCreatedBy(memberId);
+        if (travelService.existsTravelMain(request.getId())) {
+            TravelMain updatedTravelMain = travelService.updateTravelMain(request);
+            return RestResponseUtils.success(updatedTravelMain);
+        }
+        TravelMainResponse newTravelMainResponse = travelService.createTravelMain(request);
+        return RestResponseUtils.success(newTravelMainResponse);
+    }
+
     @PostMapping("/getTravelMain")
     public RestResponse<Object, Object> getTravelMain(@RequestBody UuidRequest request) {
         TravelMain travelMain = travelService.getTravelMainById(request.getId());

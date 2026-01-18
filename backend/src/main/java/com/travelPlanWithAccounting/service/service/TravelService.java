@@ -133,6 +133,13 @@ public class TravelService {
       return travelMainRepository.findById(id).orElseThrow(TravelException.TravelMainNotFound::new);
   }
 
+  public boolean existsTravelMain(UUID id) {
+      if (id == null) {
+        return false;
+      }
+      return travelMainRepository.existsById(id);
+  }
+
   public List<TravelMain> getTravelMainsByMemberId(UUID memberId) {
       if (memberId == null) {
           throw new TravelException.TravelMemberIdRequired();
