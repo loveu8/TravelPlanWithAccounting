@@ -37,6 +37,9 @@ interface IDatePickerBaseProps {
    * @todo 這裡 exclude mode 因為目前沒有支援多型
    */
   calendarOptions?: Omit<DayPickerProps, "mode">;
+  disabled?: boolean;
+  errMsg?: string;
+  ref?: React.Ref<HTMLInputElement>;
 }
 
 export type IDatePickerProps = IDatePickerBaseProps &

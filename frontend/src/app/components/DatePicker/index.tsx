@@ -22,6 +22,8 @@ function DatePicker({
   onChange,
   calendarOptions = {},
   required = false,
+  ref,
+  ...props
 }: IDatePickerProps) {
   const localeType: SupportLocaleType = langToLocaleMap[lng] || "en-US";
   const inputId = useId();
@@ -104,6 +106,8 @@ function DatePicker({
           onChange={handleInputChange}
           className="relative"
           required={required}
+          ref={ref}
+          {...props}
         >
           <Popover.Anchor className="absolute left-0 bottom-0 h-[100%]" />
           <TextFieldSlot side="left">
