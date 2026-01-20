@@ -17,7 +17,7 @@
       "schedule-name": "行程名稱",
       "start-date": "開始日期",
       "end-date": "結束日期",
-      "location": "旅行地點",
+      "visit-place": "旅行地點",
       "description": "行程簡介",
       "share-schedule": "公開行程"
     },

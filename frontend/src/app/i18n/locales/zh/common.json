@@ -26,7 +26,9 @@
     "required": "請填寫 {{label}}",
     "min-length": "最少 {{min}} 個字元",
     "max-length": "最多 {{max}} 個字元",
-    "pattern": "{{label}} 格式錯誤"
+    "pattern": "{{label}} 格式錯誤",
+    "end-date-after-start-date": "結束日期必須在開始日期之後",
+    "max-schedule-duration-days": "行程天數不可超過 {{max}} 天"
   },
   "login": {
     "title": "登入/註冊",
@@ -55,5 +57,15 @@
     "explore": "探索",
     "login": "登入",
     "language": "使用語系"
+  },
+  "schedule-modal": {
+    "title": "建立行程",
+    "schedule-name": "行程名稱",
+    "start-date": "開始日期",
+    "end-date": "結束日期",
+    "visit-place": "旅行地點",
+    "description": "行程簡介",
+    "share-schedule": "公開行程",
+    "button-create": "建立"
   }
 }
