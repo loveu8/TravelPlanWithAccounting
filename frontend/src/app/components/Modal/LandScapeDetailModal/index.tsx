@@ -1,3 +1,4 @@
+"use client";
 import { useState, forwardRef, useImperativeHandle } from "react";
 import {
   DialogRoot,
@@ -12,7 +13,7 @@ import type { ILandscapeDetailCardProps } from "@/app/components/Card/card.types
 import ViewLandscapeDetailCard from "@/app/components/Card/style/view-landscape-detail-card";
 
 /*
- * ViewLandscapeDetailModal 元件 Props
+ * LandscapeDetailModal 元件 Props
  * @property {function} handleBookmarkClick - 處理收藏按鈕點擊的函數
  * @property {function} handleAddScheduleClick - 處理添加行程按鈕點擊的函數
  */
@@ -28,16 +29,16 @@ type IModalDataType = Omit<
   iframeSrc: string;
 };
 
-export interface IViewLandscapeDetailImperativeHandle {
+export interface ILandscapeDetailImperative {
   open: () => void;
   close: () => void;
   toggle: (id: string) => void;
 }
 
-const ViewLandscapeDetailModal = forwardRef(
+const LandscapeDetailModal = forwardRef(
   (
     { handleAddScheduleClick, handleBookmarkClick }: ITravelPlanCardProps,
-    ref: React.ForwardedRef<IViewLandscapeDetailImperativeHandle>,
+    ref: React.ForwardedRef<ILandscapeDetailImperative>,
   ) => {
     const [open, setOpen] = useState(false);
     const [iframeSrc, setIframeSrc] = useState<string>("");
@@ -127,6 +128,6 @@ const ViewLandscapeDetailModal = forwardRef(
   },
 );
 
-ViewLandscapeDetailModal.displayName = "ViewLandscapeDetailModal";
+LandscapeDetailModal.displayName = "LandscapeDetailModal";
 
-export default ViewLandscapeDetailModal;
+export default LandscapeDetailModal;

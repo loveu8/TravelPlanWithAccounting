@@ -1,6 +1,11 @@
 "use client";
-import { use, useState, useRef } from "react";
+// 3rd party libraries
+import { useState, useRef } from "react";
+import { useParams } from "next/navigation";
 import { Section, Heading, Text } from "@radix-ui/themes";
+// methods and hooks
+import { useT } from "@/app/i18n/client";
+// components
 import Button from "@/app/components/Button";
 import {
   CountryCard,
@@ -8,17 +13,17 @@ import {
   LandScapeCard,
 } from "@/app/components/Card";
 import CardSection from "./card-section";
-import ViewLandscapeDetailModal, {
-  IViewLandscapeDetailImperativeHandle,
-} from "./view-landscape-detail-modal";
-import AddScheduleModal, {
-  IAddScheduleImperativeHandle,
-} from "./add-schedule-modal";
-import CreateScheduleModal, {
-  ICreateScheduleImperativeHandle,
-} from "./create-schedule-modal";
-
-import { useT } from "@/app/i18n/client";
+import {
+  LandscapeDetailModal,
+  ScheduleModal,
+  ScheduleAddModal,
+} from "@/app/components/Modal";
+// types
+import type {
+  ILandscapeDetailImperative,
+  IScheduleImperative,
+  IScheduleAddImperative,
+} from "@/app/components/Modal";
 
 const countries = [
   { countryName: "日本", imgSrc: "/img/Japan.jpg", href: "/tw" },
@@ -91,13 +96,12 @@ const landscapes = [
   },
 ];
 
-export default function Home({ params }: { params: Promise<{ lng: string }> }) {
-  const { lng } = use(params);
+export default function Home() {
+  const { lng } = useParams();
   const { t: homeTranslate } = useT("home");
-  const viewLandscapeDetailModalRef =
-    useRef<IViewLandscapeDetailImperativeHandle>(null);
-  const addScheduleModalRef = useRef<IAddScheduleImperativeHandle>(null);
-  const createScheduleModalRef = useRef<ICreateScheduleImperativeHandle>(null);
+  const viewLandscapeDetailModalRef = useRef<ILandscapeDetailImperative>(null);
+  const addScheduleModalRef = useRef<IScheduleAddImperative>(null);
+  const createScheduleModalRef = useRef<IScheduleImperative>(null);
   const [title, setTitle] = useState<string>("");
 
   const handleCardClick = (id: string, title: string) => {
@@ -119,7 +123,7 @@ export default function Home({ params }: { params: Promise<{ lng: string }> }) {
     console.log(`Bookmarking item with ID: ${id}`);
   };
 
-  const handleCreateScheduleClick = (open: boolean) => {
+  const handleScheduleClick = (open: boolean) => {
     createScheduleModalRef.current?.toggle();
     if (open) {
       addScheduleModalRef.current?.close();
@@ -172,20 +176,20 @@ export default function Home({ params }: { params: Promise<{ lng: string }> }) {
         handleBookmarkClick={handleBookmarkClick}
       />
 
-      <ViewLandscapeDetailModal
+      <LandscapeDetailModal
         ref={viewLandscapeDetailModalRef}
         handleAddScheduleClick={toggleViewAndAddModal}
         handleBookmarkClick={handleBookmarkClick}
       />
-      <AddScheduleModal
+      <ScheduleAddModal
         ref={addScheduleModalRef}
         location={title}
         viewDetailClick={toggleViewAndAddModal}
-        handleCreateScheduleClick={handleCreateScheduleClick}
+        handleCreateScheduleClick={handleScheduleClick}
       />
-      <CreateScheduleModal
+      <ScheduleModal
         ref={createScheduleModalRef}
-        handleCreateScheduleClick={handleCreateScheduleClick}
+        handleScheduleClick={handleScheduleClick}
       />
     </>
   );

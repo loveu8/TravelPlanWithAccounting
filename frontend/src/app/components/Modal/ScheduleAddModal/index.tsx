@@ -17,13 +17,13 @@ import Polygon2 from "@/app/assets/polygon-2.svg";
 import { useT } from "@/app/i18n/client";
 import { cn } from "@/app/lib/utils";
 
-interface IAddScheduleModalProps {
+interface IScheduleAddModalProps {
   location: string;
   viewDetailClick: (id: string) => void;
   handleCreateScheduleClick: (open: boolean) => void;
 }
 
-export interface IAddScheduleImperativeHandle {
+export interface IScheduleAddImperative {
   open: () => void;
   close: () => void;
   toggle: (id: string) => void;
@@ -36,14 +36,14 @@ type ISelectedSchedule = {
   day?: number;
 };
 
-const AddScheduleModal = forwardRef(
+const ScheduleAddModal = forwardRef(
   (
     {
       location,
       viewDetailClick,
       handleCreateScheduleClick,
-    }: IAddScheduleModalProps,
-    ref: React.ForwardedRef<IAddScheduleImperativeHandle>,
+    }: IScheduleAddModalProps,
+    ref: React.ForwardedRef<IScheduleAddImperative>,
   ) => {
     const { t: translateCommon } = useT("common");
     const { t: translateHome } = useT("home");
@@ -261,6 +261,6 @@ const AddScheduleModal = forwardRef(
   },
 );
 
-AddScheduleModal.displayName = "AddScheduleModal";
+ScheduleAddModal.displayName = "ScheduleAddModal";
 
-export default AddScheduleModal;
+export default ScheduleAddModal;
