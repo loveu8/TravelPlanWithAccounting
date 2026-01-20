@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Theme } from "@radix-ui/themes";
+import Providers from "./providers";
+import { AuthProvider } from "./lib/useAuth";
 
 // 樣式引入
 import "./globals.css";
@@ -17,7 +19,11 @@ export default function RootLayout({
   return (
     <html>
       <body>
-        <Theme>{children}</Theme>
+        <Theme>
+          <Providers>
+            <AuthProvider>{children}</AuthProvider>
+          </Providers>
+        </Theme>
       </body>
     </html>
   );

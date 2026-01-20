@@ -12,6 +12,7 @@ export default function Button({
   icon,
   isDisabled = false,
   handleClick,
+  children,
   ...props
 }: IButtonProps) {
   const btnColor = isMain ? "blue" : "gray";
@@ -29,8 +30,12 @@ export default function Button({
         if (handleClick) handleClick(e); // 執行自訂邏輯
       }}
     >
-      {icon}
-      {text}
+      {children || (
+        <>
+          {icon}
+          {text}
+        </>
+      )}
     </RadixButton>
   );
 }

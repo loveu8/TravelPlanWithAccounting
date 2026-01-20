@@ -21,11 +21,16 @@ export default async function Header({ lng }: { lng: string }) {
             </Link>
             <Link href={`/${lng}/explore`}>{t("header.explore")}</Link>
           </nav>
-          <LoginSignup asChild>
-            <Button
-              className="cursor-pointer bg-transparent text-black font-normal"
-              text={t("header.login")}
-            />
+          <LoginSignup
+            buttonAsChild
+            button={
+              <Button
+                className="cursor-pointer bg-transparent text-black font-normal"
+                text={t("header.login")}
+              />
+            }
+          >
+            已登入
           </LoginSignup>
           <LanguageSelector lng={lng} />
         </div>
