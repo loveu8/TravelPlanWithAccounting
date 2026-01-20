@@ -5,6 +5,7 @@ export default interface ITextFieldProps extends RootProps {
   radius?: "small" | "medium" | "large";
   label?: string;
   className?: string;
+  errMsg?: string;
   ref?: React.Ref<HTMLInputElement>;
 }
 
