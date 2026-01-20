@@ -9,6 +9,6 @@ export const LOCALE_MAP: Record<SupportLocaleType, Locale> = {
 };
 
 export const FORMAT_TOKEN_MAP: Record<SupportLocaleType, string> = {
-  "en-US": "MM/dd/yyyy",
-  "zh-TW": "yyyy/MM/dd",
+  "en-US": "yyyy-MM-dd",
+  "zh-TW": "yyyy-MM-dd",
 };
