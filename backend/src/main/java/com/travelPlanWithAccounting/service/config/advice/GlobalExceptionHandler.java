@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.travelPlanWithAccounting.service.dto.system.ApiException;
 import com.travelPlanWithAccounting.service.dto.system.RestResponse;
+import com.travelPlanWithAccounting.service.exception.ValidationException;
 import com.travelPlanWithAccounting.service.message.SystemMessageCode;
 import com.travelPlanWithAccounting.service.util.RestResponseUtils;
 
@@ -56,7 +57,7 @@ public class GlobalExceptionHandler {
         ex.getOriginalException());
     RestResponse<Object, Object> response =
         isTravelMainUpsertRequest(request)
-            ? RestResponseUtils.error(ex, buildTravelMainFieldErrors(ex.getData()))
+            ? RestResponseUtils.error(ex, buildTravelMainFieldErrors(ex))
             : RestResponseUtils.error(ex);
     return ResponseEntity.status(ex.getHttpStatus()).body(response);
   }
@@ -116,13 +117,29 @@ public class GlobalExceptionHandler {
   }
 
   private List<RestResponse.FieldError> buildTravelMainFieldErrors(Object data) {
-    Map<String, String> messageMap = extractFieldErrorMessages(data);
+    final Map<String, String> messageMap = extractFieldErrorMessages(data);
     return TRAVEL_MAIN_ERROR_FIELDS.stream()
         .map(
             field ->
                 RestResponse.FieldError.builder()
                     .field(field)
                     .message(messageMap.getOrDefault(field, ""))
+                    .build())
+        .toList();
+  }
+
+  private List<RestResponse.FieldError> buildTravelMainFieldErrors(ApiException ex) {
+    Map<String, String> messageMap = extractFieldErrorMessages(ex.getData());
+    final Map<String, String> resolvedMessageMap =
+        messageMap.isEmpty() && ex instanceof ValidationException validationException
+            ? buildValidationMessageMap(validationException)
+            : messageMap;
+    return TRAVEL_MAIN_ERROR_FIELDS.stream()
+        .map(
+            field ->
+                RestResponse.FieldError.builder()
+                    .field(field)
+                    .message(resolvedMessageMap.getOrDefault(field, ""))
                     .build())
         .toList();
   }
@@ -136,5 +153,35 @@ public class GlobalExceptionHandler {
         .collect(
             java.util.stream.Collectors.toMap(
                 entry -> (String) entry.getKey(), entry -> (String) entry.getValue()));
+  }
+
+  private Map<String, String> buildValidationMessageMap(ValidationException ex) {
+    Object[] args = ex.getArgs();
+    if (args == null || args.length == 0) {
+      return Collections.emptyMap();
+    }
+    String message = ex.getMessageCode().getMessage(args);
+    List<String> fields = extractValidationFields(ex, args);
+    if (fields.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    return fields.stream()
+        .distinct()
+        .collect(java.util.stream.Collectors.toMap(field -> field, field -> message));
+  }
+
+  private List<String> extractValidationFields(ValidationException ex, Object[] args) {
+    List<String> fields = new java.util.ArrayList<>();
+    if (args[0] instanceof String field) {
+      fields.add(field);
+    }
+    if (ex instanceof ValidationException.DateRangeInvalid
+        || ex instanceof ValidationException.DateRangeTooShort
+        || ex instanceof ValidationException.DateRangeTooLong) {
+      if (args.length > 1 && args[1] instanceof String field) {
+        fields.add(field);
+      }
+    }
+    return fields;
   }
 }

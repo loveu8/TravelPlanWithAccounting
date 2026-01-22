@@ -34,6 +34,10 @@ import com.travelPlanWithAccounting.service.service.TravelPermissionService;
 import com.travelPlanWithAccounting.service.service.TravelPopularityService;
 import com.travelPlanWithAccounting.service.service.TravelService;
 import com.travelPlanWithAccounting.service.util.RestResponseUtils;
+import com.travelPlanWithAccounting.service.validator.DateRangeRule;
+import com.travelPlanWithAccounting.service.validator.FieldType;
+import com.travelPlanWithAccounting.service.validator.FieldValidationRule;
+import com.travelPlanWithAccounting.service.validator.FieldValidator;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,12 +52,28 @@ public class TravelController {
     private final AuthContext authContext;
     private final TravelPermissionService travelPermissionService;
     private final TravelPopularityService travelPopularityService;
+    private final FieldValidator fieldValidator;
 
-    public TravelController(TravelService travelService, AuthContext authContext, TravelPermissionService travelPermissionService,TravelPopularityService travelPopularityService) {
+    private static final FieldValidationRule TRAVEL_TITLE_RULE =
+        new FieldValidationRule(false, FieldType.VARCHAR, 1, 255, true);
+    private static final FieldValidationRule TRAVEL_NOTES_RULE =
+        new FieldValidationRule(true, FieldType.TEXT, null, null, true);
+    private static final FieldValidationRule TRAVEL_VISIT_PLACE_RULE =
+        new FieldValidationRule(true, FieldType.TEXT, null, null, true);
+    private static final FieldValidationRule TRAVEL_DATE_RULE =
+        new FieldValidationRule(false, FieldType.DATE, null, null, false);
+
+    public TravelController(
+        TravelService travelService,
+        AuthContext authContext,
+        TravelPermissionService travelPermissionService,
+        TravelPopularityService travelPopularityService,
+        FieldValidator fieldValidator) {
         this.travelService = travelService;
         this.authContext = authContext;
         this.travelPermissionService = travelPermissionService;
         this.travelPopularityService = travelPopularityService;
+        this.fieldValidator = fieldValidator;
     }
 
     @PostMapping("/createTravelMain")
@@ -80,6 +100,7 @@ public class TravelController {
     @AccessTokenRequired
     @Operation(summary = "建立或更新主行程")
     public RestResponse<Object, Object> upsertTravelMain(@RequestBody TravelMainRequest request) {
+        validateUpsertTravelMainRequest(request);
         UUID memberId = authContext.getCurrentMemberId();
         request.setMemberId(memberId);
         request.setCreatedBy(memberId);
@@ -89,6 +110,20 @@ public class TravelController {
         }
         TravelMainResponse newTravelMainResponse = travelService.createTravelMain(request);
         return RestResponseUtils.success(newTravelMainResponse);
+    }
+
+    private void validateUpsertTravelMainRequest(TravelMainRequest request) {
+        fieldValidator.validate("title", request.getTitle(), TRAVEL_TITLE_RULE);
+        fieldValidator.validate("notes", request.getNotes(), TRAVEL_NOTES_RULE);
+        fieldValidator.validate("visit_place", request.getVisitPlace(), TRAVEL_VISIT_PLACE_RULE);
+        fieldValidator.validate("start_date", request.getStartDate(), TRAVEL_DATE_RULE);
+        fieldValidator.validate("end_date", request.getEndDate(), TRAVEL_DATE_RULE);
+        fieldValidator.validateDateRange(
+            "start_date",
+            request.getStartDate(),
+            "end_date",
+            request.getEndDate(),
+            new DateRangeRule("start_date", "end_date", false, null, null));
     }
 
     @PostMapping("/getTravelMain")
