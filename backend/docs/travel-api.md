@@ -22,10 +22,57 @@
   "visitPlace": "{\"country\":\"JP\"}"
 }
 ```
+- **欄位說明**
+  - `id`（UUID，非必填）：要更新的主行程 ID；未提供或查無資料時視為建立。
+  - `isPrivate`（Boolean，非必填，預設 `false`）：控制行程是否為私人行程。
+  - `startDate`（ISO `yyyy-MM-dd`，必填）：行程開始日期。
+  - `endDate`（ISO `yyyy-MM-dd`，必填）：行程結束日期，必須晚於或等於 `startDate`。
+  - `title`（String，必填）：主行程標題。
+  - `notes`（String，非必填）：行程備註。
+  - `visitPlace`（JSON String，非必填）：儲存地點資訊，格式為字串化的 JSON。
 - **行為**
   - 未傳 `id` 或 DB 查無此 ID → 建立主行程（行為同 `createTravelMain`）。
   - 傳入 `id` 且 DB 有值 → 更新主行程（行為同 `updateTravelMain`）。
 - **成功回應**：建立時回傳 `TravelMainResponse`（含 `generatedTravelDates`），更新時回傳 `TravelMain`。
+- **成功回應範例（建立）**
+```json
+{
+  "data": {
+    "id": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+    "memberId": "a3d2e7b4-1234-4321-9abc-5678def01234",
+    "isPrivate": false,
+    "startDate": "2024-09-01",
+    "endDate": "2024-09-05",
+    "title": "東京五日遊",
+    "notes": "備註內容",
+    "visitPlace": "{\"country\":\"JP\"}",
+    "createdAt": "2024-06-01T08:00:00Z",
+    "generatedTravelDates": [
+      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-01", "sort": 1 },
+      { "id": "...", "travelMainId": "...", "travelDate": "2024-09-02", "sort": 2 }
+    ]
+  },
+  "meta": null,
+  "error": null
+}
+```
+- **成功回應範例（更新）**
+```json
+{
+  "data": {
+    "id": "30c29c31-e9c2-4d0a-81d2-4f2a07123456",
+    "memberId": "a3d2e7b4-1234-4321-9abc-5678def01234",
+    "isPrivate": true,
+    "startDate": "2024-09-02",
+    "endDate": "2024-09-06",
+    "title": "東京調整後行程",
+    "notes": "更新備註",
+    "visitPlace": "{\"country\":\"JP\"}"
+  },
+  "meta": null,
+  "error": null
+}
+```
 - **錯誤回應（欄位錯誤陣列固定回傳）**
   - `error.fieldErrors` 必定包含以下欄位，無錯誤時 `message` 為空字串：
     - `title`
