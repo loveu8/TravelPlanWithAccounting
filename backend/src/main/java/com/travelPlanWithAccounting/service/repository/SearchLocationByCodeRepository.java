@@ -100,4 +100,19 @@ public interface SearchLocationByCodeRepository extends JpaRepository<Location, 
    * @return List<Location>
    */
   List<Location> findByIsoTypeOrderByOrderIndex(String isoType);
+
+  /**
+   * 根據代碼清單與語系查詢 Location 名稱
+   *
+   * @param codes Location 代碼清單
+   * @param langType 語系
+   * @return List<Object[]> (code, name)
+   */
+  @Query(
+      "SELECT l.code, lm.textContent "
+          + "FROM Location l "
+          + "LEFT JOIN l.metadata lm ON lm.locationMetaType = '001' AND lm.langType = :langType "
+          + "WHERE l.code IN :codes")
+  List<Object[]> findLocationNamesByCodes(
+      @Param("codes") List<String> codes, @Param("langType") String langType);
 }
