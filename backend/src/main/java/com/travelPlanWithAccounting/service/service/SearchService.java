@@ -35,6 +35,7 @@ import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllCountryRepository;
 import com.travelPlanWithAccounting.service.repository.SearchAllLocationRepository;
 import com.travelPlanWithAccounting.service.repository.SearchCountryRepository;
+import com.travelPlanWithAccounting.service.repository.SearchLocationByCodeRepository;
 import com.travelPlanWithAccounting.service.util.GooglePlaceConstants;
 import com.travelPlanWithAccounting.service.util.JsonHelper;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
@@ -82,6 +83,7 @@ public class SearchService {
 
   @Autowired private SearchAllLocationRepository searchAllLocationRepository;
   @Autowired private SearchAllCountryRepository searchAllCountryRepository;
+  @Autowired private SearchLocationByCodeRepository searchLocationByCodeRepository;
 
   // Google 相關服務
   @Autowired private LocationHelper locationHelper;
@@ -144,6 +146,28 @@ public class SearchService {
       locationNames.add(locationName);
     }
     return locationNames;
+  }
+
+  public List<String> getLocationNamesByCodes(List<String> codes) {
+    if (codes == null || codes.isEmpty()) {
+      return List.of();
+    }
+
+    String langType = LocaleContextHolder.getLocale().toLanguageTag();
+    List<Object[]> results = searchLocationByCodeRepository.findLocationNamesByCodes(codes, langType);
+    Map<String, String> nameMap = new LinkedHashMap<>();
+
+    for (Object[] row : results) {
+      String code = (String) row[0];
+      String name = (String) row[1];
+      nameMap.put(code, name != null ? name : code);
+    }
+
+    List<String> names = new ArrayList<>(codes.size());
+    for (String code : codes) {
+      names.add(nameMap.getOrDefault(code, code));
+    }
+    return names;
   }
 
   /**

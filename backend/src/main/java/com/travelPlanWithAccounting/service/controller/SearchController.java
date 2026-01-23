@@ -8,6 +8,7 @@ import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiRequest;
 import com.travelPlanWithAccounting.service.dto.memberpoi.SaveMemberPoiResponse;
 import com.travelPlanWithAccounting.service.dto.search.request.SearchRequest;
 import com.travelPlanWithAccounting.service.dto.search.request.TextSearchRequest;
+import com.travelPlanWithAccounting.service.dto.search.request.LocationNamesRequest;
 import com.travelPlanWithAccounting.service.dto.search.response.Country;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationName;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
@@ -74,6 +75,12 @@ public class SearchController {
   @Operation(summary = "取得所有地點 (DTO 格式)")
   public List<LocationName> allLocations() {
     return searchService.searchLocations();
+  }
+
+  @PostMapping("/locationNamesByCodes")
+  @Operation(summary = "批次取得 Location 代碼對應名稱")
+  public List<String> getLocationNamesByCodes(@Valid @RequestBody LocationNamesRequest request) {
+    return searchService.getLocationNamesByCodes(request.getCode());
   }
 
   @PostMapping("/searchNearby")
