@@ -255,7 +255,7 @@ sequenceDiagram
 ### 7. 根據類別查詢設定 ⭐
 
 - **API**: `GET /api/search/settings/{category}`
-- **描述**: 根據類別查詢設定，支援 `POI_TYPE`、`LANG_TYPE`
+- **描述**: 根據類別查詢設定，支援 `POI_TYPE`、`LANG_TYPE`、`GMAP_INCLUDED_TYPE`
 - **請求參數**:
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |

@@ -11,7 +11,8 @@ public class Validator {
 
   private static final List<String> ALLOW_COUNTRY = List.of("JP", "TW");
   private static final List<String> ALLOW_LANG = List.of("zh-TW", "en-US");
-  private static final List<String> ALLOW_CATEGORY = List.of("LANG_TYPE", "POI_TYPE");
+  private static final List<String> ALLOW_CATEGORY =
+      List.of("LANG_TYPE", "POI_TYPE", "GMAP_INCLUDED_TYPE");
 
   public void validate(String countryCode, String langType) {
     if (!ALLOW_COUNTRY.contains(countryCode)) {

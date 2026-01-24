@@ -201,6 +201,7 @@ public class RecommandService {
         .city(summary.getCityName())
         .photoUrl(extractFirstPhoto(summary.getPhotoUrls()))
         .rating(toDouble(summary.getRating()))
+        .reviewCount(summary.getReviewCount())
         .lat(toDouble(summary.getLat()))
         .lon(toDouble(summary.getLon()))
         .build();
@@ -214,6 +215,7 @@ public class RecommandService {
         .city(detail.getCity())
         .photoUrl(firstPhoto(detail.getPhotoUrls()))
         .rating(detail.getRating())
+        .reviewCount(detail.getReviewCount())
         .lat(detail.getLat())
         .lon(detail.getLon())
         .build();
