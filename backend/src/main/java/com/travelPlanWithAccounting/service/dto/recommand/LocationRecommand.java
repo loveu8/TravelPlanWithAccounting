@@ -16,6 +16,7 @@ public class LocationRecommand {
   private String city;
   private String photoUrl;
   private Double rating;
+  private Integer reviewCount;
   private Double lat;
   private Double lon;
 }

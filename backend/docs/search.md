@@ -40,11 +40,12 @@ sequenceDiagram
 
 ## API 端點總覽
 
-    | 方法   | 端點                                      | 說明                     |
+| 方法   | 端點                                      | 說明                     |
 |--------|-------------------------------------------|--------------------------|
 | GET    | `/api/search/countries`                   | 取得所有國家列表         |
 | POST   | `/api/search/regions`                     | 取得指定國家的地區和城市 |
 | GET    | `/api/search/allLocations`                | 取得所有地點資料         |
+| POST   | `/api/search/locationNamesByCodes`        | 批次取得代碼對應名稱     |
 | POST   | `/api/search/searchNearby`                | 搜尋附近景點             |
 | POST   | `/api/search/searchNearbyByLocationCode`  | 根據 Location 代碼搜尋附近景點 |
 | POST   | `/api/search/searchTextByLocationCode`    | 根據 Location 代碼和文字查詢搜尋景點 |
@@ -152,6 +153,31 @@ sequenceDiagram
 - **請求參數**: NearbySearchRequest
 - **回應**: List<LocationSearch>
 
+### 4.1 批次取得 Location 代碼對應名稱
+
+- **API**: `POST /api/search/locationNamesByCodes`
+- **描述**: 依 `Accept-Language` 批次查詢 Location 代碼對應名稱
+- **請求參數**:
+  - **標頭**:
+    | 標頭              | 型別   | 必填 | 說明                    |
+    |-------------------|--------|------|-------------------------|
+    | `Accept-Language` | String | 否   | 語言類型 (如：zh-TW, en-US) |
+  - **請求體**:
+    | 參數   | 型別         | 必填 | 說明                 |
+    |--------|--------------|------|----------------------|
+    | `code` | List<String> | 是   | Location 代碼清單    |
+  - **請求體範例**:
+    ```json
+    {
+      "code": ["TPE", "KHH"]
+    }
+    ```
+- **回應**: List<String>
+- **回應範例**:
+  ```json
+  ["台北市", "高雄市"]
+  ```
+
 ### 5. 根據 Location 代碼搜尋附近景點 ⭐
 
 - **API**: `POST /api/search/searchNearbyByLocationCode`
@@ -229,7 +255,7 @@ sequenceDiagram
 ### 7. 根據類別查詢設定 ⭐
 
 - **API**: `GET /api/search/settings/{category}`
-- **描述**: 根據類別查詢設定，支援 `POI_TYPE`、`LANG_TYPE`
+- **描述**: 根據類別查詢設定，支援 `POI_TYPE`、`LANG_TYPE`、`GMAP_INCLUDED_TYPE`
 - **請求參數**:
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |
