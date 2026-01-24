@@ -61,6 +61,7 @@ Accept-Language: zh-TW
     "city": "台北市",
     "photoUrl": "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=...",
     "rating": 4.5,
+    "reviewCount": 31245,
     "lat": 25.0330,
     "lon": 121.5654
   },
@@ -72,6 +73,7 @@ Accept-Language: zh-TW
     "city": "台北市",
     "photoUrl": "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=...",
     "rating": 4.7,
+    "reviewCount": 18321,
     "lat": 25.1024,
     "lon": 121.5485
   }
@@ -91,6 +93,7 @@ Accept-Language: zh-TW
 | city | String | 所在城市名稱 |
 | photoUrl | String | 景點照片 URL（第一張照片） |
 | rating | Double | 景點評分（1.0-5.0） |
+| reviewCount | Integer | Google Maps 實際評論人數 |
 | lat | Double | 緯度 |
 | lon | Double | 經度 |
 

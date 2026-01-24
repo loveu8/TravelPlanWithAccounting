@@ -42,6 +42,7 @@ public interface PoiRepository extends JpaRepository<Poi, UUID> {
       select p.id as id,
              p.externalId as externalId,
              p.rating as rating,
+             p.reviewCount as reviewCount,
              p.photoUrls as photoUrls,
              p.lat as lat,
              p.lon as lon,
@@ -71,6 +72,8 @@ public interface PoiRepository extends JpaRepository<Poi, UUID> {
     String getExternalId();
 
     BigDecimal getRating();
+
+    Integer getReviewCount();
 
     String getPhotoUrls();
 
