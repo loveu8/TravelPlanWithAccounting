@@ -4,6 +4,7 @@
 
 - **授權需求**：無，僅回傳公開 (`isPrivate = false`) 行程，匿名訪客即可呼叫。
 - **回應格式**：統一使用 `RestResponse`，`data` 為行程清單，`meta` 帶回實際採用策略與候選數。
+- **新增欄位**：回應內增加 `creator`（建立者名稱）、`locationName`（首個目的地名稱）、`imgUrl`（人氣行程顯示圖）。
 
 ---
 
@@ -32,18 +33,24 @@ Accept-Language: zh-TW
       "title": "東京五日遊",
       "startDate": "2024-09-01",
       "endDate": "2024-09-05",
-      "visitPlace": "{\"country\":\"JP\"}",
+      "visitPlace": "[{\"code\":\"JP\"}]",
       "favoritesCount": 18,
-      "isPrivate": false
+      "isPrivate": false,
+      "creator": "王小明",
+      "locationName": "日本",
+      "imgUrl": "/assets/images/popular-travel-default.png"
     },
     {
       "travelMainId": "c076c6c1-b9f3-4c41-8de4-492a961ac678",
       "title": "大阪親子行",
       "startDate": "2024-08-15",
       "endDate": "2024-08-19",
-      "visitPlace": "{\"country\":\"JP\"}",
+      "visitPlace": "[{\"code\":\"JP\"}]",
       "favoritesCount": 15,
-      "isPrivate": false
+      "isPrivate": false,
+      "creator": "王小明",
+      "locationName": "日本",
+      "imgUrl": "/assets/images/popular-travel-default.png"
     }
   ],
   "meta": {
@@ -64,27 +71,36 @@ Accept-Language: zh-TW
       "title": "首爾美食攻略",
       "startDate": "2024-10-10",
       "endDate": "2024-10-13",
-      "visitPlace": "{\"country\":\"KR\"}",
+      "visitPlace": "[{\"code\":\"KR\"}]",
       "favoritesCount": 11,
-      "isPrivate": false
+      "isPrivate": false,
+      "creator": "李小花",
+      "locationName": "韓國",
+      "imgUrl": "/assets/images/popular-travel-default.png"
     },
     {
       "travelMainId": "7c5182c1-ae9e-4f82-b1a7-52dd4a33f9f2",
       "title": "北海道滑雪趣",
       "startDate": "2024-12-20",
       "endDate": "2024-12-24",
-      "visitPlace": "{\"country\":\"JP\"}",
+      "visitPlace": "[{\"code\":\"JP\"}]",
       "favoritesCount": 10,
-      "isPrivate": false
+      "isPrivate": false,
+      "creator": "王小明",
+      "locationName": "日本",
+      "imgUrl": "/assets/images/popular-travel-default.png"
     },
     {
       "travelMainId": "b05fb706-8d9a-41a9-9ab9-9adacbe1b1a6",
       "title": "曼谷親子樂",
       "startDate": "2024-07-05",
       "endDate": "2024-07-09",
-      "visitPlace": "{\"country\":\"TH\"}",
+      "visitPlace": "[{\"code\":\"TH\"}]",
       "favoritesCount": 9,
-      "isPrivate": false
+      "isPrivate": false,
+      "creator": "陳小美",
+      "locationName": "泰國",
+      "imgUrl": "/assets/images/popular-travel-default.png"
     },
     {
       "travelMainId": "3a4e0e3e-8bb5-4f0e-9ad4-49c7ce840c44",
@@ -93,7 +109,10 @@ Accept-Language: zh-TW
       "endDate": "2024-05-06",
       "visitPlace": "{\"country\":\"FR\"}",
       "favoritesCount": 8,
-      "isPrivate": false
+      "isPrivate": false,
+      "creator": "Jean Dupont",
+      "locationName": "法國",
+      "imgUrl": "/assets/images/popular-travel-default.png"
     }
   ],
   "meta": {
@@ -146,6 +165,8 @@ flowchart TD
    - 將 `strategy` 字串轉換成列舉並驗證，無效值丟出 `POPULAR_STRATEGY_INVALID`。
    - `threshold` 模式下解析 `minFavorites`（預設 5，禁止負值），篩選符合門檻的行程，並以 `Collections.shuffle` 配合 `ThreadLocalRandom` 隨機選取四筆。
    - 當候選不足四筆時回退 `top` 模式，以確保永遠有最多四筆資料可用。
+   - 依 `travel_main_id` 查詢 `member` 資料，組合 `creator`，並解析 `visit_place` 取得首個 `code` 後批次查詢 `locationName`。
+   - `imgUrl` 先回傳預設的顯示圖路徑。
 3. Controller 透過 `RestResponseUtils.successWithMeta(...)` 將行程陣列與 `PopularTravelMeta` 一併回傳。
 
 ---

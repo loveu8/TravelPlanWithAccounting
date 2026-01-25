@@ -14,7 +14,10 @@ public record PopularTravelResponse(
     String visitPlace,
     long favoritesCount,
     boolean isPrivate,
-    boolean isFavorited
+    boolean isFavorited,
+    String creator,
+    String locationName,
+    String imgUrl
 ) {
 
 }

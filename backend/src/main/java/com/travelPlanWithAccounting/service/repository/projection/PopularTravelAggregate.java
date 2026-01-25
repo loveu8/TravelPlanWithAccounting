@@ -9,6 +9,7 @@ import java.util.UUID;
  */
 public record PopularTravelAggregate(
     UUID travelMainId,
+    UUID memberId,
     String title,
     LocalDate startDate,
     LocalDate endDate,
