@@ -1,6 +1,7 @@
 package com.travelPlanWithAccounting.service.dto.travelPlan;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -16,6 +17,6 @@ public class TravelMainRequest {
     private LocalDate endDate;
     private String title;
     private String notes;
-    private String visitPlace; // JSONB content as String
+    private List<String> visitPlace; // JSONB content as String
     @JsonIgnore private UUID createdBy; // 誰創建的，通常從認證資訊中獲取
 }

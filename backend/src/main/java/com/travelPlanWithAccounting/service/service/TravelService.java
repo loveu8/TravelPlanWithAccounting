@@ -45,7 +45,6 @@ import com.travelPlanWithAccounting.service.repository.TransI18nRepository;
 import com.travelPlanWithAccounting.service.repository.TravelDateRepository;
 import com.travelPlanWithAccounting.service.repository.TravelDetailRepository;
 import com.travelPlanWithAccounting.service.repository.TravelMainRepository;
-import com.travelPlanWithAccounting.service.util.JsonHelper;
 
 import jakarta.transaction.Transactional;
 
@@ -65,7 +64,6 @@ public class TravelService {
   private final TransI18nRepository transI18nRepository;
   private final PoiRepository poiRepository;
   private final TravelProperties travelProperties;
-  private final JsonHelper jsonHelper;
 
   @Autowired
   public TravelService(
@@ -75,8 +73,7 @@ public class TravelService {
       MemberRepository memberRepository,
       TransI18nRepository transI18nRepository,
       PoiRepository poiRepository,
-      TravelProperties travelProperties,
-      JsonHelper jsonHelper) { // 在建構子中注入
+      TravelProperties travelProperties) { // 在建構子中注入
     this.travelMainRepository = travelMainRepository;
     this.travelDateRepository = travelDateRepository;
     this.travelDetailRepository = travelDetailRepository;
@@ -84,7 +81,6 @@ public class TravelService {
     this.transI18nRepository = transI18nRepository;
     this.poiRepository = poiRepository;
     this.travelProperties = travelProperties;
-    this.jsonHelper = jsonHelper;
   }
 
   /**
@@ -296,12 +292,11 @@ public class TravelService {
     }
   }
 
-  private boolean shouldPersistVisitPlace(String visitPlace) {
-    if (visitPlace == null || visitPlace.isBlank()) {
+   private boolean shouldPersistVisitPlace(List<String> visitPlace) {
+    if (visitPlace == null || visitPlace.isEmpty()) {
       return false;
     }
-    com.fasterxml.jackson.databind.JsonNode node = jsonHelper.deserializeToNode(visitPlace);
-    return node != null && node.isArray() && node.size() > 0;
+    return visitPlace.stream().anyMatch(place -> place != null && !place.isBlank());
   }
 
   @Transactional

@@ -19,10 +19,7 @@
   "endDate": "2024-09-05",
   "title": "東京五日遊",
   "notes": "備註內容",
-  "visitPlace": [
-    { "code": "TW-TPE" },
-    { "code": "TW-KHH" }
-  ]
+  "visitPlace": ["JP-01", "JP-02"]
 }
 ```
 - **欄位說明**
@@ -32,7 +29,7 @@
   - `endDate`（ISO `yyyy-MM-dd`，必填）：行程結束日期，必須晚於或等於 `startDate`。
   - `title`（String，必填）：主行程標題。
   - `notes`（String，非必填）：行程備註。
-  - `visitPlace`（Array，非必填）：儲存地點資訊，元素包含 `code` 欄位，例如 `[{ "code": "TW-TPE" }, { "code": "TW-KHH" }]`，因欄位型別為 JSONB，僅在陣列有值時存入。
+  - `visitPlace`（String Array，非必填）：旅遊地點代碼清單，例如 `["JP-01","JP-02"]`。
 - **行為**
   - 未傳 `id` 或 DB 查無此 ID → 建立主行程（行為同 `createTravelMain`）。
   - 傳入 `id` 且 DB 有值 → 更新主行程（行為同 `updateTravelMain`）。
@@ -48,10 +45,7 @@
     "endDate": "2024-09-05",
     "title": "東京五日遊",
     "notes": "備註內容",
-    "visitPlace": [
-      { "code": "TW-TPE" },
-      { "code": "TW-KHH" }
-    ],
+    "visitPlace": ["JP-01", "JP-02"],
     "createdAt": "2024-06-01T08:00:00Z",
     "generatedTravelDates": [
       { "id": "...", "travelMainId": "...", "travelDate": "2024-09-01", "sort": 1 },
@@ -73,10 +67,7 @@
     "endDate": "2024-09-06",
     "title": "東京調整後行程",
     "notes": "更新備註",
-    "visitPlace": [
-      { "code": "TW-TPE" },
-      { "code": "TW-KHH" }
-    ]
+    "visitPlace": ["JP-01", "JP-02"],
   },
   "meta": null,
   "error": null
@@ -118,10 +109,7 @@
   "endDate": "2024-09-05",
   "title": "東京五日遊",
   "notes": "備註內容",
-  "visitPlace": [
-    { "code": "TW-TPE" },
-    { "code": "TW-KHH" }
-  ]
+  "visitPlace": ["JP-01", "JP-02"]
 }
 ```
 - **欄位說明**
@@ -130,7 +118,7 @@
   - `endDate`（ISO `yyyy-MM-dd`，必填）：行程結束日期，必須晚於或等於 `startDate`。
   - `title`（String，必填）：主行程標題。
   - `notes`（String，非必填）：行程備註。
-  - `visitPlace`（Array，非必填）：地點資訊陣列，元素包含 `code` 欄位，因欄位型別為 JSONB，僅在陣列有值時存入。
+  - `visitPlace`（String Array，非必填）：旅遊地點代碼清單，例如 `["JP-01","JP-02"]`。
   - **行程天數限制**：`startDate` 至 `endDate`（含首尾）不可超過系統設定的最大天數（預設 31 天，可在設定檔 `travel.max-days` 調整）。
 - **成功回應**
 ```json
@@ -143,10 +131,7 @@
     "endDate": "2024-09-05",
     "title": "東京五日遊",
     "notes": "備註內容",
-    "visitPlace": [
-      { "code": "TW-TPE" },
-      { "code": "TW-KHH" }
-    ]
+    "visitPlace": ["JP-01", "JP-02"],
     "createdAt": "2024-06-01T08:00:00Z",
     "generatedTravelDates": [
       { "id": "...", "travelMainId": "...", "travelDate": "2024-09-01", "sort": 1 },
@@ -197,10 +182,7 @@ flowchart TD
   "endDate": "2024-09-06",
   "title": "東京調整後行程",
   "notes": "更新備註",
-  "visitPlace": [
-    { "code": "TW-TPE" },
-    { "code": "TW-KHH" }
-  ]
+  "visitPlace": ["JP-01", "JP-02"]
 }
 ```
 - **欄位說明**
@@ -210,7 +192,7 @@ flowchart TD
   - `endDate`（ISO `yyyy-MM-dd`，必填）：調整後的結束日期。
   - `title`（String，必填）：主行程標題。
   - `notes`（String，非必填）：行程備註。
-  - `visitPlace`（Array，非必填）：地點資訊陣列，元素包含 `code` 欄位，因欄位型別為 JSONB，僅在陣列有值時存入。
+  - `visitPlace`（String Array，非必填）：旅遊地點代碼清單，例如 `["JP-01","JP-02"]`。
 - **成功回應**
 ```json
 {
@@ -222,10 +204,7 @@ flowchart TD
     "endDate": "2024-09-06",
     "title": "東京調整後行程",
     "notes": "更新備註",
-    "visitPlace": [
-      { "code": "TW-TPE" },
-      { "code": "TW-KHH" }
-    ]
+    "visitPlace": ["JP-01", "JP-02"]
   },
   "meta": null,
   "error": null

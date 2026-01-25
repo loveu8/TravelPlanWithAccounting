@@ -2,6 +2,7 @@ package com.travelPlanWithAccounting.service.repository.projection;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -13,7 +14,7 @@ public record PopularTravelAggregate(
     String title,
     LocalDate startDate,
     LocalDate endDate,
-    String visitPlace,
+    List<String> visitPlace,
     Boolean isPrivate,
     Instant createdAt,
     long favoritesCount

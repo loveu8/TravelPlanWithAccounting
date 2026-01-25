@@ -1,6 +1,7 @@
 package com.travelPlanWithAccounting.service.dto.travelPlan;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -11,7 +12,7 @@ public record PopularTravelResponse(
     String title,
     LocalDate startDate,
     LocalDate endDate,
-    String visitPlace,
+    List<String> visitPlace,
     long favoritesCount,
     boolean isPrivate,
     boolean isFavorited,

@@ -39,6 +39,7 @@ public class FieldValidator {
     switch (rule.type()) {
       case VARCHAR, TEXT -> validateText(fieldName, value, rule);
       case DATE -> validateDate(fieldName, value);
+      case STRING_LIST -> validateStringList(fieldName, value, rule);
     }
   }
 
@@ -106,6 +107,24 @@ public class FieldValidator {
       }
     }
     throw new ValidationException.TypeMismatch(fieldName, FieldType.DATE.name());
+  }
+
+  private void validateStringList(String fieldName, Object value, FieldValidationRule rule) {
+    if (!(value instanceof List<?> listValue)) {
+      throw new ValidationException.TypeMismatch(fieldName, FieldType.STRING_LIST.name());
+    }
+    if (!rule.nullable() && listValue.isEmpty()) {
+      throw new ValidationException.RequiredField(fieldName);
+    }
+    for (Object element : listValue) {
+      if (!(element instanceof String textValue)) {
+        throw new ValidationException.TypeMismatch(fieldName, FieldType.STRING_LIST.name());
+      }
+      String trimmed = textValue.trim();
+      if (rule.securityCheck() && !trimmed.isEmpty() && containsUnsafePattern(trimmed)) {
+        throw new ValidationException.UnsafeInput(fieldName);
+      }
+    }
   }
 
   private boolean containsUnsafePattern(String value) {

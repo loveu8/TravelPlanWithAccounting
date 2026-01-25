@@ -25,7 +25,6 @@ import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.repository.TravelFavRepository;
 import com.travelPlanWithAccounting.service.repository.TravelMainRepository;
 import com.travelPlanWithAccounting.service.repository.projection.PopularTravelAggregate;
-import com.travelPlanWithAccounting.service.util.JsonHelper;
 
 /**
  * 提供依收藏數取得人氣行程的服務，支援 Top 及 Threshold 兩種策略。
@@ -41,20 +40,17 @@ public class TravelPopularityService {
     private final TravelFavRepository travelFavRepository;
     private final MemberRepository memberRepository;
     private final SearchService searchService;
-    private final JsonHelper jsonHelper;
 
     public TravelPopularityService(
         TravelMainRepository travelMainRepository,
         TravelFavRepository travelFavRepository,
         MemberRepository memberRepository,
-        SearchService searchService,
-        JsonHelper jsonHelper
+        SearchService searchService
     ) {
         this.travelMainRepository = travelMainRepository;
         this.travelFavRepository = travelFavRepository;
         this.memberRepository = memberRepository;
         this.searchService = searchService;
-        this.jsonHelper = jsonHelper;
     }
 
     @Transactional(readOnly = true)
@@ -231,20 +227,16 @@ public class TravelPopularityService {
         return locationNames;
     }
 
-    private String resolveFirstLocationCode(String visitPlace) {
-        if (visitPlace == null || visitPlace.isBlank()) {
+    private String resolveFirstLocationCode(List<String> visitPlace) {
+        if (visitPlace == null || visitPlace.isEmpty()) {
             return null;
         }
-        com.fasterxml.jackson.databind.JsonNode node = jsonHelper.deserializeToNode(visitPlace);
-        if (node == null || !node.isArray() || node.isEmpty()) {
-            return null;
+        for (String code : visitPlace) {
+            if (code != null && !code.isBlank()) {
+                return code;
+            }
         }
-        com.fasterxml.jackson.databind.JsonNode firstNode = node.get(0);
-        if (firstNode == null || !firstNode.hasNonNull("code")) {
-            return null;
-        }
-        String code = firstNode.get("code").asText();
-        return code == null || code.isBlank() ? null : code;
+        return null;
     }
 
     private enum Strategy {

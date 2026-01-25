@@ -1,6 +1,8 @@
 package com.travelPlanWithAccounting.service.controller;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.travelPlanWithAccounting.service.dto.UuidRequest;
+import com.travelPlanWithAccounting.service.dto.system.ApiException;
 import com.travelPlanWithAccounting.service.dto.system.RestResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResult;
 import com.travelPlanWithAccounting.service.dto.travelPlan.TravelCopyRequest;
@@ -28,6 +31,8 @@ import com.travelPlanWithAccounting.service.dto.travelPlan.TravelMainResponse;
 import com.travelPlanWithAccounting.service.entity.TravelDate;
 import com.travelPlanWithAccounting.service.entity.TravelDetail;
 import com.travelPlanWithAccounting.service.entity.TravelMain;
+import com.travelPlanWithAccounting.service.exception.ValidationException;
+import com.travelPlanWithAccounting.service.message.SystemMessageCode;
 import com.travelPlanWithAccounting.service.security.AccessTokenRequired;
 import com.travelPlanWithAccounting.service.security.OptionalAccessToken;
 import com.travelPlanWithAccounting.service.service.TravelPermissionService;
@@ -59,7 +64,7 @@ public class TravelController {
     private static final FieldValidationRule TRAVEL_NOTES_RULE =
         new FieldValidationRule(true, FieldType.TEXT, null, null, true);
     private static final FieldValidationRule TRAVEL_VISIT_PLACE_RULE =
-        new FieldValidationRule(true, FieldType.TEXT, null, null, true);
+        new FieldValidationRule(true, FieldType.STRING_LIST, null, null, true);
     private static final FieldValidationRule TRAVEL_DATE_RULE =
         new FieldValidationRule(false, FieldType.DATE, null, null, false);
 
@@ -113,17 +118,59 @@ public class TravelController {
     }
 
     private void validateUpsertTravelMainRequest(TravelMainRequest request) {
-        fieldValidator.validate("title", request.getTitle(), TRAVEL_TITLE_RULE);
-        fieldValidator.validate("notes", request.getNotes(), TRAVEL_NOTES_RULE);
-        fieldValidator.validate("visitPlace", request.getVisitPlace(), TRAVEL_VISIT_PLACE_RULE);
-        fieldValidator.validate("startDate", request.getStartDate(), TRAVEL_DATE_RULE);
-        fieldValidator.validate("endDate", request.getEndDate(), TRAVEL_DATE_RULE);
-        fieldValidator.validateDateRange(
-            "startDate",
-            request.getStartDate(),
-            "endDate",
-            request.getEndDate(),
-            new DateRangeRule("startDate", "endDate", false, null, null));
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        collectValidationError(
+            () -> fieldValidator.validate("title", request.getTitle(), TRAVEL_TITLE_RULE),
+            fieldErrors);
+        collectValidationError(
+            () -> fieldValidator.validate("notes", request.getNotes(), TRAVEL_NOTES_RULE),
+            fieldErrors);
+        collectValidationError(
+            () -> fieldValidator.validate("visitPlace", request.getVisitPlace(), TRAVEL_VISIT_PLACE_RULE),
+            fieldErrors);
+        collectValidationError(
+            () -> fieldValidator.validate("startDate", request.getStartDate(), TRAVEL_DATE_RULE),
+            fieldErrors);
+        collectValidationError(
+            () -> fieldValidator.validate("endDate", request.getEndDate(), TRAVEL_DATE_RULE),
+            fieldErrors);
+        collectValidationError(
+            () -> fieldValidator.validateDateRange(
+                "startDate",
+                request.getStartDate(),
+                "endDate",
+                request.getEndDate(),
+                new DateRangeRule("startDate", "endDate", false, null, null)),
+            fieldErrors);
+        if (!fieldErrors.isEmpty()) {
+            throw new ApiException(SystemMessageCode.INVALID_PARAMETER, fieldErrors);
+        }
+    }
+
+    private void collectValidationError(Runnable validator, Map<String, String> fieldErrors) {
+        try {
+            validator.run();
+        } catch (ValidationException ex) {
+            addFieldErrors(ex, fieldErrors);
+        }
+    }
+
+    private void addFieldErrors(ValidationException ex, Map<String, String> fieldErrors) {
+        Object[] args = ex.getArgs();
+        if (args == null || args.length == 0) {
+            return;
+        }
+        String message = ex.getMessageCode().getMessage(args);
+        if (args[0] instanceof String field) {
+            fieldErrors.putIfAbsent(field, message);
+        }
+        if (ex instanceof ValidationException.DateRangeInvalid
+            || ex instanceof ValidationException.DateRangeTooShort
+            || ex instanceof ValidationException.DateRangeTooLong) {
+            if (args.length > 1 && args[1] instanceof String field) {
+                fieldErrors.putIfAbsent(field, message);
+            }
+        }
     }
 
     @PostMapping("/getTravelMain")

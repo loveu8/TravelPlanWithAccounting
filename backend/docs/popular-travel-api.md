@@ -33,7 +33,7 @@ Accept-Language: zh-TW
       "title": "東京五日遊",
       "startDate": "2024-09-01",
       "endDate": "2024-09-05",
-      "visitPlace": "[{\"code\":\"JP\"}]",
+      "visitPlace": ["JP-01"],
       "favoritesCount": 18,
       "isPrivate": false,
       "creator": "王小明",
@@ -45,7 +45,7 @@ Accept-Language: zh-TW
       "title": "大阪親子行",
       "startDate": "2024-08-15",
       "endDate": "2024-08-19",
-      "visitPlace": "[{\"code\":\"JP\"}]",
+      "visitPlace": ["JP-01"],
       "favoritesCount": 15,
       "isPrivate": false,
       "creator": "王小明",
@@ -71,7 +71,7 @@ Accept-Language: zh-TW
       "title": "首爾美食攻略",
       "startDate": "2024-10-10",
       "endDate": "2024-10-13",
-      "visitPlace": "[{\"code\":\"KR\"}]",
+      "visitPlace": ["KR-01"],
       "favoritesCount": 11,
       "isPrivate": false,
       "creator": "李小花",
@@ -83,7 +83,7 @@ Accept-Language: zh-TW
       "title": "北海道滑雪趣",
       "startDate": "2024-12-20",
       "endDate": "2024-12-24",
-      "visitPlace": "[{\"code\":\"JP\"}]",
+      "visitPlace": ["JP-01"],
       "favoritesCount": 10,
       "isPrivate": false,
       "creator": "王小明",
@@ -95,7 +95,7 @@ Accept-Language: zh-TW
       "title": "曼谷親子樂",
       "startDate": "2024-07-05",
       "endDate": "2024-07-09",
-      "visitPlace": "[{\"code\":\"TH\"}]",
+      "visitPlace": ["TH-01"],
       "favoritesCount": 9,
       "isPrivate": false,
       "creator": "陳小美",
@@ -107,7 +107,7 @@ Accept-Language: zh-TW
       "title": "巴黎深度自由行",
       "startDate": "2024-05-01",
       "endDate": "2024-05-06",
-      "visitPlace": "{\"country\":\"FR\"}",
+      "visitPlace": ["FR-01"],
       "favoritesCount": 8,
       "isPrivate": false,
       "creator": "Jean Dupont",
@@ -165,7 +165,7 @@ flowchart TD
    - 將 `strategy` 字串轉換成列舉並驗證，無效值丟出 `POPULAR_STRATEGY_INVALID`。
    - `threshold` 模式下解析 `minFavorites`（預設 5，禁止負值），篩選符合門檻的行程，並以 `Collections.shuffle` 配合 `ThreadLocalRandom` 隨機選取四筆。
    - 當候選不足四筆時回退 `top` 模式，以確保永遠有最多四筆資料可用。
-   - 依 `travel_main_id` 查詢 `member` 資料，組合 `creator`，並解析 `visit_place` 取得首個 `code` 後批次查詢 `locationName`。
+   - 依 `travel_main_id` 查詢 `member` 資料，組合 `creator`，並取 `visit_place` 的首個地點代碼後批次查詢 `locationName`。
    - `imgUrl` 先回傳預設的顯示圖路徑。
 3. Controller 透過 `RestResponseUtils.successWithMeta(...)` 將行程陣列與 `PopularTravelMeta` 一併回傳。
 

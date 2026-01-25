@@ -21,7 +21,7 @@ public class TravelMainResponse  implements Serializable {
     private LocalDate endDate;
     private String title;
     private String notes;
-    private String visitPlace;
+    private List<String> visitPlace;
     private Instant createdAt;
 
     private List<TravelDate> generatedTravelDates;
