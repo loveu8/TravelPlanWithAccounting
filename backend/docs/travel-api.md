@@ -171,7 +171,7 @@ flowchart TD
 ---
 
 ### 2. 更新主行程 `POST /updateTravelMain`
-- **目的**：更新既有主行程，若日期區間變更會增刪 `TravelDate`。
+- **目的**：更新既有主行程，若日期區間變更會增刪 `TravelDate`（可完整替換日期範圍，即使新舊區間不重疊）。
 - **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json
@@ -381,7 +381,7 @@ flowchart TD
 ---
 
 ### 7. 刪除行程日期 `POST /deleteTravelDate`
-- **目的**：刪除特定 `TravelDate`，若刪除最後一天則可能更新主行程結束日期。
+- **目的**：刪除特定 `TravelDate`，禁止刪除最後一天；若刪除成功則可能更新主行程結束日期。
 - **授權**：需要帶入 `Authorization: Bearer <token>`
 - **請求範例**
 ```json

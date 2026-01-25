@@ -419,7 +419,7 @@ public class TravelService {
     }
 
     // 找出需要刪除的日期 (在現有記錄中但不在新範圍內的日期)
-    // 並將這些日期的 TravelDate ID 傳遞給 deleteTravelDate
+    // 注意：此流程允許完整重建日期範圍，不走 deleteTravelDate 的最後一天限制
     existingDatesSet.stream()
         .filter(date -> !newDatesSet.contains(date))
         .forEach(
@@ -427,7 +427,7 @@ public class TravelService {
               UUID idToDelete = existingDateIdMap.get(dateToDelete);
               if (idToDelete != null) {
                 // 透過 TravelDateService 刪除 travel_date，它會級聯刪除旗下的 travel_detail
-                deleteTravelDate(idToDelete);
+                deleteTravelDateForRangeUpdate(idToDelete);
               }
             });
 
@@ -451,6 +451,11 @@ public class TravelService {
       travelDateRepository.saveAll(datesToAdd);
     }
     assignTravelDateSorts(travelMainId, updatedBy);
+  }
+
+  private void deleteTravelDateForRangeUpdate(UUID travelDateId) {
+    travelDetailRepository.deleteByTravelDateId(travelDateId);
+    travelDateRepository.deleteById(travelDateId);
   }
 
   private void assignTravelDateSorts(UUID travelMainId, UUID updatedBy) {
