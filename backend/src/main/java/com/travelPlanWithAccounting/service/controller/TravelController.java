@@ -115,15 +115,15 @@ public class TravelController {
     private void validateUpsertTravelMainRequest(TravelMainRequest request) {
         fieldValidator.validate("title", request.getTitle(), TRAVEL_TITLE_RULE);
         fieldValidator.validate("notes", request.getNotes(), TRAVEL_NOTES_RULE);
-        fieldValidator.validate("visit_place", request.getVisitPlace(), TRAVEL_VISIT_PLACE_RULE);
-        fieldValidator.validate("start_date", request.getStartDate(), TRAVEL_DATE_RULE);
-        fieldValidator.validate("end_date", request.getEndDate(), TRAVEL_DATE_RULE);
+        fieldValidator.validate("visitPlace", request.getVisitPlace(), TRAVEL_VISIT_PLACE_RULE);
+        fieldValidator.validate("startDate", request.getStartDate(), TRAVEL_DATE_RULE);
+        fieldValidator.validate("endDate", request.getEndDate(), TRAVEL_DATE_RULE);
         fieldValidator.validateDateRange(
-            "start_date",
+            "startDate",
             request.getStartDate(),
-            "end_date",
+            "endDate",
             request.getEndDate(),
-            new DateRangeRule("start_date", "end_date", false, null, null));
+            new DateRangeRule("startDate", "endDate", false, null, null));
     }
 
     @PostMapping("/getTravelMain")

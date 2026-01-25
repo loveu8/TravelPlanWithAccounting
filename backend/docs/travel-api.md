@@ -32,7 +32,7 @@
   - `endDate`（ISO `yyyy-MM-dd`，必填）：行程結束日期，必須晚於或等於 `startDate`。
   - `title`（String，必填）：主行程標題。
   - `notes`（String，非必填）：行程備註。
-  - `visitPlace`（Array，非必填）：儲存地點資訊，元素包含 `code` 欄位，例如 `[{ "code": "TW-TPE" }, { "code": "TW-KHH" }]`，因欄位型別為 JSONB，存入時為 JSON array。
+  - `visitPlace`（Array，非必填）：儲存地點資訊，元素包含 `code` 欄位，例如 `[{ "code": "TW-TPE" }, { "code": "TW-KHH" }]`，因欄位型別為 JSONB，僅在陣列有值時存入。
 - **行為**
   - 未傳 `id` 或 DB 查無此 ID → 建立主行程（行為同 `createTravelMain`）。
   - 傳入 `id` 且 DB 有值 → 更新主行程（行為同 `updateTravelMain`）。
@@ -85,22 +85,22 @@
 - **錯誤回應（欄位錯誤陣列固定回傳）**
   - `error.fieldErrors` 必定包含以下欄位，無錯誤時 `message` 為空字串：
     - `title`
-    - `start_date`
-    - `end_date`
-    - `visit_place`
+    - `startDate`
+    - `endDate`
+    - `visitPlace`
     - `notes`
 ```json
 {
   "data": null,
   "meta": null,
   "error": {
-    "code": "TRAVEL_DATE_RANGE_INVALID",
-    "message": "行程日期區間不正確",
+    "code": "欄位有誤",
+    "message": "欄位有誤",
     "fieldErrors": [
       { "field": "title", "message": "" },
-      { "field": "start_date", "message": "Start date is required" },
-      { "field": "end_date", "message": "" },
-      { "field": "visit_place", "message": "" },
+      { "field": "startDate", "message": "Start date is required" },
+      { "field": "endDate", "message": "" },
+      { "field": "visitPlace", "message": "" },
       { "field": "notes", "message": "" }
     ]
   }
@@ -130,7 +130,7 @@
   - `endDate`（ISO `yyyy-MM-dd`，必填）：行程結束日期，必須晚於或等於 `startDate`。
   - `title`（String，必填）：主行程標題。
   - `notes`（String，非必填）：行程備註。
-  - `visitPlace`（Array，非必填）：地點資訊陣列，元素包含 `code` 欄位，因欄位型別為 JSONB，存入時為 JSON array。
+  - `visitPlace`（Array，非必填）：地點資訊陣列，元素包含 `code` 欄位，因欄位型別為 JSONB，僅在陣列有值時存入。
   - **行程天數限制**：`startDate` 至 `endDate`（含首尾）不可超過系統設定的最大天數（預設 31 天，可在設定檔 `travel.max-days` 調整）。
 - **成功回應**
 ```json
@@ -210,7 +210,7 @@ flowchart TD
   - `endDate`（ISO `yyyy-MM-dd`，必填）：調整後的結束日期。
   - `title`（String，必填）：主行程標題。
   - `notes`（String，非必填）：行程備註。
-  - `visitPlace`（Array，非必填）：地點資訊陣列，元素包含 `code` 欄位，因欄位型別為 JSONB，存入時為 JSON array。
+  - `visitPlace`（Array，非必填）：地點資訊陣列，元素包含 `code` 欄位，因欄位型別為 JSONB，僅在陣列有值時存入。
 - **成功回應**
 ```json
 {

@@ -45,6 +45,7 @@ import com.travelPlanWithAccounting.service.repository.TransI18nRepository;
 import com.travelPlanWithAccounting.service.repository.TravelDateRepository;
 import com.travelPlanWithAccounting.service.repository.TravelDetailRepository;
 import com.travelPlanWithAccounting.service.repository.TravelMainRepository;
+import com.travelPlanWithAccounting.service.util.JsonHelper;
 
 import jakarta.transaction.Transactional;
 
@@ -64,6 +65,7 @@ public class TravelService {
   private final TransI18nRepository transI18nRepository;
   private final PoiRepository poiRepository;
   private final TravelProperties travelProperties;
+  private final JsonHelper jsonHelper;
 
   @Autowired
   public TravelService(
@@ -73,7 +75,8 @@ public class TravelService {
       MemberRepository memberRepository,
       TransI18nRepository transI18nRepository,
       PoiRepository poiRepository,
-      TravelProperties travelProperties) { // 在建構子中注入
+      TravelProperties travelProperties,
+      JsonHelper jsonHelper) { // 在建構子中注入
     this.travelMainRepository = travelMainRepository;
     this.travelDateRepository = travelDateRepository;
     this.travelDetailRepository = travelDetailRepository;
@@ -81,6 +84,7 @@ public class TravelService {
     this.transI18nRepository = transI18nRepository;
     this.poiRepository = poiRepository;
     this.travelProperties = travelProperties;
+    this.jsonHelper = jsonHelper;
   }
 
   /**
@@ -101,7 +105,9 @@ public class TravelService {
     travelMain.setEndDate(request.getEndDate());
     travelMain.setTitle(request.getTitle());
     travelMain.setNotes(request.getNotes());
-    travelMain.setVisitPlace(request.getVisitPlace());
+    if (shouldPersistVisitPlace(request.getVisitPlace())) {
+      travelMain.setVisitPlace(request.getVisitPlace());
+    }
     travelMain.setCreatedBy(request.getCreatedBy());
     // createdAt 和 updatedAt 由 JPA @CreationTimestamp 和 @UpdateTimestamp 自動處理
     // id 由 JPA @GeneratedValue 自動處理
@@ -197,7 +203,9 @@ public class TravelService {
     existingTravelMain.setEndDate(request.getEndDate());
     existingTravelMain.setTitle(request.getTitle());
     existingTravelMain.setNotes(request.getNotes());
-    existingTravelMain.setVisitPlace(request.getVisitPlace());
+    if (shouldPersistVisitPlace(request.getVisitPlace())) {
+      existingTravelMain.setVisitPlace(request.getVisitPlace());
+    }
     existingTravelMain.setUpdatedBy(request.getCreatedBy()); // 假設 request.createdBy 是更新人
 
     // 保存更新後的 TravelMain
@@ -286,6 +294,14 @@ public class TravelService {
     if (days > travelProperties.getMaxDays()) {
       throw new TravelException.TravelDateExceedsMaxDays(travelProperties.getMaxDays());
     }
+  }
+
+  private boolean shouldPersistVisitPlace(String visitPlace) {
+    if (visitPlace == null || visitPlace.isBlank()) {
+      return false;
+    }
+    com.fasterxml.jackson.databind.JsonNode node = jsonHelper.deserializeToNode(visitPlace);
+    return node != null && node.isArray() && node.size() > 0;
   }
 
   @Transactional

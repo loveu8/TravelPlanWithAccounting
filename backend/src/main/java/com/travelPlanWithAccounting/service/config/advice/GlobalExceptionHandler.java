@@ -37,8 +37,10 @@ import lombok.extern.slf4j.Slf4j;
 @RestControllerAdvice(basePackages = {"com.travelPlanWithAccounting"})
 public class GlobalExceptionHandler {
   private static final String TRAVEL_MAIN_UPSERT_PATH = "/api/travels/upsertTravelMain";
+  private static final String TRAVEL_MAIN_FIELD_ERROR_CODE = "欄位有誤";
+  private static final String TRAVEL_MAIN_FIELD_ERROR_MESSAGE = "欄位有誤";
   private static final List<String> TRAVEL_MAIN_ERROR_FIELDS =
-      List.of("title", "start_date", "end_date", "visit_place", "notes");
+      List.of("title", "startDate", "endDate", "visitPlace", "notes");
 
   /**
    * 處理應用程式自訂的 {@link ApiException}，回傳標準化錯誤格式。<br>
@@ -57,7 +59,7 @@ public class GlobalExceptionHandler {
         ex.getOriginalException());
     RestResponse<Object, Object> response =
         isTravelMainUpsertRequest(request)
-            ? RestResponseUtils.error(ex, buildTravelMainFieldErrors(ex))
+            ? buildTravelMainFieldErrorResponse(ex, buildTravelMainFieldErrors(ex))
             : RestResponseUtils.error(ex);
     return ResponseEntity.status(ex.getHttpStatus()).body(response);
   }
@@ -74,11 +76,7 @@ public class GlobalExceptionHandler {
     log.error("[UnexpectedException] {}", ex.getMessage(), ex);
     RestResponse<Object, Object> response =
         isTravelMainUpsertRequest(request)
-            ? RestResponseUtils.error(
-                SystemMessageCode.UNEXPECTED_ERROR,
-                null,
-                ex,
-                buildTravelMainFieldErrors(null))
+            ? buildTravelMainFieldErrorResponse(ex, buildTravelMainFieldErrors(null))
             : RestResponseUtils.error(SystemMessageCode.UNEXPECTED_ERROR, null, ex);
     return ResponseEntity.status(SystemMessageCode.UNEXPECTED_ERROR.getHttpStatus()).body(response);
   }
@@ -98,11 +96,7 @@ public class GlobalExceptionHandler {
     log.error("[HttpMessageNotReadableException] {}", ex.getMessage(), ex);
     RestResponse<Object, Object> response =
         isTravelMainUpsertRequest(request)
-            ? RestResponseUtils.error(
-                SystemMessageCode.REQUEST_NOT_READABLE,
-                null,
-                ex,
-                buildTravelMainFieldErrors(null))
+            ? buildTravelMainFieldErrorResponse(ex, buildTravelMainFieldErrors(null))
             : RestResponseUtils.error(SystemMessageCode.REQUEST_NOT_READABLE, null, ex);
     return ResponseEntity.status(SystemMessageCode.REQUEST_NOT_READABLE.getHttpStatus())
         .body(response);
@@ -142,6 +136,30 @@ public class GlobalExceptionHandler {
                     .message(resolvedMessageMap.getOrDefault(field, ""))
                     .build())
         .toList();
+  }
+
+  private RestResponse<Object, Object> buildTravelMainFieldErrorResponse(
+      ApiException ex, List<RestResponse.FieldError> fieldErrors) {
+    return buildTravelMainFieldErrorResponse(ex.getData(), ex.getOriginalException(), fieldErrors);
+  }
+
+  private RestResponse<Object, Object> buildTravelMainFieldErrorResponse(
+      Exception originalException, List<RestResponse.FieldError> fieldErrors) {
+    return buildTravelMainFieldErrorResponse(null, originalException, fieldErrors);
+  }
+
+  private RestResponse<Object, Object> buildTravelMainFieldErrorResponse(
+      Object details, Exception originalException, List<RestResponse.FieldError> fieldErrors) {
+    RestResponse.Error error =
+        RestResponse.Error.builder()
+            .code(TRAVEL_MAIN_FIELD_ERROR_CODE)
+            .message(TRAVEL_MAIN_FIELD_ERROR_MESSAGE)
+            .timestamp(java.time.Instant.now())
+            .details(details)
+            .fieldErrors(fieldErrors)
+            .originalException(originalException)
+            .build();
+    return RestResponse.builder().data(null).meta(null).error(error).build();
   }
 
   private Map<String, String> extractFieldErrorMessages(Object data) {
