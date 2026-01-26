@@ -22,6 +22,7 @@ public interface TravelMainRepository extends JpaRepository<TravelMain, UUID>  {
         """
         select new com.travelPlanWithAccounting.service.repository.projection.PopularTravelAggregate(
             tm.id,
+            tm.memberId,
             tm.title,
             tm.startDate,
             tm.endDate,
@@ -33,7 +34,7 @@ public interface TravelMainRepository extends JpaRepository<TravelMain, UUID>  {
         from TravelMain tm
         left join TravelFav tf on tf.travelMain = tm
         where tm.isPrivate = false
-        group by tm.id, tm.title, tm.startDate, tm.endDate, tm.visitPlace, tm.isPrivate, tm.createdAt
+        group by tm.id, tm.memberId, tm.title, tm.startDate, tm.endDate, tm.visitPlace, tm.isPrivate, tm.createdAt
         order by count(tf) desc, tm.createdAt desc
         """
     )

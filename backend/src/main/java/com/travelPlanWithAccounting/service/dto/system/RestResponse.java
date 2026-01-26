@@ -1,8 +1,11 @@
 package com.travelPlanWithAccounting.service.dto.system;
 
+import java.time.Instant;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import java.time.Instant;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -60,7 +63,18 @@ public class RestResponse<D, M> {
     private String message;
     private Instant timestamp;
     private Object details;
+    private List<FieldError> fieldErrors;
 
     @JsonIgnore private Exception originalException;
+  }
+
+  @Getter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public static class FieldError {
+    private String field;
+    private String message;
   }
 }

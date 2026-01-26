@@ -2,8 +2,11 @@ package com.travelPlanWithAccounting.service.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -16,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelMeta;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResponse;
 import com.travelPlanWithAccounting.service.dto.travelPlan.PopularTravelResult;
+import com.travelPlanWithAccounting.service.entity.Member;
 import com.travelPlanWithAccounting.service.exception.TravelException;
+import com.travelPlanWithAccounting.service.repository.MemberRepository;
 import com.travelPlanWithAccounting.service.repository.TravelFavRepository;
 import com.travelPlanWithAccounting.service.repository.TravelMainRepository;
 import com.travelPlanWithAccounting.service.repository.projection.PopularTravelAggregate;
@@ -29,13 +34,23 @@ public class TravelPopularityService {
 
     private static final int POPULAR_LIMIT = 4;
     private static final int DEFAULT_MIN_FAVORITES = 5;
+    private static final String DEFAULT_POPULAR_IMAGE_URL = "/assets/images/popular-travel-default.png";
 
     private final TravelMainRepository travelMainRepository;
     private final TravelFavRepository travelFavRepository;
+    private final MemberRepository memberRepository;
+    private final SearchService searchService;
 
-    public TravelPopularityService(TravelMainRepository travelMainRepository, TravelFavRepository travelFavRepository) {
+    public TravelPopularityService(
+        TravelMainRepository travelMainRepository,
+        TravelFavRepository travelFavRepository,
+        MemberRepository memberRepository,
+        SearchService searchService
+    ) {
         this.travelMainRepository = travelMainRepository;
         this.travelFavRepository = travelFavRepository;
+        this.memberRepository = memberRepository;
+        this.searchService = searchService;
     }
 
     @Transactional(readOnly = true)
@@ -68,16 +83,14 @@ public class TravelPopularityService {
                 Collections.shuffle(thresholdCandidates, ThreadLocalRandom.current());
                 List<PopularTravelAggregate> selected = thresholdCandidates.subList(0, POPULAR_LIMIT);
                 return new PopularTravelResult(
-                    selected.stream().map(item -> toResponse(item, favoritedTravelIds)).collect(Collectors.toList()),
+                    buildResponses(selected, favoritedTravelIds),
                     new PopularTravelMeta(strategy.value(), minFavorites, totalCandidates)
                 );
             }
         }
 
-        List<PopularTravelResponse> topTravels = aggregates.stream()
-            .limit(POPULAR_LIMIT)
-            .map(item -> toResponse(item, favoritedTravelIds))
-            .collect(Collectors.toList());
+        List<PopularTravelAggregate> topCandidates = aggregates.stream().limit(POPULAR_LIMIT).collect(Collectors.toList());
+        List<PopularTravelResponse> topTravels = buildResponses(topCandidates, favoritedTravelIds);
 
         return new PopularTravelResult(
             topTravels,
@@ -93,7 +106,24 @@ public class TravelPopularityService {
         return minFavorites;
     }
 
-    private PopularTravelResponse toResponse(PopularTravelAggregate aggregate, Set<UUID> favoritedTravelIds) {
+    private List<PopularTravelResponse> buildResponses(
+        List<PopularTravelAggregate> aggregates,
+        Set<UUID> favoritedTravelIds
+    ) {
+        Map<UUID, String> creatorNames = resolveCreatorNames(aggregates);
+        Map<UUID, String> locationNames = resolveLocationNames(aggregates);
+
+        return aggregates.stream()
+            .map(item -> toResponse(item, favoritedTravelIds, creatorNames, locationNames))
+            .collect(Collectors.toList());
+    }
+
+    private PopularTravelResponse toResponse(
+        PopularTravelAggregate aggregate,
+        Set<UUID> favoritedTravelIds,
+        Map<UUID, String> creatorNames,
+        Map<UUID, String> locationNames
+    ) {
         return new PopularTravelResponse(
             aggregate.travelMainId(),
             aggregate.title(),
@@ -102,7 +132,10 @@ public class TravelPopularityService {
             aggregate.visitPlace(),
             aggregate.favoritesCount(),
             Boolean.TRUE.equals(aggregate.isPrivate()),
-            favoritedTravelIds.contains(aggregate.travelMainId())
+            favoritedTravelIds.contains(aggregate.travelMainId()),
+            creatorNames.getOrDefault(aggregate.travelMainId(), ""),
+            locationNames.getOrDefault(aggregate.travelMainId(), ""),
+            DEFAULT_POPULAR_IMAGE_URL
         );
     }
 
@@ -118,6 +151,92 @@ public class TravelPopularityService {
             .map(fav -> fav.getTravelMain() != null ? fav.getTravelMain().getId() : null)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
+    }
+
+    private Map<UUID, String> resolveCreatorNames(List<PopularTravelAggregate> aggregates) {
+        if (aggregates.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Set<UUID> memberIds = aggregates.stream()
+            .map(PopularTravelAggregate::memberId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (memberIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, Member> memberMap = memberRepository.findAllById(memberIds).stream()
+            .collect(Collectors.toMap(Member::getId, member -> member));
+
+        Map<UUID, String> creatorNames = new LinkedHashMap<>();
+        for (PopularTravelAggregate aggregate : aggregates) {
+            Member member = memberMap.get(aggregate.memberId());
+            creatorNames.put(
+                aggregate.travelMainId(),
+                member != null ? resolveCreatorName(member) : ""
+            );
+        }
+        return creatorNames;
+    }
+
+    private String resolveCreatorName(Member member) {
+        String givenName = member.getGivenName() == null ? "" : member.getGivenName();
+        String familyName = member.getFamilyName() == null ? "" : member.getFamilyName();
+        String combinedName = (givenName + familyName).trim();
+        if (!combinedName.isBlank()) {
+            return combinedName;
+        }
+        String nickName = member.getNickName();
+        return nickName == null ? "" : nickName;
+    }
+
+    private Map<UUID, String> resolveLocationNames(List<PopularTravelAggregate> aggregates) {
+        if (aggregates.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, String> travelCodeMap = new LinkedHashMap<>();
+        LinkedHashSet<String> uniqueCodes = new LinkedHashSet<>();
+        for (PopularTravelAggregate aggregate : aggregates) {
+            String code = resolveFirstLocationCode(aggregate.visitPlace());
+            travelCodeMap.put(aggregate.travelMainId(), code);
+            if (code != null && !code.isBlank()) {
+                uniqueCodes.add(code);
+            }
+        }
+
+        if (uniqueCodes.isEmpty()) {
+            return travelCodeMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> "", (a, b) -> a, LinkedHashMap::new));
+        }
+
+        List<String> codes = new ArrayList<>(uniqueCodes);
+        List<String> names = searchService.getLocationNamesByCodes(codes);
+        Map<String, String> nameMap = new LinkedHashMap<>();
+        for (int index = 0; index < codes.size(); index++) {
+            String name = index < names.size() ? names.get(index) : null;
+            nameMap.put(codes.get(index), name != null ? name : codes.get(index));
+        }
+
+        Map<UUID, String> locationNames = new LinkedHashMap<>();
+        for (Map.Entry<UUID, String> entry : travelCodeMap.entrySet()) {
+            String code = entry.getValue();
+            String name = code == null || code.isBlank() ? "" : nameMap.getOrDefault(code, "");
+            locationNames.put(entry.getKey(), name);
+        }
+        return locationNames;
+    }
+
+    private String resolveFirstLocationCode(List<String> visitPlace) {
+        if (visitPlace == null || visitPlace.isEmpty()) {
+            return null;
+        }
+        for (String code : visitPlace) {
+            if (code != null && !code.isBlank()) {
+                return code;
+            }
+        }
+        return null;
     }
 
     private enum Strategy {

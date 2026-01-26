@@ -101,7 +101,9 @@ public class TravelService {
     travelMain.setEndDate(request.getEndDate());
     travelMain.setTitle(request.getTitle());
     travelMain.setNotes(request.getNotes());
-    travelMain.setVisitPlace(request.getVisitPlace());
+    if (shouldPersistVisitPlace(request.getVisitPlace())) {
+      travelMain.setVisitPlace(request.getVisitPlace());
+    }
     travelMain.setCreatedBy(request.getCreatedBy());
     // createdAt 和 updatedAt 由 JPA @CreationTimestamp 和 @UpdateTimestamp 自動處理
     // id 由 JPA @GeneratedValue 自動處理
@@ -131,6 +133,13 @@ public class TravelService {
           throw new TravelException.TravelMainIdRequired();
       }
       return travelMainRepository.findById(id).orElseThrow(TravelException.TravelMainNotFound::new);
+  }
+
+  public boolean existsTravelMain(UUID id) {
+      if (id == null) {
+        return false;
+      }
+      return travelMainRepository.existsById(id);
   }
 
   public List<TravelMain> getTravelMainsByMemberId(UUID memberId) {
@@ -190,7 +199,9 @@ public class TravelService {
     existingTravelMain.setEndDate(request.getEndDate());
     existingTravelMain.setTitle(request.getTitle());
     existingTravelMain.setNotes(request.getNotes());
-    existingTravelMain.setVisitPlace(request.getVisitPlace());
+    if (shouldPersistVisitPlace(request.getVisitPlace())) {
+      existingTravelMain.setVisitPlace(request.getVisitPlace());
+    }
     existingTravelMain.setUpdatedBy(request.getCreatedBy()); // 假設 request.createdBy 是更新人
 
     // 保存更新後的 TravelMain
@@ -279,6 +290,13 @@ public class TravelService {
     if (days > travelProperties.getMaxDays()) {
       throw new TravelException.TravelDateExceedsMaxDays(travelProperties.getMaxDays());
     }
+  }
+
+   private boolean shouldPersistVisitPlace(List<String> visitPlace) {
+    if (visitPlace == null || visitPlace.isEmpty()) {
+      return false;
+    }
+    return visitPlace.stream().anyMatch(place -> place != null && !place.isBlank());
   }
 
   @Transactional
@@ -401,7 +419,7 @@ public class TravelService {
     }
 
     // 找出需要刪除的日期 (在現有記錄中但不在新範圍內的日期)
-    // 並將這些日期的 TravelDate ID 傳遞給 deleteTravelDate
+    // 注意：此流程允許完整重建日期範圍，不走 deleteTravelDate 的最後一天限制
     existingDatesSet.stream()
         .filter(date -> !newDatesSet.contains(date))
         .forEach(
@@ -409,7 +427,7 @@ public class TravelService {
               UUID idToDelete = existingDateIdMap.get(dateToDelete);
               if (idToDelete != null) {
                 // 透過 TravelDateService 刪除 travel_date，它會級聯刪除旗下的 travel_detail
-                deleteTravelDate(idToDelete);
+                deleteTravelDateForRangeUpdate(idToDelete);
               }
             });
 
@@ -433,6 +451,11 @@ public class TravelService {
       travelDateRepository.saveAll(datesToAdd);
     }
     assignTravelDateSorts(travelMainId, updatedBy);
+  }
+
+  private void deleteTravelDateForRangeUpdate(UUID travelDateId) {
+    travelDetailRepository.deleteByTravelDateId(travelDateId);
+    travelDateRepository.deleteById(travelDateId);
   }
 
   private void assignTravelDateSorts(UUID travelMainId, UUID updatedBy) {
