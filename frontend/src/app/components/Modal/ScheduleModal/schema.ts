@@ -23,7 +23,7 @@ const getSchema = (
         .refine((value): value is Date => value !== undefined, {
           message: requiredMsg("schedule-modal.end-date"),
         }),
-      visitPlace: z.string().nonempty({
+      visitPlace: z.array(z.string()).nonempty({
         message: requiredMsg("schedule-modal.visit-place"),
       }),
       notes: z.string().optional(),

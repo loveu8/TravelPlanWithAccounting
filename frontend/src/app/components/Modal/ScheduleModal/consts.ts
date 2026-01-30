@@ -6,7 +6,7 @@ export const FIELDS_DEFAULT: ScheduleForm = {
   title: "",
   startDate: undefined,
   endDate: undefined,
-  visitPlace: "",
+  visitPlace: [],
   notes: "",
   isPrivate: true,
 };

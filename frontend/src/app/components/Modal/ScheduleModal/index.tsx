@@ -2,15 +2,16 @@
 // 3rd party libraries
 import { useState, forwardRef, useImperativeHandle, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { addDays } from "date-fns";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Flex, Grid, Switch, Text } from "@radix-ui/themes";
-// methods and hooks
-import { getSchema, type ScheduleForm } from "./schema";
+// hooks + methods
 import { useT } from "@/app/i18n/client";
+import { api } from "@/app/lib/http";
+import { getSchema, type ScheduleForm } from "./schema";
 // components
-import Autocomplete from "@/app/components/Autocomplete";
 import Button from "@/app/components/Button";
 import DatePicker from "@/app/components/DatePicker";
 import {
@@ -20,14 +21,17 @@ import {
   DialogBody,
   DialogFooter,
 } from "@/app/components/Dialog";
+import ComboboxField from "@/app/components/ComboboxField";
 import TextArea from "@/app/components/TextArea";
 import TextField from "@/app/components/TextField";
 // constants
 import { FIELDS_DEFAULT, MAX_DURATION_DAYS } from "./consts";
+import { AllLocationsResponse } from "@/app/lib/types";
 
 interface IScheduleModalProps {
   scheduleDefault?: ScheduleForm;
   handleScheduleClick: (open: boolean) => void;
+  onSubmit: (data: ScheduleForm) => Promise<void>;
 }
 
 export interface IScheduleImperative {
@@ -39,20 +43,24 @@ const ScheduleModal = forwardRef(
     {
       scheduleDefault = FIELDS_DEFAULT,
       handleScheduleClick,
+      onSubmit,
     }: IScheduleModalProps,
     ref: React.ForwardedRef<IScheduleImperative>,
   ) => {
     const { lng } = useParams();
     const { t } = useT("common");
     const [open, setOpen] = useState(false);
+    const currentLang = lng === "zh" ? "zh-TW" : "en-US";
 
-    const fetchAutoCompleteList = async (query: string) => {
-      /**
-       * TODO: 處理 API 取資料
-       */
-      console.log(query);
-      return ["123", "234", "345"];
-    };
+    const { data: allLocationsData } = useQuery({
+      queryKey: ["all-locations"],
+      queryFn: async () => {
+        const res: AllLocationsResponse = await api.get(
+          "/api/search/all-locations",
+        );
+        return res.data;
+      },
+    });
 
     const requiredMsg = (labelKey: string) =>
       t("validation.required", {
@@ -96,11 +104,35 @@ const ScheduleModal = forwardRef(
       if (e.key === "Enter") e.preventDefault();
     };
 
-    const onSubmit = (data: ScheduleForm) => {
-      /**
-       * TODO: 處理 API 存資料
-       */
-      console.log({ data });
+    // 取得 Combobox option 的 value
+    const setComboboxValue = ({
+      code,
+      langType,
+    }: AllLocationsResponse["data"][number]) => {
+      return `${code}@${langType}`;
+    };
+
+    // Combobox option 過濾函式
+    const filterComboboxOptions = (
+      options: AllLocationsResponse["data"],
+      value: string,
+    ) => {
+      const optionsByCode = new Map(
+        options.map((option) => [`${option.code}@${option.langType}`, option]),
+      );
+
+      if (!value.length)
+        return options.filter((option) => option.langType === currentLang);
+
+      const matchOptions = options.filter((option) =>
+        option.name.toLowerCase().includes(value.toLowerCase()),
+      );
+
+      const langMatchedOptions = matchOptions.map(
+        ({ code }) => optionsByCode.get(`${code}@${currentLang}`)!,
+      );
+
+      return langMatchedOptions;
     };
 
     const handleCloseClick = useCallback(() => {
@@ -144,7 +176,7 @@ const ScheduleModal = forwardRef(
                       render={({ field }) => (
                         <DatePicker
                           label={t("schedule-modal.start-date")}
-                          lng={lng === "zh" ? "zh-TW" : "en-US"}
+                          lng={currentLang}
                           calendarOptions={{
                             captionLayout: "dropdown",
                           }}
@@ -164,7 +196,7 @@ const ScheduleModal = forwardRef(
                         <DatePicker
                           label={t("schedule-modal.end-date")}
                           disabled={!startDateValue}
-                          lng={lng === "zh" ? "zh-TW" : "en-US"}
+                          lng={currentLang}
                           calendarOptions={{
                             captionLayout: "dropdown",
                             disabled: endDateDisabledRange(startDateValue),
@@ -180,14 +212,17 @@ const ScheduleModal = forwardRef(
                     name="visitPlace"
                     control={control}
                     render={({ field }) => (
-                      <Autocomplete
+                      <ComboboxField
                         label={t("schedule-modal.visit-place")}
                         placeholder="Enter location"
                         size="2"
-                        type="text"
-                        getSuggestions={fetchAutoCompleteList}
+                        options={allLocationsData || []}
+                        value={field.value ?? []}
+                        onChange={(next) => field.onChange(next)}
                         errMsg={getError("visitPlace")}
-                        {...field}
+                        getOptionValue={setComboboxValue}
+                        getOptionLabel={({ name }) => name}
+                        optionFilter={filterComboboxOptions}
                       />
                     )}
                   />
@@ -216,6 +251,7 @@ const ScheduleModal = forwardRef(
                             size="2"
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            className="z-1"
                           />
                         )}
                       />
