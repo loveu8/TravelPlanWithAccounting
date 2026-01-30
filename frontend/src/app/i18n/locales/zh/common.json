@@ -16,7 +16,8 @@
     "cancel": "取消",
     "bookmark": "收藏",
     "bookmark-already": "已收藏",
-    "schedule-add": "新增至行程"
+    "schedule-add": "新增至行程",
+    "no-data": "暫無資料"
   },
   "lang": {
     "zh": "繁體中文",
@@ -59,7 +60,8 @@
     "language": "使用語系"
   },
   "schedule-modal": {
-    "title": "建立行程",
+    "create-schedule": "建立行程",
+    "edit-schedule": "編輯行程",
     "schedule-name": "行程名稱",
     "start-date": "開始日期",
     "end-date": "結束日期",

@@ -10,12 +10,14 @@
     "to-ssr-page": "To SSR page"
   },
   "common": {
+    "search": "search",
     "loading": "loading...",
     "error": "An error occurred, please try again later",
     "cancel": "Cancel",
     "bookmark": "Bookmark",
     "bookmark-already": "Bookmarked",
-    "schedule-add": "Add to Schedule"
+    "schedule-add": "Add to Schedule",
+    "no-data": "No data available"
   },
   "lang": {
     "zh": "繁體中文",
@@ -25,7 +27,9 @@
     "required": "Please fill in {{label}}.",
     "min-length": "At least {{min}} characters.",
     "max-length": "At most {{max}} characters.",
-    "pattern": "{{label}} is incorrect."
+    "pattern": "{{label}} is incorrect.",
+    "end-date-after-start-date": "End date must be after start date.",
+    "max-schedule-duration-days": "Schedule duration cannot exceed {{max}} days."
   },
   "login": {
     "title": "Login / Sign Up",
@@ -54,5 +58,16 @@
     "explore": "Explore",
     "login": "Login",
     "language": "Language"
+  },
+  "schedule-modal": {
+    "create-schedule": "Create Schedule",
+    "edit-schedule": "Edit Schedule",
+    "schedule-name": "Schedule Name",
+    "start-date": "Start Date",
+    "end-date": "End Date",
+    "visit-place": "Travel Destination",
+    "description": "Description",
+    "share-schedule": "Public Schedule",
+    "button-create": "Create"
   }
 }
