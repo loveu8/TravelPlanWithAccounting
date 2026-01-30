@@ -9,17 +9,17 @@ import { cn } from "@/app/lib/utils";
 export default function Badge({
   text,
   bgColor = "gray",
+  size = "2",
   icon,
   handleRemoveClick,
   ...props
 }: IBadgeProps) {
   const isTransparent = bgColor === "transparent";
   const badgeColor = isTransparent ? "gray" : bgColor;
-  const badgeSize = !handleRemoveClick && !icon ? "2" : "3";
 
   return (
     <RadixBadge
-      size={badgeSize}
+      size={size}
       color={badgeColor}
       variant="soft"
       className={cn(
@@ -30,11 +30,9 @@ export default function Badge({
     >
       {icon}
       {handleRemoveClick && (
-        <CrossCircledIcon
-          fontSize="16px"
-          className="cursor-pointer"
-          onClick={handleRemoveClick}
-        />
+        <button type="button" className="mr-0.5" onClick={handleRemoveClick}>
+          <CrossCircledIcon fontSize="12px" className="cursor-pointer" />
+        </button>
       )}
       {text}
     </RadixBadge>
