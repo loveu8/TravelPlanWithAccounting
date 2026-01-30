@@ -36,3 +36,38 @@ export type SessionData = {
   tokenType?: "ACCESS" | "REFRESH";
   reason?: string | null;
 };
+
+export type AllLocationsResponse = {
+  data: {
+    code: string;
+    name: string;
+    langType: string;
+  }[];
+};
+
+export type CreateTravelMainResponse = {
+  data: {
+    id: string;
+    memberId: string;
+    isPrivate: boolean;
+    startDate: string;
+    endDate: string;
+    title: string;
+    notes: string;
+    visitPlace: string;
+    createdAt: string;
+    generatedTravelDates: {
+      id: string;
+      travelMainId: string;
+      travelDate: string;
+      sort: number;
+    }[];
+  } | null;
+  meta: null;
+  error: {
+    code: number;
+    message: string;
+    timestamp: string;
+    details: null;
+  } | null;
+};
