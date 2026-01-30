@@ -29,6 +29,7 @@ export default function Button({
         if (props.onClick) props.onClick(e); // 保留 Radix 的內部邏輯
         if (handleClick) handleClick(e); // 執行自訂邏輯
       }}
+      {...props}
     >
       {children || (
         <>
