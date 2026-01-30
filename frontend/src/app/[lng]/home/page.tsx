@@ -2,7 +2,9 @@
 // 3rd party libraries
 import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 import { Section, Heading, Text } from "@radix-ui/themes";
+import { api } from "@/app/lib/http";
 // methods and hooks
 import { useT } from "@/app/i18n/client";
 // components
@@ -18,12 +20,14 @@ import {
   ScheduleModal,
   ScheduleAddModal,
 } from "@/app/components/Modal";
+
 // types
 import type {
   ILandscapeDetailImperative,
   IScheduleImperative,
   IScheduleAddImperative,
 } from "@/app/components/Modal";
+import type { ScheduleForm } from "@/app/components/Modal/ScheduleModal/schema";
 
 const countries = [
   { countryName: "日本", imgSrc: "/img/Japan.jpg", href: "/tw" },
@@ -104,6 +108,19 @@ export default function Home() {
   const createScheduleModalRef = useRef<IScheduleImperative>(null);
   const [title, setTitle] = useState<string>("");
 
+  const { mutateAsync: createScheduleMutateAsync } = useMutation({
+    mutationFn: async (data: ScheduleForm) => {
+      const res = await api.post("/api/travels/create-travel-main", {
+        ...data,
+      });
+      return res.data;
+    },
+    onSuccess: async () => {
+      handleScheduleClick(false);
+      createScheduleModalRef.current?.close();
+    },
+  });
+
   const handleCardClick = (id: string, title: string) => {
     viewLandscapeDetailModalRef.current?.toggle(id);
     setTitle(title);
@@ -164,7 +181,6 @@ export default function Home() {
         handleCardClick={handleCardClick}
         handleBookmarkClick={handleBookmarkClick}
       />
-
       {/* TODO:修改正確url路徑 */}
       <CardSection
         title={homeTranslate("recommend-landscapes")}
@@ -175,7 +191,6 @@ export default function Home() {
         handleCardClick={handleCardClick}
         handleBookmarkClick={handleBookmarkClick}
       />
-
       <LandscapeDetailModal
         ref={viewLandscapeDetailModalRef}
         handleAddScheduleClick={toggleViewAndAddModal}
@@ -190,6 +205,7 @@ export default function Home() {
       <ScheduleModal
         ref={createScheduleModalRef}
         handleScheduleClick={handleScheduleClick}
+        onSubmit={createScheduleMutateAsync}
       />
     </>
   );
