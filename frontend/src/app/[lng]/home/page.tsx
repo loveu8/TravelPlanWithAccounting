@@ -2,7 +2,7 @@
 // 3rd party libraries
 import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Section, Heading, Text } from "@radix-ui/themes";
 import { api } from "@/app/lib/http";
 // methods and hooks
@@ -36,64 +36,23 @@ const countries = [
   { countryName: "日本", imgSrc: "/img/Japan.jpg", href: "/tw" },
 ];
 
-const travelPlans = [
-  {
-    id: "1",
-    title: "東京賞櫻全攻略六天五夜",
-    imgSrc: "/img/Japan.jpg",
-    tags: ["六日遊"],
-    location: "東京",
-    author: "安安莎莉",
-    isBookmarked: true,
-  },
-  {
-    id: "2",
-    title: "大阪美食全攻略六天五夜",
-    imgSrc: "/img/Japan.jpg",
-    tags: ["四日遊"],
-    location: "大阪",
-    author: "安安莎莉",
-    isBookmarked: true,
-  },
-];
-
 const landscapes = [
   {
-    id: "1",
+    poiId: "1",
     title: "東京鐵塔",
     imgSrc: "/img/Japan.jpg",
     tags: ["文化活動", "觀光景點"],
-    location: "東京",
+    country: "東京",
     score: 5.5,
     evaluateCount: 1300,
     isBookmarked: false,
   },
   {
-    id: "2",
+    poiId: "2",
     title: "淺草寺",
     imgSrc: "/img/Japan.jpg",
     tags: ["文化活動"],
-    location: "京都",
-    score: 5.5,
-    evaluateCount: 1300,
-    isBookmarked: false,
-  },
-  {
-    id: "3",
-    title: "東京迪士尼",
-    imgSrc: "/img/Japan.jpg",
-    tags: ["觀光景點"],
-    location: "東京",
-    score: 5.5,
-    evaluateCount: 1300,
-    isBookmarked: false,
-  },
-  {
-    id: "4",
-    title: "東京環球影城",
-    imgSrc: "/img/Japan.jpg",
-    tags: ["觀光景點"],
-    location: "大阪",
+    country: "京都",
     score: 5.5,
     evaluateCount: 1300,
     isBookmarked: false,
@@ -108,11 +67,30 @@ export default function Home() {
   const createScheduleModalRef = useRef<IScheduleImperative>(null);
   const [title, setTitle] = useState<string>("");
 
+  const { data: popularTravels } = useQuery({
+    queryKey: ["popular-travels"],
+    queryFn: async () => {
+      const res = await api.get("/api/travels/popular");
+      return res.data;
+    },
+  });
+
+  const { data: recommendLandscapes } = useQuery({
+    queryKey: ["recommend-landscapes"],
+    queryFn: async () => {
+      const res = await api.post("/api/recommands", { country: "ALL" });
+      return res.data;
+    },
+  });
+
+  console.log(recommendLandscapes);
+
   const { mutateAsync: createScheduleMutateAsync } = useMutation({
     mutationFn: async (data: ScheduleForm) => {
-      const res = await api.post("/api/travels/create-travel-main", {
+      const res = await api.post("/api/travels/upsert-travel-main", {
         ...data,
       });
+      console.log(res.data);
       return res.data;
     },
     onSuccess: async () => {
@@ -174,7 +152,7 @@ export default function Home() {
       {/* TODO:修改正確url路徑 */}
       <CardSection
         title={homeTranslate("popular-travel-plans")}
-        data={travelPlans}
+        data={popularTravels || []}
         CardComponent={TravelPlanCard}
         buttonText={`${homeTranslate("view-more")}${homeTranslate("popular-travel-plans")}`}
         viewMoreUrl={`/${lng}/popular-list`}
