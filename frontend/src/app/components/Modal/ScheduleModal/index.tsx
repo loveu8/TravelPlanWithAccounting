@@ -107,9 +107,8 @@ const ScheduleModal = forwardRef(
     // 取得 Combobox option 的 value
     const setComboboxValue = ({
       code,
-      langType,
     }: AllLocationsResponse["data"][number]) => {
-      return `${code}@${langType}`;
+      return code;
     };
 
     // Combobox option 過濾函式
@@ -154,6 +153,20 @@ const ScheduleModal = forwardRef(
             <Grid columns="1" gap="5">
               <DialogHeader title={t("schedule-modal.title")} />
               <DialogBody>
+                <Controller
+                  name="id"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      size="2"
+                      type="text"
+                      className="hidden"
+                      errMsg={getError("id")}
+                      readOnly
+                      {...field}
+                    />
+                  )}
+                />
                 <Grid columns="1" gap="2">
                   <Controller
                     name="title"

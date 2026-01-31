@@ -8,6 +8,7 @@ const getSchema = (
 ) =>
   z
     .object({
+      id: z.string().optional(),
       title: z.string().nonempty({
         message: requiredMsg("schedule-modal.schedule-name"),
       }),
