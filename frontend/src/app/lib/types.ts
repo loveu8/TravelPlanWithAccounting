@@ -45,7 +45,7 @@ export type AllLocationsResponse = {
   }[];
 };
 
-export type CreateTravelMainResponse = {
+export type UpsertTravelMainResponse = {
   data: {
     id: string;
     memberId: string;
@@ -67,7 +67,6 @@ export type CreateTravelMainResponse = {
   error: {
     code: number;
     message: string;
-    timestamp: string;
-    details: null;
+    fieldErrors: { field?: string; message?: string }[];
   } | null;
 };
