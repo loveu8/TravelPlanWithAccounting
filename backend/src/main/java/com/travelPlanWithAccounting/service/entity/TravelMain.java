@@ -8,12 +8,11 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import com.travelPlanWithAccounting.service.entity.converter.VisitPlaceConverter;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -59,7 +58,7 @@ public class TravelMain implements Serializable {
     private String notes;
 
     @Column(name = "visit_place", columnDefinition = "JSONB")
-    @Convert(converter = VisitPlaceConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<String> visitPlace;
 
     @Column(name = "created_by")
