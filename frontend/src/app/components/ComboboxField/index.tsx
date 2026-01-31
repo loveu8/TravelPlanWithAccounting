@@ -30,6 +30,13 @@ export default function ComboboxField<T>({
   const [expanded, setExpanded] = useState(false);
   const [filterText, setFilterText] = useState("");
 
+  const handlePopoverToggle = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setFilterText("");
+    }
+  };
+
   const handleBadgeClick = (e: React.MouseEvent, key: string) => {
     e.stopPropagation();
     removeSelection(key);
@@ -61,7 +68,7 @@ export default function ComboboxField<T>({
           <label onClick={() => setOpen(true)}>{label}</label>
         </Text>
       )}
-      <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Root open={open} onOpenChange={handlePopoverToggle}>
         <Popover.Trigger asChild>
           <Flex
             justify="between"
