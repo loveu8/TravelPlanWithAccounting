@@ -2,25 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { createBackendClient } from "@/app/api/_utils/http";
 import { AxiosResponse, isAxiosError } from "axios";
 import { format } from "date-fns";
-import type { CreateTravelMainResponse } from "@/app/lib/types";
+import type { UpsertTravelMainResponse } from "@/app/lib/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Record<string, unknown>;
-    const formatData = Object.entries(body).reduce<Record<string, unknown>>(
-      (acc, [key, value]) => {
-        const isDateValue = value instanceof Date;
-        acc[key] = isDateValue ? format(value as Date, "yyyy-MM-dd") : value;
-        return acc;
-      },
-      {},
-    );
+    const { startDate, endDate, ...rest } = (await req.json()) as Record<
+      string,
+      unknown
+    >;
+    const body = {
+      startDate: format(new Date(startDate as string), "yyyy-MM-dd"),
+      endDate: format(new Date(endDate as string), "yyyy-MM-dd"),
+      ...rest,
+    };
 
     const be = await createBackendClient({ attachAuth: true });
     const { data } = await be.post<
       unknown,
-      AxiosResponse<CreateTravelMainResponse>
-    >("/api/travels/createTravelMain", formatData);
+      AxiosResponse<UpsertTravelMainResponse>
+    >("/api/travels/upsertTravelMain", body);
+
     return NextResponse.json(data);
   } catch (error) {
     if (isAxiosError(error)) {
@@ -28,6 +29,6 @@ export async function POST(req: NextRequest) {
     } else {
       console.error("Unexpected error:", error);
     }
-    return new NextResponse(error, { status: 400 });
+    return new NextResponse("Invalid request", { status: 400 });
   }
 }
