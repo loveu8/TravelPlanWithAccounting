@@ -10,6 +10,7 @@ import com.travelPlanWithAccounting.service.exception.RecommandException;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository.LocationSummary;
 import com.travelPlanWithAccounting.service.repository.PoiRepository.PoiExternalId;
+import com.travelPlanWithAccounting.service.util.GooglePhotoUrlBuilder;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,6 +57,7 @@ public class RecommandService {
   private final SearchService searchService;
   private final ResourceLoader resourceLoader;
   private final ObjectMapper objectMapper;
+  private final GooglePhotoUrlBuilder photoUrlBuilder;
 
   private final ConcurrentMap<String, List<RecommandDefinition>> cache = new ConcurrentHashMap<>();
 
@@ -168,7 +170,9 @@ public class RecommandService {
         result.add(refreshed);
         continue;
       }
-      result.add(toDto(summary));
+      // 推薦列表的 photoUrl 須為未過期的 resource，故跳過快取向 Google 取最新 Place Details 的第一張圖
+      String freshPhotoUrl = getFreshPhotoUrl(summary.getExternalId());
+      result.add(toDto(summary, freshPhotoUrl));
     }
 
     if (result.size() < limit) {
@@ -193,13 +197,23 @@ public class RecommandService {
   }
 
   private LocationRecommand toDto(LocationSummary summary) {
+    return toDto(summary, null);
+  }
+
+  /**
+   * 組裝推薦 DTO；photoUrlOverride 為 null 時使用 DB 的 photoUrls（可能過期）。
+   * 推薦 API 應傳入由 Place Details 取得之未過期 photo URL。
+   */
+  private LocationRecommand toDto(LocationSummary summary, String photoUrlOverride) {
+    String photoUrl =
+        photoUrlOverride != null ? photoUrlOverride : extractFirstPhoto(summary.getPhotoUrls());
     return LocationRecommand.builder()
         .poiId(summary.getId())
         .placeId(summary.getExternalId())
         .name(summary.getName())
         .country(summary.getCountryName())
         .city(summary.getCityName())
-        .photoUrl(extractFirstPhoto(summary.getPhotoUrls()))
+        .photoUrl(photoUrl)
         .rating(toDouble(summary.getRating()))
         .reviewCount(summary.getReviewCount())
         .lat(toDouble(summary.getLat()))
@@ -239,13 +253,19 @@ public class RecommandService {
         return null;
       }
       if (first.isTextual()) {
-        return first.asText();
+        return photoUrlBuilder.resolvePhotoUrl(first.asText(), 400);
+      }
+      if (first.hasNonNull("name")) {
+        return photoUrlBuilder.buildFromName(first.get("name").asText(), 400);
+      }
+      if (first.hasNonNull("urlSmall")) {
+        return photoUrlBuilder.resolvePhotoUrl(first.get("urlSmall").asText(), 400);
       }
       if (first.hasNonNull("url")) {
-        return first.get("url").asText();
+        return photoUrlBuilder.resolvePhotoUrl(first.get("url").asText(), 400);
       }
       if (first.hasNonNull("photoUrl")) {
-        return first.get("photoUrl").asText();
+        return photoUrlBuilder.resolvePhotoUrl(first.get("photoUrl").asText(), 400);
       }
     } catch (IOException e) {
       log.warn("Failed to parse photoUrls JSON for poi {}", photoJson, e);
@@ -310,6 +330,23 @@ public class RecommandService {
     }
     return poiRepository.findAllExternalIdsByIdIn(poiIds).stream()
         .collect(Collectors.toMap(PoiExternalId::getId, PoiExternalId::getExternalId));
+  }
+
+  /** 向 Place Details 取最新資料（跳過快取），取得未過期的第一張 photo URL；失敗時回傳 null。 */
+  private String getFreshPhotoUrl(String placeId) {
+    if (placeId == null || placeId.isBlank()) {
+      return null;
+    }
+    try {
+      PlaceDetailResponse detail = searchService.getPlaceDetailById(placeId, false);
+      if (detail == null || detail.getPhotoUrls() == null || detail.getPhotoUrls().isEmpty()) {
+        return null;
+      }
+      return detail.getPhotoUrls().get(0);
+    } catch (RuntimeException ex) {
+      log.warn("Failed to get fresh photo URL for placeId={}", placeId, ex);
+      return null;
+    }
   }
 
   private LocationRecommand refreshFromPlaceDetails(

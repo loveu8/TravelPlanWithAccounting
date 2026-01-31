@@ -40,6 +40,7 @@ import com.travelPlanWithAccounting.service.util.GooglePlaceConstants;
 import com.travelPlanWithAccounting.service.util.JsonHelper;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import com.travelPlanWithAccounting.service.util.LocationHelper;
+import com.travelPlanWithAccounting.service.util.PhotoUrlValidator;
 import com.travelPlanWithAccounting.service.util.PoiTypeMapper;
 import com.travelPlanWithAccounting.service.validator.PlaceDetailValidator;
 import com.travelPlanWithAccounting.service.validator.MemberPoiListValidator;
@@ -104,6 +105,7 @@ public class SearchService {
   @Autowired private JsonHelper jsonHelper;
   @Autowired private MemberPoiListValidator memberPoiListValidator;
   @Autowired private MemberPoiFavoritesValidator memberPoiFavoritesValidator;
+  @Autowired private PhotoUrlValidator photoUrlValidator;
 
   public List<Region> searchRegions(String countryCode) {
     String langType = LocaleContextHolder.getLocale().toLanguageTag();
@@ -243,22 +245,34 @@ public class SearchService {
   }
 
   /**
-   * 根據 placeId 查詢完整景點
+   * 根據 placeId 查詢完整景點（會使用 24h 快取）。
    *
    * @param placeId Google Map placeId
-   * @param langType 語系
    * @return PlaceDetailResponse
    */
   @Transactional
   public PlaceDetailResponse getPlaceDetailById(String placeId) {
+    return getPlaceDetailById(placeId, true);
+  }
+
+  /**
+   * 根據 placeId 查詢完整景點。
+   *
+   * @param placeId Google Map placeId
+   * @param useCache 是否使用 24h 快取；false 時強制呼叫 Google API，可取得未過期的 photo resource
+   * @return PlaceDetailResponse
+   */
+  @Transactional
+  public PlaceDetailResponse getPlaceDetailById(String placeId, boolean useCache) {
     String langType = LocaleContextHolder.getLocale().toLanguageTag();
 
     // 1) 驗證
     placeDetailValidator.validate(placeId, langType);
     String langCode = langTypeMapper.toCode(langType);
 
-    // 2) 先找 DB（替換原本的 infos_raw 快取）
-    Optional<String> cachedJson = poiRepository.findCachedRawJson(placeId, langCode);
+    // 2) 依 useCache 決定是否讀快取；推薦列表需未過期 photo URL 時傳 useCache=false
+    Optional<String> cachedJson =
+        useCache ? poiRepository.findCachedRawJson(placeId, langCode) : Optional.empty();
     JsonNode json;
     boolean hit = cachedJson.isPresent();
     UUID poiId = null;
@@ -269,7 +283,7 @@ public class SearchService {
       poiId =
           poiRepository.findByExternalId(placeId).map(p -> p.getId()).orElse(null);
     } else {
-      log.debug("Call api placeId={} langType={}", placeId, langType);
+      log.debug("Call api placeId={} langType={} useCache={}", placeId, langType, useCache);
       PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(placeId);
       json = mapService.getPlaceDetails(req);
 
@@ -281,7 +295,30 @@ public class SearchService {
 
     PlaceDetailResponse resp = placeDetailMapper.toDto(json, false);
     resp.setPoiId(poiId);
+    if (useCache) {
+      resp = refreshPhotoUrlIfExpired(resp, langCode);
+    }
     return resp;
+  }
+
+  private PlaceDetailResponse refreshPhotoUrlIfExpired(
+      PlaceDetailResponse cached, String langCode) {
+    if (cached == null || cached.getPhotoUrls() == null || cached.getPhotoUrls().isEmpty()) {
+      return cached;
+    }
+    String firstPhotoUrl = cached.getPhotoUrls().get(0);
+    if (photoUrlValidator.isValid(firstPhotoUrl)) {
+      return cached;
+    }
+    log.info(
+        "Detected expired photo URL for placeId={}, refreshing from Google.",
+        cached.getPlaceId());
+    PlaceDetailRequestPost req = requestFactory.buildPlaceDetails(cached.getPlaceId());
+    JsonNode freshJson = mapService.getPlaceDetails(req);
+    PlaceDetailResponse freshDto = placeDetailMapper.toDto(freshJson, false);
+    TxPoiResult tx = upsertPoiAndI18n(freshDto, langCode);
+    freshDto.setPoiId(tx.getPoiId());
+    return freshDto;
   }
 
   public MemberPoiListResponse getMemberPoiList(UUID memberId, MemberPoiListRequest req) {
@@ -310,7 +347,7 @@ public class SearchService {
                   loc.setPlaceId(p.getPlaceId());
                   loc.setName(p.getName());
                   loc.setCity(p.getCity());
-                  loc.setPhotoUrl(p.getPhotoUrl());
+                  loc.setPhotoUrl(resolveValidPhotoUrl(p.getPlaceId(), p.getPhotoUrl()));
                   loc.setRating(p.getRating());
                   return loc;
                 })
@@ -330,6 +367,23 @@ public class SearchService {
     resp.setList(list);
     resp.setMeta(meta);
     return resp;
+  }
+
+  private String resolveValidPhotoUrl(String placeId, String photoUrl) {
+    if (photoUrlValidator.isValid(photoUrl)) {
+      return photoUrl;
+    }
+    log.info(
+        "Detected expired photo URL for placeId={}, refreshing from Google.", placeId);
+    try {
+      PlaceDetailResponse detail = getPlaceDetailById(placeId, false);
+      if (detail != null && detail.getPhotoUrls() != null && !detail.getPhotoUrls().isEmpty()) {
+        return detail.getPhotoUrls().get(0);
+      }
+    } catch (RuntimeException ex) {
+      log.warn("Failed to refresh photo URL for placeId={}", placeId, ex);
+    }
+    return photoUrl;
   }
 
   public Map<String, Boolean> checkPoisFavorites(UUID memberId, List<String> placeIds) {

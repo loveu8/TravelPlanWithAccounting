@@ -305,7 +305,7 @@ sequenceDiagram
 ### 9. 取得地點詳細資訊 (含照片)
 
 - **API**: `GET /api/search/placeDetails`
-- **描述**: 根據 Google PlaceId 取得該地點的詳細資訊
+- **描述**: 根據 Google PlaceId 取得該地點的詳細資訊。照片 URL 依 Google Place Photos (New) 格式組出；**photo 的 resource name 會過期**，若回傳來自快取或資料庫，圖片連結可能出現 400（INVALID_ARGUMENT），需重新呼叫本 API 取得最新 place 資料以取得新圖片網址。
 - **請求參數**:
   - **標頭**:
     | 標頭              | 型別   | 必填 | 說明                    |

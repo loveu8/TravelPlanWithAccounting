@@ -2,10 +2,10 @@ package com.travelPlanWithAccounting.service.mapper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
 import com.travelPlanWithAccounting.service.dto.search.response.PlaceDetailResponse;
 import com.travelPlanWithAccounting.service.entity.Poi;
 import com.travelPlanWithAccounting.service.entity.PoiI18n;
+import com.travelPlanWithAccounting.service.util.GooglePhotoUrlBuilder;
 import com.travelPlanWithAccounting.service.util.JsonHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GooglePlaceDetailMapper {
 
-  private final GoogleApiConfig googleApiConfig;
+  private final GooglePhotoUrlBuilder photoUrlBuilder;
   private final JsonHelper jsonHelper;
 
   public PlaceDetailResponse toDto(JsonNode p, boolean withDetails) {
@@ -63,7 +63,7 @@ public class GooglePlaceDetailMapper {
     JsonNode photoArr = p.path("photos");
     for (int i = 0; i < photoArr.size() && i < 5; i++) {
       String photoName = photoArr.get(i).path("name").asText();
-      photos.add(buildPhotoUrl(photoName, 400)); // 400px 預設，可依需求 param
+      photos.add(photoUrlBuilder.buildFromName(photoName, 400)); // 400px 預設，可依需求 param
     }
 
     /* ======== regularOpeningHours 原始 JSON ======== */
@@ -95,15 +95,6 @@ public class GooglePlaceDetailMapper {
         .primaryType(primaryType)
         .rawJson(withDetails ? p : null) // 整包資料
         .build();
-  }
-
-  private String buildPhotoUrl(String photoName, int maxWidthPx) {
-    return "https://places.googleapis.com/v1/"
-        + photoName
-        + "/media?key="
-        + googleApiConfig.getGoogleApiKey()
-        + "&maxWidthPx="
-        + maxWidthPx;
   }
 
   // 轉 DB -> PlaceDetailResponse

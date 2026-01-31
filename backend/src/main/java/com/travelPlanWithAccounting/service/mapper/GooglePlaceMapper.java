@@ -3,7 +3,7 @@ package com.travelPlanWithAccounting.service.mapper;
 import static com.travelPlanWithAccounting.service.util.GooglePlaceConstants.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.travelPlanWithAccounting.service.config.GoogleApiConfig;
+import com.travelPlanWithAccounting.service.util.GooglePhotoUrlBuilder;
 import com.travelPlanWithAccounting.service.dto.search.response.LocationSearch;
 import java.util.*;
 import org.springframework.stereotype.Component;
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class GooglePlaceMapper {
 
-  private final GoogleApiConfig googleApiConfig;
+  private final GooglePhotoUrlBuilder photoUrlBuilder;
 
-  public GooglePlaceMapper(GoogleApiConfig googleApiConfig) {
-    this.googleApiConfig = googleApiConfig;
+  public GooglePlaceMapper(GooglePhotoUrlBuilder photoUrlBuilder) {
+    this.photoUrlBuilder = photoUrlBuilder;
   }
 
   public List<LocationSearch> toLocationSearchList(JsonNode root) {
@@ -37,12 +37,7 @@ public class GooglePlaceMapper {
     JsonNode photosNode = place.path("photos");
     if (photosNode.isArray() && photosNode.size() > 0) {
       String photoName = photosNode.get(0).path("name").asText();
-      photoUrl =
-          "https://places.googleapis.com/v1/"
-              + photoName
-              + "/media?key="
-              + googleApiConfig.getGoogleApiKey()
-              + "&maxWidthPx=400";
+      photoUrl = photoUrlBuilder.buildFromName(photoName, 400);
     }
 
     // City 決策
