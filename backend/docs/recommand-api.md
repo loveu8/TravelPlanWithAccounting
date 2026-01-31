@@ -59,7 +59,7 @@ Accept-Language: zh-TW
     "name": "台北 101",
     "country" : "台灣",
     "city": "台北市",
-    "photoUrl": "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=...",
+    "photoUrl": "https://places.googleapis.com/v1/places/{placeId}/photos/{photoReference}/media?maxWidthPx=400&key=API_KEY",
     "rating": 4.5,
     "reviewCount": 31245,
     "lat": 25.0330,
@@ -71,7 +71,7 @@ Accept-Language: zh-TW
     "name": "國立故宮博物院",
     "country" : "台灣",
     "city": "台北市",
-    "photoUrl": "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=...",
+    "photoUrl": "https://places.googleapis.com/v1/places/{placeId}/photos/{photoReference}/media?maxWidthPx=400&key=API_KEY",
     "rating": 4.7,
     "reviewCount": 18321,
     "lat": 25.1024,
@@ -91,11 +91,13 @@ Accept-Language: zh-TW
 | name | String | 景點名稱（根據語系顯示） |
 | country | String | 所在國家名稱 |
 | city | String | 所在城市名稱 |
-| photoUrl | String | 景點照片 URL（第一張照片） |
+| photoUrl | String | 景點照片 URL（第一張照片，基於 Places Photos resource name 產生） |
 | rating | Double | 景點評分（1.0-5.0） |
 | reviewCount | Integer | Google Maps 實際評論人數 |
 | lat | Double | 緯度 |
 | lon | Double | 經度 |
+
+> **備註**：若既有資料仍使用舊版 Photo Reference 或快取 URL，需重新呼叫 Places Details 取得 `photos[].name` 以刷新資料。系統會以最新的 Places Photos resource name 生成對應的 media URL。
 
 **錯誤回應欄位**：
 

@@ -10,6 +10,7 @@ import com.travelPlanWithAccounting.service.exception.RecommandException;
 import com.travelPlanWithAccounting.service.repository.PoiRepository;
 import com.travelPlanWithAccounting.service.repository.PoiRepository.LocationSummary;
 import com.travelPlanWithAccounting.service.repository.PoiRepository.PoiExternalId;
+import com.travelPlanWithAccounting.service.util.GooglePhotoUrlBuilder;
 import com.travelPlanWithAccounting.service.util.LangTypeMapper;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,6 +57,7 @@ public class RecommandService {
   private final SearchService searchService;
   private final ResourceLoader resourceLoader;
   private final ObjectMapper objectMapper;
+  private final GooglePhotoUrlBuilder photoUrlBuilder;
 
   private final ConcurrentMap<String, List<RecommandDefinition>> cache = new ConcurrentHashMap<>();
 
@@ -239,13 +241,19 @@ public class RecommandService {
         return null;
       }
       if (first.isTextual()) {
-        return first.asText();
+        return photoUrlBuilder.resolvePhotoUrl(first.asText(), 400);
+      }
+      if (first.hasNonNull("name")) {
+        return photoUrlBuilder.buildFromName(first.get("name").asText(), 400);
+      }
+      if (first.hasNonNull("urlSmall")) {
+        return photoUrlBuilder.resolvePhotoUrl(first.get("urlSmall").asText(), 400);
       }
       if (first.hasNonNull("url")) {
-        return first.get("url").asText();
+        return photoUrlBuilder.resolvePhotoUrl(first.get("url").asText(), 400);
       }
       if (first.hasNonNull("photoUrl")) {
-        return first.get("photoUrl").asText();
+        return photoUrlBuilder.resolvePhotoUrl(first.get("photoUrl").asText(), 400);
       }
     } catch (IOException e) {
       log.warn("Failed to parse photoUrls JSON for poi {}", photoJson, e);
