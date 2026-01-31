@@ -15,7 +15,7 @@ export default function LandScapeCard(props: ILandscapeCardProps) {
   const {
     id,
     title,
-    location,
+    country,
     score,
     evaluateCount,
     isBookmarked,
@@ -47,7 +47,7 @@ export default function LandScapeCard(props: ILandscapeCardProps) {
       </div>
       <CardBase {...props} handleCardClick={() => handleCardClick(id, title)}>
         <Badge
-          text={location}
+          text={country}
           icon={<PinpointIcon className="text-blue-9" />}
           bgColor="transparent"
           className="pl-0 py-0 rounded-none"

@@ -13,11 +13,12 @@ import PinpointIcon from "@/app/assets/pinpoint.svg";
 
 export default function TravelPlanCard(props: ITravelPlanCardProps) {
   const {
-    id,
+    travelMainId,
+    imgUrl,
     title,
-    location,
-    author,
-    isBookmarked = false,
+    locationName,
+    creator,
+    isFavorited = false,
     handleBookmarkClick,
     handleCardClick,
   } = props;
@@ -27,24 +28,28 @@ export default function TravelPlanCard(props: ITravelPlanCardProps) {
         <Button
           size="2"
           icon={
-            isBookmarked ? (
+            isFavorited ? (
               <BookmarkFilledIcon width={18} height={18} />
             ) : (
               <BookmarkIcon width={18} height={18} />
             )
           }
-          handleClick={() => handleBookmarkClick(id)}
+          handleClick={() => handleBookmarkClick(travelMainId)}
         />
       </div>
-      <CardBase {...props} handleCardClick={() => handleCardClick(id, title)}>
+      <CardBase
+        {...props}
+        imgSrc={imgUrl}
+        handleCardClick={() => handleCardClick(travelMainId, title)}
+      >
         <Badge
-          text={location}
+          text={locationName}
           icon={<PinpointIcon className="text-blue-9" />}
           bgColor="transparent"
           className="pl-0 py-0 rounded-none"
         />
         <Badge
-          text={author}
+          text={creator}
           icon={<AvatarIcon width={18} height={18} />}
           bgColor="transparent"
           className="pl-0 py-0 rounded-none"

@@ -53,15 +53,19 @@ interface ICountryCardProps {
  * TravelPlanCard 元件 Props.
  * @type {Object} ITravelPlanCardProps
  * @extends ICardBaseProps
- * @property {string} location - 旅遊地點
- * @property {string} author - 作者名稱
- * @property {boolean} isBookmarked - 是否已被收藏
+ * @property {string} travelMainId - 旅遊主檔ID
+ * @property {string} imgUrl - 圖片的來源
+ * @property {string} locationName - 旅遊地點
+ * @property {string} creator - 作者名稱
+ * @property {boolean} isFavorited - 是否已被收藏
  * @property {function} [handleBookmarkClick] - 處理收藏按鈕點擊的函數
  */
 interface ITravelPlanCardProps extends ICardBaseProps {
-  location: string;
-  author: string;
-  isBookmarked: boolean;
+  travelMainId: string;
+  imgUrl: string;
+  locationName: string;
+  creator: string;
+  isFavorited: boolean;
   handleBookmarkClick: (id: string) => void;
 }
 
@@ -69,7 +73,7 @@ interface ITravelPlanCardProps extends ICardBaseProps {
  * LandscapeCard 元件 Props.
  * @type {Object} ILandscapeCardProps
  * @extends ICardBaseProps
- * @property {string} location - 旅遊地點
+ * @property {string} country - 旅遊地點
  * @property {number} score - 評分
  * @property {number} evaluateCount - 評價數量
  * @property {boolean} isBookmarked - 是否已被收藏
@@ -77,7 +81,7 @@ interface ITravelPlanCardProps extends ICardBaseProps {
  * @property {function} [handleAddScheduleClick] - 處理添加行程按鈕點擊的函數
  */
 interface ILandscapeCardProps extends ICardBaseProps {
-  location: string;
+  country: string;
   score: number;
   evaluateCount: number;
   isBookmarked: boolean;
