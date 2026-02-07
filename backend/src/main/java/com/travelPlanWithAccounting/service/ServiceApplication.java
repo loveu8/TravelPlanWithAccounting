@@ -22,11 +22,21 @@ public class ServiceApplication {
 
   /** 負責從環境檔案中載入變數，並優先於系統環境變數 */
   private static void loadEnv() {
-    Path[] possiblePaths = {
-      Paths.get(".backendEnv"), Paths.get("../.backendEnv"), Paths.get("/application/.backendEnv")
-    };
+    String envFileOverride = System.getenv("BACKEND_ENV_FILE");
+    Path[] possiblePaths =
+        envFileOverride == null || envFileOverride.isBlank()
+            ? new Path[] {
+              Paths.get(".backendEnv"),
+              Paths.get("../.backendEnv"),
+              Paths.get("/application/.backendEnv"),
+              Paths.get("/application/config/.backendEnv")
+            }
+            : new Path[] {Paths.get(envFileOverride)};
 
     log.info("當前工作目錄: {}", System.getProperty("user.dir"));
+    if (envFileOverride != null && !envFileOverride.isBlank()) {
+      log.info("使用 BACKEND_ENV_FILE 指定路徑: {}", envFileOverride);
+    }
 
     for (Path envPath : possiblePaths) {
       if (tryLoadEnvFile(envPath)) {

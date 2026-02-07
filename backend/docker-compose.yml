@@ -4,7 +4,7 @@ services:
     ports:
       - "9000:9000"
     env_file:
-      - ../.backendEnv # 與 build.sh 一致
+      - ${BACKEND_ENV_FILE:-../.backendEnv} # 與 build.sh 一致
     networks:
       - app-network
     volumes:
@@ -13,7 +13,7 @@ services:
       # Config
       - ./configs:/application/config
       # Env file for runtime lookup
-      - ../.backendEnv:/application/.backendEnv:ro
+      - ${BACKEND_ENV_FILE:-../.backendEnv}:/application/.backendEnv:ro
 networks:
   app-network:
     driver: bridge
