@@ -22,9 +22,22 @@ public class ServiceApplication {
 
   /** 負責從環境檔案中載入變數，並優先於系統環境變數 */
   private static void loadEnv() {
-    Path[] possiblePaths = {
-      Paths.get(".backendEnv"), Paths.get("../.backendEnv"), Paths.get("/application/.backendEnv")
-    };
+    String configuredEnvFile = resolveConfiguredEnvFile();
+    Path[] possiblePaths =
+        configuredEnvFile == null
+            ? new Path[] {
+              Paths.get(".backendEnv"),
+              Paths.get("../.backendEnv"),
+              Paths.get("/application/.backendEnv"),
+              Paths.get("/application/config/.backendEnv")
+            }
+            : new Path[] {
+              Paths.get(configuredEnvFile),
+              Paths.get(".backendEnv"),
+              Paths.get("../.backendEnv"),
+              Paths.get("/application/.backendEnv"),
+              Paths.get("/application/config/.backendEnv")
+            };
 
     log.info("當前工作目錄: {}", System.getProperty("user.dir"));
 
@@ -35,6 +48,23 @@ public class ServiceApplication {
     }
 
     log.info("未找到環境變數檔案，將使用系統環境變數。");
+  }
+
+  /**
+   * 從環境變數或系統屬性中取得指定的環境檔案路徑
+   *
+   * @return 指定環境檔案路徑，若未設定則回傳 null
+   */
+  private static String resolveConfiguredEnvFile() {
+    String envFile = System.getProperty("BACKEND_ENV_FILE");
+    if (envFile != null && !envFile.isBlank()) {
+      return envFile.trim();
+    }
+    envFile = System.getenv("BACKEND_ENV_FILE");
+    if (envFile != null && !envFile.isBlank()) {
+      return envFile.trim();
+    }
+    return null;
   }
 
   /**
