@@ -12,6 +12,8 @@ services:
       - ./logs:/application/logs
       # Config
       - ./configs:/application/config
+      # Env file for runtime lookup
+      - ../.backendEnv:/application/.backendEnv:ro
 networks:
   app-network:
     driver: bridge

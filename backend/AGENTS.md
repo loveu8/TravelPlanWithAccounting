@@ -4,13 +4,15 @@
 
 ```
 Java: 21
-Spring Boot: 3.5.6
-OpenAPI: springdoc-openapi 2.8.6
+Spring Boot: 4.0.2
+OpenAPI: springdoc-openapi 3.0.1
 JWT: jjwt 0.13.0
 Database: PostgreSQL + Spring Data JPA
 Apache HttpClient: 4.5.14
-其他: HikariCP, Jackson Hibernate6, Gson, Spring Security, Spring Mail
+其他: HikariCP, Jackson Hibernate6, Gson, Spring Security, Spring Mail, spring-boot-starter-aspectj
 ```
+
+**Spring Boot 4 注意**：AOP 使用 `spring-boot-starter-aspectj`（取代 `spring-boot-starter-aop`），詳見 `docs/spring-boot-4-upgrade-plan.md` 與 `.cursor/rules/spring-boot-4-aop-migration.mdc`。
 
 **依賴管理原則**：新增依賴時明確指定版本號，確保與 Spring Boot BOM 相容，並同步更新 `pom.xml`。
 
