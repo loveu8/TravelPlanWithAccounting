@@ -1,11 +1,11 @@
 # 構建階段
-FROM eclipse-temurin:21-jre-alpine AS builder
+FROM eclipse-temurin:25-jre-alpine AS builder
 WORKDIR /application/jar
 COPY target/*.jar application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 
 # 運行階段
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 RUN apk add --no-cache bash
 WORKDIR /application
 # 複製分層構建的結果

@@ -2,8 +2,8 @@
 
 ## 環境需求
 
-- **OpenJDK 21.0.6 LTS**  
-  [下載連結](https://learn.microsoft.com/en-us/java/openjdk/download#openjdk-21)
+- **OpenJDK 25**  
+  [下載連結](https://learn.microsoft.com/en-us/java/openjdk/download)
 - **Maven 3.9.9**  
   [下載連結](https://maven.apache.org/download.cgi)
 
