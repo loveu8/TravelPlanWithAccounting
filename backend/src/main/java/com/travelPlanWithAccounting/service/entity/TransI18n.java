@@ -23,6 +23,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 多語系行程區段（起訖明細間）的翻譯／轉乘等資訊。<br>
+ * I18n record for a segment between start/end detail, e.g. translation or transit info.
+ */
 @Entity
 @Valid
 @Data
@@ -32,48 +36,57 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Table(name = "trans_i18n")
 public class TransI18n implements Serializable {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID) // 使用 GenerationType.UUID 讓JPA自動生成UUID
-    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
-    private UUID id;
 
-    @Column(name = "lang_type", nullable = false)
-    private String langType;
+  private static final long serialVersionUID = 1L;
 
-    @Column(name = "start_detail_id", nullable = false)
-    private UUID startDetailId; // 不建立雙向關聯
+  /** 預設轉乘／類型代碼（空字串表示未指定） */
+  private static final String DEFAULT_TRANS_TYPE = "";
 
-    @Column(name = "end_detail_id", nullable = false)
-    private UUID endDetailId; // 不建立雙向關聯
+  // --- 主鍵 ---
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
+  private UUID id;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "infos_raw", columnDefinition = "JSONB")
-    // 將 JSON 儲存為 String，您可以使用自定義類型以實現更結構化的訪問
-    private String infosRaw;
+  // --- 業務欄位 ---
+  @Column(name = "lang_type", nullable = false)
+  private String langType;
 
-    @Column(name = "trans_type", length = 50, nullable = false)
-    private String transType = "";
+  @Column(name = "start_detail_id", nullable = false)
+  private UUID startDetailId;
 
-    @Column(name = "trans_time", nullable = false)
-    private LocalTime transTime;
+  @Column(name = "end_detail_id", nullable = false)
+  private UUID endDetailId;
 
-    @Column(name = "summary", columnDefinition = "TEXT")
-    private String summary;
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "infos_raw", columnDefinition = "JSONB")
+  private String infosRaw;
 
-    @Column(name = "notes", columnDefinition = "TEXT")
-    private String notes;
+  @Column(name = "trans_type", length = 50, nullable = false)
+  @Builder.Default
+  private String transType = DEFAULT_TRANS_TYPE;
 
-    @Column(name = "created_by")
-    private UUID createdBy;
+  @Column(name = "trans_time", nullable = false)
+  private LocalTime transTime;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @Column(name = "summary", columnDefinition = "TEXT")
+  private String summary;
 
-    @Column(name = "updated_by")
-    private UUID updatedBy;
+  @Column(name = "notes", columnDefinition = "TEXT")
+  private String notes;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  // --- 審計欄位 ---
+  @Column(name = "created_by")
+  private UUID createdBy;
+
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
+
+  @Column(name = "updated_by")
+  private UUID updatedBy;
+
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 }
