@@ -35,7 +35,7 @@ public class Location extends BaseEntity {
   @Column(name = "level", nullable = false)
   private Short level;
 
-  @Column(name = "order_index")
+  @Column(name = "order_index", nullable = false)
   private Short orderIndex;
 
   @Column(name = "iso_type", length = 3, nullable = false)

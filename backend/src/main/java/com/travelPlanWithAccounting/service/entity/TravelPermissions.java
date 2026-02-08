@@ -42,10 +42,10 @@ public class TravelPermissions implements Serializable {
   @Column(name = "email")
   private String email;
 
-  @Column(name = "type", length = 3)
+  @Column(name = "type", length = 3, nullable = false)
   private String type;
 
-  @Column(name = "permissions")
+  @Column(name = "permissions", nullable = false)
   private Boolean permissions;
 
   @Column(name = "created_by")

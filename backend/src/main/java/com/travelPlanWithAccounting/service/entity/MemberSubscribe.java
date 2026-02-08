@@ -1,9 +1,5 @@
 package com.travelPlanWithAccounting.service.entity;
 
-import java.time.Instant;
-
-import org.hibernate.annotations.DynamicUpdate;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,11 +8,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
 @Valid
@@ -29,16 +27,21 @@ import lombok.NoArgsConstructor;
 @Table(name = "member_subscribe")
 public class MemberSubscribe extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "member_id", nullable = false)
+  private Member member;
 
-    @Schema(description = "開始日期")
-    @Column(name = "start_date", columnDefinition = "timestamp with time zone not null")
-    private Instant startDate;
+  @Schema(description = "開始日期")
+  @Column(
+      name = "start_date",
+      columnDefinition = "timestamp with time zone not null",
+      nullable = false)
+  private Instant startDate;
 
-    @Schema(description = "結束日期")
-    @Column(name = "end_date", columnDefinition = "timestamp with time zone not null")
-    private Instant endDate;
-
+  @Schema(description = "結束日期")
+  @Column(
+      name = "end_date",
+      columnDefinition = "timestamp with time zone not null",
+      nullable = false)
+  private Instant endDate;
 }

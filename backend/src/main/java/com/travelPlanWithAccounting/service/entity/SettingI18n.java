@@ -29,14 +29,14 @@ import lombok.ToString;
 public class SettingI18n extends BaseEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "setting_id")
+  @JoinColumn(name = "setting_id", nullable = false)
   @ToString.Exclude
   private Setting setting;
 
-  @Column(name = "lang_type", length = 5)
+  @Column(name = "lang_type", length = 5, nullable = false)
   private String langType;
 
-  @Column(name = "name", length = 255)
+  @Column(name = "name", length = 255, nullable = false)
   private String name;
 
   @Column(name = "code_desc", columnDefinition = "TEXT")

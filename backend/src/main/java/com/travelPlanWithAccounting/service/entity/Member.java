@@ -27,7 +27,7 @@ import org.hibernate.annotations.DynamicUpdate;
 @Table(name = "member")
 public class Member extends BaseEntity {
 
-  @Column(name = "status")
+  @Column(name = "status", nullable = false)
   private Short status;
 
   @Column(name = "given_name")
@@ -42,7 +42,7 @@ public class Member extends BaseEntity {
   @Column(name = "birthday")
   private LocalDate birthday;
 
-  @Column(name = "subscribe")
+  @Column(name = "subscribe", nullable = false)
   private Boolean subscribe;
 
   @Column(name = "email")
