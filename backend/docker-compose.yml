@@ -12,6 +12,8 @@ services:
       - ./logs:/application/logs
       # Config
       - ./configs:/application/config
+      # Env: 掛載專案根目錄，程式讀取 /application/project-env/.backendEnv（避免 Windows 單檔掛載問題）
+      - ..:/application/project-env:ro
 networks:
   app-network:
     driver: bridge

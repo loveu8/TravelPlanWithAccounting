@@ -40,7 +40,7 @@ public class LocationGroup extends BaseEntity {
   @OneToMany(mappedBy = "parent", orphanRemoval = true)
   private List<LocationGroup> children = new ArrayList<>();
 
-  @Column(name = "order_index")
+  @Column(name = "order_index", nullable = false)
   private Short orderIndex;
 
   /* 關聯 */

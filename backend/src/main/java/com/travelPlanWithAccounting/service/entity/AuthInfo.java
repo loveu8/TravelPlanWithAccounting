@@ -51,6 +51,7 @@ public class AuthInfo {
   private OffsetDateTime verifiedAt;
 
   @Version
+  @Column(nullable = false)
   private Long version;
 
   @Column(name = "expire_at", nullable = false, columnDefinition = "timestamptz")
