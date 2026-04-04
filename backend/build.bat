@@ -40,12 +40,12 @@ REM Convert Windows path to Docker path format
 set "HOST_DIR_DOCKER=%HOST_DIR:\=/%"
 
 REM Use Docker to extract artifactId
-for /f "tokens=*" %%a in ('docker run --rm -v "%HOST_DIR_DOCKER%:/app" -w "%CONTAINER_WORKDIR%" maven:3.9.9-eclipse-temurin-21 mvn help:evaluate -Dexpression^=project.artifactId -q -DforceStdout') do (
+for /f "tokens=*" %%a in ('docker run --rm -v "%HOST_DIR_DOCKER%:/app" -w "%CONTAINER_WORKDIR%" maven:3.9.13-eclipse-temurin-25 mvn help:evaluate -Dexpression^=project.artifactId -q -DforceStdout') do (
     set "APP_NAME=%%a"
 )
 
 REM Use Docker to extract version
-for /f "tokens=*" %%a in ('docker run --rm -v "%HOST_DIR_DOCKER%:/app" -w "%CONTAINER_WORKDIR%" maven:3.9.9-eclipse-temurin-21 mvn help:evaluate -Dexpression^=project.version -q -DforceStdout') do (
+for /f "tokens=*" %%a in ('docker run --rm -v "%HOST_DIR_DOCKER%:/app" -w "%CONTAINER_WORKDIR%" maven:3.9.13-eclipse-temurin-25 mvn help:evaluate -Dexpression^=project.version -q -DforceStdout') do (
     set "VERSION=%%a"
 )
 
@@ -65,7 +65,7 @@ set "IMAGE_NAME=!APP_NAME!:!VERSION!"
 echo [SUCCESS] Project info: name=!APP_NAME!, version=!VERSION!, JAR=!JAR_NAME!
 
 echo [INFO] Building Maven project...
-docker run --rm -v "%HOST_DIR_DOCKER%:/app" -w "%CONTAINER_WORKDIR%" maven:3.9.9-eclipse-temurin-21 mvn clean package -DskipTests
+docker run --rm -v "%HOST_DIR_DOCKER%:/app" -w "%CONTAINER_WORKDIR%" maven:3.9.13-eclipse-temurin-25 mvn clean package -DskipTests
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Maven build failed

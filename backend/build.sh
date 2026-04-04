@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # 腳本名稱: build.sh
-# 用途: 使用 maven:3.9.9-eclipse-temurin-21 容器打包 Maven 專案，構建 Docker 鏡像，支援 monorepo 結構查找 pom.xml 和 Dockerfile，動態查找 .backendEnv
+# 用途: 使用 maven:3.9.13-eclipse-temurin-25 容器打包 Maven 專案，構建 Docker 鏡像，支援 monorepo 結構查找 pom.xml 和 Dockerfile，動態查找 .backendEnv
 # 使用方式: chmod +x build.sh && ./build.sh
 
 # 配置參數
 DOCKERFILE="Dockerfile"
-MAVEN_IMAGE="maven:3.9.9-eclipse-temurin-21"
+MAVEN_IMAGE="maven:3.9.13-eclipse-temurin-25"
 
 # 顏色輸出函數
 RED='\033[0;31m'
