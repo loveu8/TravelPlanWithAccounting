@@ -1,30 +1,35 @@
 # Agent System PRD（可執行修正版）
 
 - 文件名稱：Agent System PRD
-- 文件版本：v1.0-executable
+- 文件版本：v1.1-executable-patch
 - 文件狀態：Ready for implementation
 - 建議儲存路徑：`/docs/agent-system-PRD.md`
 - 適用範圍：`project-root`、`backend`
 - 主要對象：Codex / 其他 coding agent 的 repo 內持久化工作規則與技能設計
-- 本文件角色：**設計與產檔母文件**。未來可依本文件直接生成對應的 `AGENTS.md`、`SKILL.md`，並在條件具備時再生成 `.codex/config.toml`。
+- 本文件角色：**設計與更新母文件**。未來可依本文件生成缺少的 `AGENTS.md`、`SKILL.md`，並在既有檔案存在時採「先檢查、再 patch、非必要不覆蓋」策略更新；條件具備時再考慮 `.codex/config.toml`。
 
 ---
 
 ## 1. 文件目的與本次修正結論
 
-### 1.1 為什麼要修正
-原始版本的方向正確，但有一個實作層級的矛盾：
+### 1.1 為什麼要再次修正
+上一版已經把 PRD 從「純說明文件」推進到「可產檔母文件」，方向是對的。  
+但現在出現一個新的真實前提：
 
-- 一方面希望未來由 Codex 生成 `AGENTS.md`、`SKILL.md`、`.codex/config.toml`
-- 另一方面又把本次任務定義成「只產出 PRD，不建立任何實作檔」
+- `backend/AGENTS.md` **已經存在**
+- 而且內容不是空白殼，而是已有技術版本、分層規範、驗證命令、權限驗證、i18n、回應格式、Safety and Permissions 等專案特有規則
 
-這會導致真正執行時，模型很容易停在「寫完 PRD 就結束」，而不會自然進入後續的產檔階段。
+如果 PRD 仍把第一輪策略寫成「直接生成 `backend/AGENTS.md`」，實作時就容易發生兩個問題：
+
+1. 把既有的專案知識覆蓋掉
+2. 讓模型傾向重寫整份檔案，而不是做小範圍、可驗證的 patch
 
 ### 1.2 本次修正目標
-本修正版要解決兩件事：
+本修正版要解決三件事：
 
-1. 讓架構設計與 OpenAI / Codex 目前的官方慣例對齊
-2. 讓這份 PRD **不只是說明文件，而是能被後續任務直接拿來產出對應檔案**
+1. 持續對齊 OpenAI / Codex 的官方慣例
+2. 讓這份 PRD 能直接驅動後續產檔或更新任務
+3. 把 `backend/AGENTS.md` 的處理策略改成：**先檢查既有檔案，只有必要時才更新，不預設覆蓋重建**
 
 ### 1.3 本次修正後的核心決策
 1. 使用 `AGENTS.md`，不使用 `AGENT.md`
@@ -33,6 +38,12 @@
 4. `.codex/config.toml` 屬於環境層，不在第一輪強制生成
 5. subagents / custom agents 只保留為可選擴充，不列為第一輪預設輸出
 6. 第一輪實作的目標是：**先讓單代理工作流穩定可用，再擴充角色化與並行化**
+7. 對既有 `backend/AGENTS.md` 採 **inspect-and-patch policy**：
+   - 先完整讀取既有內容
+   - 保留合理且專案特有的規則
+   - 只修補缺漏、衝突、過時或不夠清楚的部分
+   - **不預設重建整份檔案**
+8. 除非檔案嚴重失真、結構無法維護、或使用者明確同意，否則不得以「重寫整份 `backend/AGENTS.md`」作為預設策略
 
 ---
 
@@ -50,7 +61,7 @@
 ### 2.2 真正要解決的核心問題
 本 PRD 要解決的問題不是「怎麼寫一組 prompt」，而是：
 
-> 如何把專案中的長期規則、重複工作流、環境設定、可選角色邏輯拆分成清楚分層，讓 Codex 在 backend 專案中有一致、可驗證、可擴充，而且能落地產檔的工作方式。
+> 如何把專案中的長期規則、重複工作流、環境設定、可選角色邏輯拆分成清楚分層，讓 Codex 在 backend 專案中有一致、可驗證、可擴充，而且能落地產檔與更新的工作方式。
 
 ### 2.3 目標使用情境
 本系統主要支援以下情境：
@@ -69,7 +80,7 @@
 3. **先寫規則，再忽略執行環境**：很多設定其實應放在 `.codex/config.toml`。
 4. **先想產檔，再忽略真實 repo**：最後產出一組看起來完整、但實際命令與路徑都不對的檔案。
 
-因此，本 PRD 的核心是：**先掃描真實 repo，再按分層規則生成最小必要檔案。**
+因此，本 PRD 的核心是：**先掃描真實 repo，再按分層規則生成或更新最小必要檔案。**
 
 ---
 
@@ -114,7 +125,8 @@
 - 主要工作流程情境
 - 各 skill 的輸入、輸出、邊界、驗證方式
 - 高風險決策的升級條件
-- 產檔順序與最小必要輸出物
+- 產檔 / 更新順序與最小必要輸出物
+- 既有 `backend/AGENTS.md` 的檢查、比對、patch 策略
 - 後續落地實作的分階段路線
 
 ### 4.2 Out of Scope
@@ -130,11 +142,12 @@
 ### 4.3 Success Criteria
 本文件算成功，應同時滿足：
 
-1. 可依本文件直接建立 root / backend 兩層 `AGENTS.md`
-2. 可依本文件直接建立第一輪最小必要 skill 檔案
-3. 可辨識哪些規則應放 `AGENTS.md`、哪些應放 skill、哪些應延後到 `.codex/config.toml`
-4. 可明確知道哪些檔案第一輪要生成、哪些不要
-5. 後續執行時，不會因任務描述模糊而卡在「只寫 PRD 不產檔」
+1. 可依本文件建立缺少的 root `AGENTS.md`
+2. 可依本文件**檢查並原地更新**既有 `backend/AGENTS.md`，而不是預設覆蓋
+3. 可依本文件建立第一輪最小必要 skill 檔案
+4. 可辨識哪些規則應放 `AGENTS.md`、哪些應放 skill、哪些應延後到 `.codex/config.toml`
+5. 可明確知道哪些檔案第一輪要新建、哪些只需檢查、哪些在必要時才 patch
+6. 後續執行時，不會因任務描述模糊而卡在「只寫 PRD 不產檔」，也不會因為過度重建而丟失既有 repo 規則
 
 ---
 
@@ -142,7 +155,7 @@
 
 ```text
 /project-root
-├── AGENTS.md
+├── AGENTS.md                         # 若不存在則建立；若已存在則同樣採 inspect-and-patch
 ├── .agents/
 │   └── skills/
 │       ├── scan-project/
@@ -159,7 +172,7 @@
 │       ├── pdm.toml
 │       └── reviewer.toml
 └── backend/
-    ├── AGENTS.md
+    ├── AGENTS.md                    # 已存在：第一輪只檢查與 patch，非必要不覆蓋
     └── .agents/
         └── skills/
             ├── implement-backend-change/
@@ -225,6 +238,38 @@
 - 自訂 agent 的說明與設定
 - 需要專門 spawn 的角色型代理
 
+### 5.2 既有檔案優先原則
+若以下檔案已存在：
+
+- `project-root/AGENTS.md`
+- `backend/AGENTS.md`
+
+則第一輪策略一律是：
+
+1. **先讀完整內容**
+2. **比對本 PRD 的最低要求**
+3. **保留既有且合理的專案規則**
+4. **只 patch 缺漏、衝突、過時、結構不清楚之處**
+5. **不因格式喜好而整份重寫**
+
+### 5.3 對既有 `backend/AGENTS.md` 的特別要求
+如果 `backend/AGENTS.md` 已包含這類專案知識，應視為高價值內容，預設保留：
+
+- 技術與版本資訊
+- Spring Boot / library 版本約束
+- auth / locale / response format 規範
+- 專案命令
+- 目錄結構導覽
+- safety / permissions / when stuck 類內容
+
+只有在以下情況才應改動：
+
+- 與 PRD 分層原則衝突
+- 過時或錯誤
+- 描述重複且互相矛盾
+- 缺少關鍵 escalation / verification / scope 說明
+- 過度冗長到影響實際 routing
+
 ---
 
 ## 6. 載入邏輯與作用域
@@ -245,16 +290,27 @@
 - 不可把所有細節都塞到 root
 - 不可讓 root 與 backend 對同一件事給出互相衝突的命令
 
-### 6.3 產檔時的實務要求
-在生成 `AGENTS.md` 之前，必須先掃描 repo，找出：
+### 6.3 產檔 / 更新時的實務要求
+在生成或更新任何 `AGENTS.md` 之前，必須先掃描 repo，找出：
 
 - 真實目錄結構
 - 真實 build / test / run 指令
 - 真實 backend 入口位置
 - 真實模組切分方式
+- 既有 `AGENTS.md` 是否已存在，以及其內容是否已承載專案知識
 
 **禁止憑空猜測命令或路徑。**
 若找不到真實命令，應使用 `TODO:` 或 `REQUIRES CONFIRMATION` 標示，而不是捏造內容。
+
+### 6.4 既有 `backend/AGENTS.md` 的作用域判斷
+檢查既有 `backend/AGENTS.md` 時，要先分辨哪些內容是：
+
+- backend 專屬 durable guidance
+- 已適合保留的專案細節
+- 應移出到 skill 的多步流程
+- 應留給 `.codex/config.toml` 的環境層設定
+
+只有在完成這個判斷後，才能決定要不要 patch。
 
 ---
 
@@ -313,7 +369,7 @@ skill 命名應優先反映：
 | 安全性修補 | `scan-project`（必要時） → `plan-work` → `implement-backend-change` → `review-change` → `backend-test-verification` |
 | 技術債重構 | `scan-project` → `plan-work` → `refactor-backend` → `backend-test-verification` → `review-change` |
 | 純文件產出 | `scan-project` → `create-prd` 或 `plan-work` |
-| 生成 repo 規則檔 | `scan-project` → 生成 `AGENTS.md` → 生成第一輪 skills → 自我驗證 |
+| 生成 / 更新 repo 規則檔 | `scan-project` → 檢查既有 `AGENTS.md` → 建立缺少的 root `AGENTS.md` → 檢查並 patch `backend/AGENTS.md`（如有必要）→ 生成第一輪 skills → 自我驗證 |
 
 ### 8.2 安全修補為什麼 review 在前
 安全修補的風險常在於「修補方向本身可能錯」。
@@ -330,6 +386,23 @@ skill 命名應優先反映：
 - 自動多代理協作
 - 自動 PR review pipeline
 - 自動外部工具協作
+
+### 8.4 `backend/AGENTS.md` 更新流程
+當 repo 中已存在 `backend/AGENTS.md` 時，應採以下固定順序：
+
+1. 讀取完整檔案
+2. 與本 PRD 的最小欄位要求比對
+3. 標出：
+   - 可直接保留
+   - 建議補強
+   - 需要修正
+   - 建議移出到 skills 的內容
+4. 僅針對必要項做 patch
+5. 最後輸出變更摘要：
+   - 保留了什麼
+   - 改了什麼
+   - 為什麼改
+   - 什麼沒有改
 
 ---
 
@@ -446,13 +519,15 @@ skill 命名應優先反映：
 8. 有多個技術方向且 trade-off 明顯
 9. 掃描結果與使用者敘述不一致
 10. 需要 subagents、MCP 或額外外部工具時
+11. 既有 `backend/AGENTS.md` 雖存在，但其內容疑似過時、錯誤或結構嚴重失真，且修補幅度已接近重寫時
 
 ### 10.2 升級矩陣
 
 | 類型 | 可自動處理 | 需先回報 |
 |---|---|---|
 | 小範圍純文件調整 | 是 | 否 |
-| root / backend `AGENTS.md` 草稿生成 | 是，但須先 scan repo | 若關鍵命令無法確認 |
+| root `AGENTS.md` 草稿生成 | 是，但須先 scan repo | 若關鍵命令無法確認 |
+| 既有 `backend/AGENTS.md` 小範圍 patch | 是，但須先完整讀檔與比對 | 若 patch 已接近整份重寫 |
 | 第一輪 skill 檔案生成 | 是 | 若命名或作用域不明 |
 | `.codex/config.toml` 生成 | 否，預設延後 | 是 |
 | DB schema 相關規則 | 否 | 是 |
@@ -460,8 +535,9 @@ skill 命名應優先反映：
 | 新 dependency 引入 | 否 | 是 |
 
 ### 10.3 設計原則
-- 低風險、局部、可回溯的內容可自動產出
+- 低風險、局部、可回溯的內容可自動產出或 patch
 - 高風險、環境敏感、影響權限的內容必須升級
+- **已有專案知識的檔案優先採修補，不採覆蓋**
 
 ---
 
@@ -500,26 +576,47 @@ skill 命名應優先反映：
 
 ---
 
-## 12. 第一輪最小必要輸出物（真正可執行版本）
+## 12. 第一輪最小必要動作與輸出物（真正可執行版本）
 
-> 本章是本次修正版最重要的新章節。它定義：**當 Codex 被要求依本 PRD 建檔時，第一輪到底要生成哪些檔案。**
+> 本章重新定義第一輪任務，不再把所有東西都視為「必生成檔案」，而是區分成：**必執行動作、必新建檔案、必檢查檔案、必要時才 patch 的檔案。**
 
-### 12.1 第一輪必生成檔案
+### 12.1 第一輪必執行動作
+1. 掃描 repo
+2. 檢查 `project-root/AGENTS.md` 是否存在
+3. 檢查 `backend/AGENTS.md` 是否存在
+4. 建立缺少的 root `AGENTS.md`
+5. 完整讀取並比對既有 `backend/AGENTS.md`
+6. 只有在必要時才 patch `backend/AGENTS.md`
+7. 建立第一輪最小必要 skills
+8. 進行一次自我驗證
 
+### 12.2 第一輪必新建檔案（若不存在）
 ```text
 /project-root/AGENTS.md
 /project-root/.agents/skills/scan-project/SKILL.md
 /project-root/.agents/skills/create-prd/SKILL.md
 /project-root/.agents/skills/plan-work/SKILL.md
 /project-root/.agents/skills/verify-change/SKILL.md
-/backend/AGENTS.md
 /backend/.agents/skills/implement-backend-change/SKILL.md
 /backend/.agents/skills/backend-test-verification/SKILL.md
 /backend/.agents/skills/review-change/SKILL.md
 /backend/.agents/skills/refactor-backend/SKILL.md
 ```
 
-### 12.2 第一輪不生成檔案
+### 12.3 第一輪必檢查但不預設重建的檔案
+```text
+/backend/AGENTS.md
+```
+
+若此檔案存在，流程必須是：
+- 讀取
+- 比對
+- patch（只有必要時）
+- 保留原有有效內容
+
+**不可直接整份覆蓋。**
+
+### 12.4 第一輪不生成檔案
 以下檔案在第一輪預設不生成：
 
 ```text
@@ -534,23 +631,26 @@ skill 命名應優先反映：
 - `agents/*.toml` 涉及 agent 角色拆分與 spawn 策略
 - `api-contract-check` / `db-migration-check` 適合在 repo 規則與第一輪流程穩定後再補
 
-### 12.3 第一輪產檔順序
-生成順序必須如下：
+### 12.5 第一輪執行順序
+執行順序必須如下：
 
 1. `scan-project`：掃描 repo 並整理觀察結果
-2. 產生 `project-root/AGENTS.md`
-3. 產生 `backend/AGENTS.md`
-4. 產生 root 層 4 個 skills
-5. 產生 backend 層 4 個 skills
-6. 執行一次自我檢查，確認：
+2. 檢查 root `AGENTS.md`
+3. 若 root `AGENTS.md` 不存在則建立；若存在則同樣採 inspect-and-patch
+4. 檢查既有 `backend/AGENTS.md`
+5. 只有在必要時 patch `backend/AGENTS.md`
+6. 產生 root 層 4 個 skills
+7. 產生 backend 層 4 個 skills
+8. 執行一次自我檢查，確認：
    - 路徑正確
    - `AGENTS.md` 不過長
    - `SKILL.md` 有 `name` / `description`
    - root / backend 規則沒有重複打架
+   - `backend/AGENTS.md` 沒有被不必要地重寫
 
 ---
 
-## 13. 每個要生成檔案的最小欄位要求
+## 13. 每個要建立或更新檔案的最小欄位要求
 
 ### 13.1 root `AGENTS.md`
 至少要有：
@@ -562,8 +662,8 @@ skill 命名應優先反映：
 - Definition of done
 - Routing guidance：什麼情況應先進 backend 規則、什麼情況應先用哪個 root skill
 
-### 13.2 backend `AGENTS.md`
-至少要有：
+### 13.2 既有 `backend/AGENTS.md`
+檢查或 patch 時，至少要確認是否具備：
 - Backend overview
 - Main modules / directory map
 - Real backend commands（若已確認）
@@ -571,6 +671,14 @@ skill 命名應優先反映：
 - High-risk escalation rules
 - Verification expectations
 - Suggested backend skills to route into first
+
+另外，更新時還必須遵守：
+
+1. **保留既有專案特有規則**
+2. **優先局部 patch，不重寫整份**
+3. **不要因文字風格差異就大改**
+4. **只有在內容錯誤、衝突、過時、缺漏時才修改**
+5. **若既有內容比 PRD 建議更具體且正確，應保留既有內容**
 
 ### 13.3 每個 `SKILL.md`
 至少要有：
@@ -591,18 +699,42 @@ skill 命名應優先反映：
 - 主要做什麼
 - 是否屬 mandatory workflow
 
+### 13.5 `backend/AGENTS.md` 建議的 patch 類型
+允許的 patch 類型：
+- 補 scope / role 說明
+- 補 escalation / verification
+- 補 routing guidance
+- 移除或縮短明顯重複段落
+- 修正明顯過時或錯誤資訊
+- 重新整理段落順序，使 durable guidance 更清楚
+
+不建議的 patch 類型：
+- 因單純格式偏好整份重寫
+- 把專案特有規則抽掉換成通用模板
+- 沒有證據就改技術版本或命令
+
 ---
 
-## 14. 生成檔案時的實作規範
+## 14. 生成 / 更新檔案時的實作規範
 
-### 14.1 一律先掃描，再生成
+### 14.1 一律先掃描，再生成或更新
 生成任何 `AGENTS.md` 或 `SKILL.md` 之前，必須先掃描：
 - 真實目錄
 - 真實命令
 - 真實 backend 子系統範圍
 - 是否已有現成 docs / scripts 可引用
+- 既有 `AGENTS.md` 是否已存在，以及其內容品質
 
-### 14.2 不得捏造 repo 事實
+### 14.2 既有檔案優先採 patch
+若 `backend/AGENTS.md` 已存在，預設流程必須是：
+
+1. 先讀完整內容
+2. 與本 PRD 最小要求比對
+3. 標出可保留、待補強、需修正項
+4. 以最小必要 diff patch
+5. 保留原本正確且有價值的專案知識
+
+### 14.3 不得捏造 repo 事實
 若 repo 中找不到：
 - build 命令
 - test 命令
@@ -616,19 +748,27 @@ skill 命名應優先反映：
 
 禁止直接幻想一套通用命令塞進文件。
 
-### 14.3 文件長度控制
+### 14.4 文件長度控制
 - root `AGENTS.md` 以短小為原則
 - backend `AGENTS.md` 只寫 backend 需要的規則
 - 太長的流程應下放到 skills
 - 太細的 repo 特例可在 skill 內說明或引用額外檔案
 
-### 14.4 先穩定，再擴充
+### 14.5 先穩定，再擴充
 第一輪只做最小必要輸出，不要同時做：
 - custom agents
 - MCP
 - multi-agent orchestration
 - CI automation
 - 過多 specialized skills
+
+### 14.6 變更摘要是必需輸出
+若對既有 `backend/AGENTS.md` 做了 patch，最後必須輸出：
+- 修改前提
+- 修改項目
+- 沒改的項目
+- 為何不重寫整份
+- 是否有待人工確認之處
 
 ---
 
@@ -688,13 +828,13 @@ skill 的價值不在「有檔案」，而在：
 至少準備以下案例：
 - 新功能 PRD
 - bug 修復規劃
-- root / backend `AGENTS.md` 生成
+- root / backend `AGENTS.md` 生成或更新
 - 小範圍 backend 變更
 - 純文件修改檢查
 - refactor 升級判斷
 
-### 16.4 產檔驗證清單
-生成完第一輪檔案後，至少檢查：
+### 16.4 產檔 / 更新驗證清單
+生成或更新完第一輪檔案後，至少檢查：
 
 1. 檔案路徑是否全部正確
 2. 所有 `SKILL.md` 是否都有 `name` 與 `description`
@@ -702,6 +842,7 @@ skill 的價值不在「有檔案」，而在：
 4. 是否有捏造命令或路徑
 5. 是否有明確寫出高風險升級規則
 6. 是否有過度寬泛、難以觸發的 skill 描述
+7. `backend/AGENTS.md` 是否保留了既有高價值專案規則
 
 ---
 
@@ -710,12 +851,13 @@ skill 的價值不在「有檔案」，而在：
 ### Phase 0：PRD 定稿
 完成本文件。
 
-### Phase 1：生成第一輪最小必要輸出物
-生成：
-- root `AGENTS.md`
-- backend `AGENTS.md`
-- root 4 個 skills
-- backend 4 個 skills
+### Phase 1：執行第一輪最小必要動作
+執行：
+- 建立缺少的 root `AGENTS.md`
+- 檢查既有 `backend/AGENTS.md`
+- 只在必要時 patch `backend/AGENTS.md`
+- 建立 root 4 個 skills
+- 建立 backend 4 個 skills
 
 ### Phase 2：根據真實使用回饋修正 routing 與邊界
 把重複錯誤、重複 review feedback 寫回 `AGENTS.md` 與 `SKILL.md`。
@@ -742,31 +884,40 @@ skill 的價值不在「有檔案」，而在：
 
 ## 18. 直接可用的執行指令模板（給後續 Codex 任務）
 
-> 本章是給未來真正執行產檔時使用的任務模板。
+> 本章是給未來真正執行產檔 / 更新時使用的任務模板。
 
 ### 18.1 目標
-根據 `/docs/agent-system-PRD.md`，掃描目前 repo，並生成第一輪最小必要輸出物。
+根據 `/docs/agent-system-PRD.md`，掃描目前 repo，建立缺少的第一輪檔案，並檢查既有 `backend/AGENTS.md`；只有在必要時才做小範圍 patch，不可直接覆蓋。
 
 ### 18.2 執行要求
 1. 先掃描 repo，確認真實目錄、命令、backend 邊界
-2. 根據 PRD 只生成第一輪必生成檔案
-3. 不生成 `.codex/config.toml`、`.codex/agents/*.toml`、optional skills
-4. 若找不到真實命令，使用 `TODO:` 或 `REQUIRES CONFIRMATION:` 標示
-5. 生成後自我檢查：
+2. 若 root `AGENTS.md` 不存在，則建立；若存在則同樣先檢查再決定是否 patch
+3. 必須完整讀取既有 `backend/AGENTS.md`
+4. 對 `backend/AGENTS.md` 只做必要 patch，不得因格式偏好整份重寫
+5. 根據 PRD 生成第一輪必新建的 skill 檔案
+6. 不生成 `.codex/config.toml`、`.codex/agents/*.toml`、optional skills
+7. 若找不到真實命令，使用 `TODO:` 或 `REQUIRES CONFIRMATION:` 標示
+8. 完成後自我檢查：
    - 路徑是否正確
    - `name` / `description` 是否齊全
    - root / backend 是否有重複衝突
    - 是否有捏造資訊
-6. 最後輸出變更檔案清單與每個檔案一句摘要
+   - `backend/AGENTS.md` 是否被不必要地重寫
+9. 最後輸出變更檔案清單與每個檔案一句摘要；若 `backend/AGENTS.md` 未修改，也要明確寫出「已檢查，無需調整」
 
-### 18.3 預期生成檔案
+### 18.3 預期動作與檔案
 ```text
+必做動作：
+- scan repo
+- inspect existing backend/AGENTS.md
+- patch backend/AGENTS.md only if needed
+
+必新建檔案（若不存在）：
 /project-root/AGENTS.md
 /project-root/.agents/skills/scan-project/SKILL.md
 /project-root/.agents/skills/create-prd/SKILL.md
 /project-root/.agents/skills/plan-work/SKILL.md
 /project-root/.agents/skills/verify-change/SKILL.md
-/backend/AGENTS.md
 /backend/.agents/skills/implement-backend-change/SKILL.md
 /backend/.agents/skills/backend-test-verification/SKILL.md
 /backend/.agents/skills/review-change/SKILL.md
@@ -784,6 +935,7 @@ skill 的價值不在「有檔案」，而在：
 4. **環境規則與 repo 規則混寫**：config 與 repo guidance 難以分工。
 5. **過度追求自動化**：忽略高風險升級與人工判斷。
 6. **捏造 repo 事實**：是第一輪產檔最常見、也最危險的錯誤。
+7. **覆蓋既有 `backend/AGENTS.md`**：會把已沉澱的專案知識洗掉，造成比原本更差的結果。
 
 ### 19.2 限制
 本 PRD 仍有以下限制：
@@ -797,12 +949,5 @@ skill 的價值不在「有檔案」，而在：
 2. 補 `PLANS.md` / execution plan 模板
 3. 補 repo-specific review checklist
 4. 規則穩定後再接 CI / GitHub Action
-5. 明確需要時再引入 subagents 做 bounded parallel work
-
----
-
-## 20. 最終結論
-
-這份修正版 PRD 的核心不是「建立很多 agent」，而是：
-
-> 先把規則層、工作流層、環境層、可選角色層拆乾淨，再明確定義第一輪真正要生成哪些檔案、以什麼順序生成、哪些檔案暫時不生成，讓 Codex 可以從 repo 掃描出發，穩定產出可用的 `AGENTS.md` 與 `SKILL.md`。
+5. 明確需要時再引入 subagents 做 bounded parallelism
+6. 規則穩定後，再決定是否將 root `AGENTS.md` 也正式改成 inspect-and-patch 的預設策略

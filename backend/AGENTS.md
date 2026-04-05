@@ -1,172 +1,467 @@
 # AGENTS.md
 
-## 技術與版本
+## Scope
 
-```
-Java: 21
-Spring Boot: 4.0.2
+This file applies to the `backend/` subtree only.
+
+- Backend work should follow both `project-root/AGENTS.md` and this file.
+- If a root rule and a backend rule overlap, the backend rule wins for files under `backend/` because it is more specific.
+- This file is for **durable backend rules** only. Multi-step workflows, reusable procedures, and task-specific playbooks should live in repo skills under `.agents/skills/`.
+
+---
+
+## Purpose
+
+Use this file to keep backend work consistent, safe, and aligned with the existing codebase.
+
+When handling backend tasks, prioritize these goals:
+
+1. Preserve existing architecture and conventions.
+2. Reuse current utilities and patterns before creating new ones.
+3. Keep Controller thin and business logic in Service.
+4. Avoid silent breaking changes to API, database, security, or dependency setup.
+5. Validate changes with real commands before final handoff.
+
+---
+
+## Source of Truth
+
+When this file conflicts with the real repository state, follow the repository and explicitly note the mismatch.
+
+Use these as the source of truth, in order:
+
+1. `backend/pom.xml`
+2. `backend/mvnw` and real Maven configuration
+3. Actual package structure under `src/main/java`
+4. Existing tests and current implementation patterns
+5. `backend/docs/` and related migration notes
+
+Do not invent package paths, commands, profiles, or dependency versions.
+If something cannot be confirmed from the repo, mark it clearly as `REQUIRES CONFIRMATION` instead of guessing.
+
+---
+
+## Technology Baseline
+
+Known backend baseline:
+
+```text
+Java: 25
+Spring Boot: 4.0.4
 OpenAPI: springdoc-openapi 3.0.1
 JWT: jjwt 0.13.0
 Database: PostgreSQL + Spring Data JPA
 Apache HttpClient: 4.5.14
-其他: HikariCP, Jackson Hibernate6, Gson, Spring Security, Spring Mail, spring-boot-starter-aspectj
+Other: HikariCP, Jackson Hibernate6, Gson, Spring Security, Spring Mail,
+       spring-boot-starter-aspectj
 ```
 
-**Spring Boot 4 注意**：AOP 使用 `spring-boot-starter-aspectj`（取代 `spring-boot-starter-aop`），詳見 `docs/spring-boot-4-upgrade-plan.md` 與 `.cursor/rules/spring-boot-4-aop-migration.mdc`。
+Important notes:
 
-**依賴管理原則**：新增依賴時明確指定版本號，確保與 Spring Boot BOM 相容，並同步更新 `pom.xml`。
+- For Spring Boot 4, AOP should use `spring-boot-starter-aspectj`, not `spring-boot-starter-aop`.
+- If version-related behavior matters, verify against `pom.xml` before changing code or docs.
+- Do not change Spring Boot parent version, plugin versions, or dependency versions unless the task explicitly requires it and approval has been given.
 
----
+Reference materials:
 
-## Do
-
-### 架構與分層
-- 採用 Controller-Service-Repository 分層架構
-- Controller 僅處理 request/response，不包含商業邏輯
-- 商業邏輯集中於 `service` 層
-- 資料存取透過 `repository` 層的 Spring Data JPA
-- DTO 轉換統一在 `mapper` 套件處理
-
-### 權限驗證
-- 需登入的端點加上 `@AccessTokenRequired` 注解
-- 透過注入的 `AuthContext` 取得當前 `memberId`
-- JWT 驗證交給 `AccessTokenAspect` + `JwtUtil` 處理
-- Token 相關操作使用 `service/util/TokenUtil`
-
-### 語系處理
-- 系統自動從 `Accept-Language` header 解析語系（透過 `LocaleAspect`）
-- 取得語系使用 `LocaleContextHolder.getLocale()`
-- 多語訊息使用 `MessageSourceHolder.getMessage(...)`
-- 預設語系為 `Locale.TAIWAN`（zh-TW），另支援 en-US
-
-### 回應格式
-- 統一使用 `RestResponse` 格式
-- 透過 `RestResponseUtils.success(...)` 或 `RestResponseUtils.error(...)` 建立回應
-- 交給 `ResponseBodyWrapperAdvice` 自動包裝，避免手動組裝
-
-### 重用既有工具
-優先使用 `service/util` 下的工具類別：
-- `TokenUtil` - Token 產生與雜湊
-- `UuidGeneratorUtils` - UUID 生成
-- `RestResponseUtils` - 回應格式化
-- `JsonHelper` - JSON 處理
-- `EmailValidatorUtil` - Email 驗證
-- `PoiTypeMapper`, `LangTypeMapper`, `LocationHelper` - 業務轉換
-
-確認無可復用程式碼時才新增新的 Utility。
-
-### 錯誤處理
-- 例外統一使用 `ApiException` + `MessageCode`
-- 新增錯誤訊息時同步更新 `src/main/resources/i18n/messages_*.properties`
-- 交給 `GlobalExceptionHandler` 統一處理，不在 Controller 內捕捉
-
-### API 文件與驗證
-- 使用 `@Operation`, `@Tag`, `@Parameter` 維護 Swagger 說明
-- DTO 使用 `record` 或 `@Data`，搭配 `jakarta.validation` 註解
-- 確保 API 文件完整性
-
-### 外部服務整合
-- Google API 使用 `GoogleRequestFactory`
-- 郵件發送使用 `MailConfig` 設定
-- 快取參考 `CacheConfig` 與 `CacheConstants`
-- 背景任務參考 `PoiLanguageEnrichmentPublisher`、`CacheCleanupService` 範例
-
-### 編譯驗證
-- 任何後端程式碼變更後必須執行 `mvn clean install` 或 `./mvnw clean install`
-- 確保專案可成功編譯並通過測試
+- `docs/spring-boot-4-upgrade-plan.md`
+- `.cursor/rules/spring-boot-4-aop-migration.mdc`
 
 ---
 
-## Don't
+## Required Working Style
 
-- ❌ 不要繞過 `@AccessTokenRequired` 自行解析 `Authorization` header
-- ❌ 不要手動從 header 解析語系或自建 `LocaleResolver`
-- ❌ 不要回傳非 `RestResponse` 格式或直接使用 `ResponseEntity`
-- ❌ 不要在 Controller 內直接操作 `ThreadLocal` 或 `HttpServletResponse`
-- ❌ 不要重複實作已存在於 `service/util`、`service/dto`、`service/validator` 的功能
-- ❌ 未經評估不要引入未鎖版或大型第三方依賴
-- ❌ 不要在程式碼中硬編多語系字串
-- ❌ 不要忽略 `ResponseBodyWrapperAdvice`、`BodyWriteHandler` 的標準回應流程
-- ❌ 不要變更 Maven parent 版本或破壞既有 Spring Boot 自動配置
+### Before editing code
+
+For any of the following cases, do **not** jump straight into implementation:
+
+- new feature development
+- ambiguous product requirement
+- unfamiliar module or flow
+- refactor request
+- security-sensitive change
+- API contract change
+- database/schema change
+
+First do the minimum needed discovery:
+
+1. inspect the affected packages and existing examples
+2. identify the entry points, services, repositories, DTOs, and config involved
+3. summarize the impacted files and constraints
+4. only then implement
+
+If the repo later has skills such as `scan-project`, `plan-work`, `review-change`, or `backend-test-verification`, use them instead of repeating the workflow in chat.
+
+### During implementation
+
+- Prefer the smallest safe change that fits the current architecture.
+- Reuse existing components before adding new abstractions.
+- Match the naming, packaging, and code style already used in nearby files.
+- Keep changes localized unless the task explicitly requires broader refactoring.
+
+### Before final handoff
+
+Always report:
+
+1. what changed
+2. which files were touched
+3. which commands were run
+4. whether tests/build passed or failed
+5. any remaining risks, assumptions, or unverified areas
+
+---
+
+## Architecture and Layering
+
+### Core layering
+
+Use Controller → Service → Repository layering.
+
+- `controller/`: request/response handling only
+- `service/`: business logic and orchestration
+- `repository/`: persistence through Spring Data JPA
+- `mapper/`: DTO ↔ Entity conversion
+- `dto/`: request/response models
+- `validator/`: validation helpers and custom validators
+- `config/`: application-wide configuration
+- `aspect/`: cross-cutting logic such as auth and locale handling
+
+### Layering rules
+
+- Do not place business logic in Controllers.
+- Do not let Controllers directly orchestrate persistence-heavy flows.
+- Do not bypass Service and write complex logic inside Repository.
+- Keep DTO mapping centralized in `mapper/` or the established local pattern.
+- Prefer extending the existing architecture over introducing a parallel pattern.
+
+---
+
+## Authentication and Authorization
+
+- Endpoints that require login should use `@AccessTokenRequired`.
+- Obtain the current user through injected `AuthContext` and the established `memberId` flow.
+- JWT verification should go through the existing `AccessTokenAspect` + `JwtUtil` flow.
+- Token-related operations should reuse `service/util/TokenUtil` or the repository’s established token utilities.
+
+Do not:
+
+- manually parse the `Authorization` header when the standard flow already exists
+- bypass existing aspect-based auth checks
+- introduce a separate token validation path unless the task explicitly requires it
+
+Any change that affects authentication, authorization, token issuance, token validation, or security defaults requires confirmation before implementation.
+
+---
+
+## Locale and i18n
+
+- Locale should be derived from `Accept-Language` through the existing locale mechanism.
+- Use `LocaleContextHolder.getLocale()` to read the current locale.
+- Use `MessageSourceHolder.getMessage(...)` for localized messages.
+- Default locale is `Locale.TAIWAN` (`zh-TW`), with `en-US` also supported.
+
+Do not:
+
+- parse locale manually from headers if the aspect/config already handles it
+- hardcode user-facing multilingual text in application code
+- create a separate locale resolution path without an explicit reason
+
+When adding or changing message keys:
+
+1. update `MessageCode` or the equivalent code registry
+2. update both `messages_zh_TW.properties` and `messages_en_US.properties`
+3. verify the new message path is actually used
+
+---
+
+## Response and Exception Handling
+
+- Use the established `RestResponse` response model.
+- Prefer `RestResponseUtils.success(...)` and `RestResponseUtils.error(...)`.
+- Let `ResponseBodyWrapperAdvice` and related response advice handle standard wrapping.
+- Use `ApiException` + `MessageCode` for business/API error signaling.
+- Let `GlobalExceptionHandler` handle exception translation consistently.
+
+Do not:
+
+- return ad hoc response shapes
+- bypass the standard response wrapper without a strong reason
+- catch and swallow exceptions in Controllers just to shape output manually
+- use `ResponseEntity` as a parallel response style when the standard flow already covers the case
+
+If a route truly must bypass the wrapper, document the reason in code comments and the final handoff.
+
+---
+
+## Validation, DTOs, and API Docs
+
+- Use `jakarta.validation` annotations for request validation.
+- Keep DTOs simple and consistent with the existing project style.
+- Use `record` or Lombok patterns only where they match the codebase’s established conventions.
+- Maintain Swagger / OpenAPI annotations such as `@Operation`, `@Tag`, and `@Parameter` when modifying public API behavior.
+
+Whenever an API request/response contract changes:
+
+1. update DTOs and validation rules
+2. update API annotations as needed
+3. update related docs in `backend/docs/` if applicable
+4. call out contract changes explicitly in the handoff
+
+---
+
+## Reuse Existing Utilities First
+
+Before adding a new util/helper, search the existing codebase.
+
+Prefer existing utilities under `service/util`, `service/validator`, `service/dto`, and nearby packages.
+
+Known reusable examples include:
+
+- `TokenUtil`
+- `UuidGeneratorUtils`
+- `RestResponseUtils`
+- `JsonHelper`
+- `EmailValidatorUtil`
+- `PoiTypeMapper`
+- `LangTypeMapper`
+- `LocationHelper`
+
+Also check existing config/services for patterns such as:
+
+- `GoogleRequestFactory`
+- `MailConfig`
+- `CacheConfig`
+- `CacheConstants`
+- `PoiLanguageEnrichmentPublisher`
+- `CacheCleanupService`
+
+Do not add a new utility class just because it feels cleaner.
+Only introduce one when there is no suitable reusable implementation and the new abstraction is clearly justified.
+
+---
+
+## External Integrations and Configuration
+
+When touching external integrations:
+
+- follow existing factories/config classes first
+- keep credentials and environment-specific values out of code
+- preserve current configuration style unless the task explicitly changes it
+
+Be cautious with changes involving:
+
+- Google API integration
+- mail sending
+- caching behavior
+- scheduled/background jobs
+- HTTP client configuration
+- security configuration
+
+These often have runtime side effects beyond the edited file.
+
+---
+
+## Dependencies
+
+Dependency management rules:
+
+- Prefer existing dependencies and current Spring Boot ecosystem defaults.
+- New dependencies must have an explicit version when that is the repository convention or when the BOM does not manage them.
+- Any new dependency must be checked for compatibility with the current Spring Boot baseline.
+- Avoid large, overlapping, or redundant libraries.
+
+Requires confirmation before:
+
+- adding a new dependency
+- changing dependency versions
+- changing Maven plugins or parent version
+- replacing a foundational library already used across the project
 
 ---
 
 ## Commands
 
+Run commands from `backend/` unless the task clearly requires another working directory.
+
+Preferred order:
+
 ```bash
-# 完整編譯與測試（變更程式碼後必跑）
-mvn clean install
-# 或使用 Maven Wrapper
+# Full build and test
 ./mvnw clean install
 
-# 僅執行測試
-mvn test
+# If Maven Wrapper is unavailable in the environment
+mvn clean install
+
+# Tests only
 ./mvnw test
+mvn test
 ```
+
+Guidelines:
+
+- After backend code changes, run the most relevant validation commands you can actually execute.
+- Prefer `./mvnw` when available to reduce environment drift.
+- If full build is too expensive for a tiny docs-only change, say so explicitly.
+- Never claim a command passed unless you actually ran it and saw the result.
 
 ---
 
-## 專案結構
+## Validation Expectations
 
-```
+### Minimum expectation
+
+For any backend code change, run at least one real validation step unless the environment blocks execution.
+
+### Strong expectation
+
+For meaningful code changes, aim to run:
+
+1. targeted tests if available
+2. `./mvnw test` or `mvn test`
+3. `./mvnw clean install` or `mvn clean install` before final handoff when feasible
+
+### If validation is blocked
+
+State clearly:
+
+- which command could not be run
+- why it could not be run
+- what remains unverified
+
+Do not hide validation gaps.
+
+---
+
+## Project Structure Reference
+
+```text
 backend/src/main/java/com/travelPlanWithAccounting/service/
-├── controller/          # REST API 入口點
-├── service/             # 商業邏輯層
-├── repository/          # Spring Data JPA 資料存取
-├── dto/                 # 請求/回應資料物件
-├── mapper/              # DTO 與 Entity 轉換
-├── util/                # 公用工具類別
-├── validator/           # 資料驗證器
-├── aspect/              # AOP（AccessTokenAspect, LocaleAspect）
-├── security/            # JWT 與登入態相關工具
-├── config/              # 全域設定
-│   ├── advice/          # Response Wrapper, Exception Handler
-│   └── I18nConfig, CacheConfig, MailConfig 等
-├── constant/            # 常數定義
-├── exception/           # 自訂例外類別
-├── message/             # 訊息代碼與處理
-└── entity/              # JPA Entity
+├── controller/          # REST API entry points
+├── service/             # business logic layer
+├── repository/          # Spring Data JPA persistence
+├── dto/                 # request/response models
+├── mapper/              # DTO / Entity mapping
+├── util/                # shared utility classes
+├── validator/           # validators
+├── aspect/              # AOP, including auth and locale aspects
+├── security/            # JWT and auth-related helpers
+├── config/              # global configuration
+│   ├── advice/          # response wrapper, exception handling
+│   └── other config classes such as i18n/cache/mail
+├── constant/            # constants
+├── exception/           # custom exceptions
+├── message/             # message codes and related handling
+└── entity/              # JPA entities
 
 backend/src/main/resources/
-├── i18n/                # 多語訊息檔（messages_zh_TW.properties, messages_en_US.properties）
-└── application-*.yml    # 環境設定檔
+├── i18n/                # localized message bundles
+└── application-*.yml    # environment configs
 
-backend/docs/            # API 與流程文件
+backend/docs/            # API and process documentation
 ```
+
+If the actual package layout differs, follow the real repo and note the discrepancy.
 
 ---
 
-## 提交前檢查清單
+## Risk Escalation
 
-1. ✅ 執行 `mvn clean install` 確認編譯成功
-2. ✅ 新增的 API 已加上 `@Operation` 等 Swagger 註解
-3. ✅ 錯誤訊息有對應的 `MessageCode` 與 i18n 檔案
-4. ✅ 如有調整 API，同步更新 `docs/` 相關文件
-5. ✅ 程式碼格式、命名與現有風格一致
-6. ✅ 確認回應格式符合既有模式（使用 `RestResponse`）
-7. ✅ 驗證新增依賴的版本相容性
+Stop and ask for confirmation before making any of these changes:
+
+1. database schema or migration changes
+2. public API contract changes that may break clients
+3. auth / permission / token flow changes
+4. dependency additions or version changes
+5. major refactoring across modules
+6. cache semantics changes
+7. mail, external API, or background job behavior changes
+8. deleting or moving critical configuration files
+9. changing Spring Boot parent version or core framework setup
+
+Small internal refactors or bug fixes may proceed without confirmation only when:
+
+- the scope is localized
+- the behavior is well understood
+- the contract does not change
+- the validation path is clear
+
+---
+
+## Documentation Sync
+
+Update docs when the change affects any of the following:
+
+- API behavior or request/response shape
+- configuration or setup steps
+- Spring Boot 4 migration constraints
+- message keys / user-visible error behavior
+- major architectural decisions
+
+At minimum, review whether related files in `backend/docs/` should change.
+If docs are intentionally left unchanged, say why.
+
+---
+
+## Submission Checklist
+
+Before finalizing a backend change, check these items:
+
+1. `mvnw` / Maven command results are reported honestly.
+2. API annotations are updated when API behavior changed.
+3. Message codes and i18n files are updated when new errors/messages were introduced.
+4. Response shape still follows the established `RestResponse` pattern.
+5. Reused existing utilities and patterns where possible.
+6. New dependencies or version changes were approved if needed.
+7. Related docs were reviewed and updated when necessary.
+8. File/class naming is consistent with nearby code.
+9. Remaining risks, assumptions, and unverified areas are stated.
 
 ---
 
 ## Safety and Permissions
 
-### 允許操作
-- 閱讀專案檔案
-- 編輯程式碼
-- 執行單元測試與 `mvn clean install`
+### Allowed without extra confirmation
 
-### 需事前確認
-- 新增或變更依賴版本
-- 重大架構調整
-- 刪除關鍵設定檔或修改資料表結構
-- 變更安全性設定或驗證流程
+- read repository files
+- edit backend code within task scope
+- run safe build/test commands
+- update backend documentation tied to the change
+
+### Requires confirmation first
+
+- dependency changes
+- major architecture changes
+- schema or migration changes
+- security/auth flow changes
+- destructive file deletion
+- broad refactors across modules
+- changes with unclear production/runtime impact
 
 ---
 
 ## When Stuck
 
-- 優先搜尋 `service/util`、`service/config`、`service/validator` 確認是否有現成實作
-- 查閱 `docs/` 目錄瞭解現有 API 與流程
-- 確認 `pom.xml` 中的依賴版本與配置
-- 檢視既有的 Service、Controller 範例作為參考
-- 必要時提出簡短問題或設計草案，確認後再實作
+1. Search for an existing implementation before creating a new pattern.
+2. Check nearby Controller / Service / Repository examples.
+3. Inspect `service/util`, `config`, `validator`, and `message` first.
+4. Read relevant docs under `backend/docs/`.
+5. Verify real dependency/config state in `pom.xml`.
+6. If multiple valid designs exist, present the trade-offs briefly and ask for direction.
+7. If the repo and this file disagree, follow the repo and report the mismatch.
+
+---
+
+## What This File Should Not Contain
+
+This file should not become a giant workflow manual.
+
+Do not move these into `backend/AGENTS.md` unless there is a strong reason:
+
+- full PRD writing procedures
+- detailed scan/report templates
+- long review scoring rubrics
+- multi-step orchestration logic
+- model/provider/sandbox/approval configuration
+- optional subagent definitions
+
+Those belong in skills, task-specific docs, or `.codex/config.toml`.
