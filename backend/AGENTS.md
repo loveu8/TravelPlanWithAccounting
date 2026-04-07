@@ -90,7 +90,108 @@ First do the minimum needed discovery:
 3. summarize the impacted files and constraints
 4. only then implement
 
-If the repo later has skills such as `scan-project`, `plan-work`, `review-change`, or `backend-test-verification`, use them instead of repeating the workflow in chat.
+Use backend skills for reusable workflows instead of duplicating multi-step SOP in this file.
+
+---
+
+## Backend Skill Routing Policy
+
+Use this section to decide **which backend skill to call first**.  
+Keep detailed execution steps inside each skill.
+
+### Skill entry conditions
+
+- `scan-project-backend`
+  - Use first when backend module boundaries, command map, or architecture context are unclear.
+  - Typical trigger: unfamiliar repo/module, outdated architecture snapshot, or cross-module task.
+- `create-prd`
+  - Use when requirement intent, acceptance criteria, or scope/non-goals are ambiguous.
+  - Typical trigger: new feature with unclear behavior, unclear API/data/auth expectation.
+- `plan-work`
+  - Use after PRD/bug context is known but execution order, risk checkpoints, and validation sequence are not finalized.
+  - Typical trigger: “plan before coding”, “define sequence/risk/validation”.
+- `implement-backend-change`
+  - Use only when scope + acceptance criteria are explicit and implementation is approved.
+  - Typical trigger: concrete backend coding task with bounded targets.
+- `refactor-backend`
+  - Use for refactor-only work where external behavior must remain unchanged.
+  - Typical trigger: technical debt cleanup, deduplication, structure/readability/testability improvement.
+- `review-change`
+  - Use when a patch/diff is ready for correctness/security/maintainability/testing-risk assessment.
+  - Typical trigger: pre-merge review, severity-based findings request, delivery gate decision.
+- `backend-test-verification`
+  - Use when verification evidence is needed for PR/CI/merge readiness.
+  - Typical trigger: run/summarize Maven checks, classify blocking vs non-blocking verification results.
+
+### Routing guardrails
+
+1. If requirement is unclear, do **not** start implementation skill first; route to `create-prd`.
+2. If module context is unclear, do **not** force planning/implementation; route to `scan-project-backend`.
+3. For tiny, obvious, localized bug fixes, direct implementation can be acceptable, but still follow escalation and validation rules.
+4. For medium/high-risk tasks, include both `review-change` and `backend-test-verification` before delivery recommendation.
+
+---
+
+## Recommended Default Sequences
+
+These are default paths, not rigid SOP. Keep detailed sub-steps in skills.
+
+1. **New feature + ambiguous requirement**
+   - `scan-project-backend` (if context unclear) → `create-prd` → `plan-work` → `implement-backend-change` → `review-change` → `backend-test-verification`
+2. **New feature + clear PRD**
+   - `scan-project-backend` (only if module context unclear) → `plan-work` → `implement-backend-change` → `review-change` → `backend-test-verification`
+3. **Bug fix in familiar module**
+   - `plan-work` (lightweight) → `implement-backend-change` → `backend-test-verification`
+4. **Bug fix in unfamiliar module**
+   - `scan-project-backend` → `plan-work` → `implement-backend-change` → `review-change` → `backend-test-verification`
+5. **Refactor-only work**
+   - `scan-project-backend` (if context unclear) → `plan-work` → `refactor-backend` → `review-change` → `backend-test-verification`
+6. **High-risk change (rollback/escalation likely)**
+   - `scan-project-backend` → `create-prd` (if requirement/impact ambiguity exists) → `plan-work` (must include escalation checkpoints) → `implement-backend-change` or `refactor-backend` → `review-change` → `backend-test-verification`
+   - If any checkpoint triggers risk gates in this file, stop and mark `REQUIRES CONFIRMATION` before continuing.
+
+---
+
+## Skill Handoff Contract
+
+When handing off from one skill to another, preserve these minimum outputs.
+
+- `scan-project-backend` → next skill
+  - module map
+  - command map
+  - architecture snapshot
+  - unknowns marked `REQUIRES CONFIRMATION`
+- `create-prd` → next skill
+  - problem statement
+  - scope / non-goals
+  - acceptance criteria
+  - risks / dependencies / open questions
+  - explicit `REQUIRES CONFIRMATION` items
+- `plan-work` → next skill
+  - task type and risk level
+  - ordered execution sequence
+  - validation plan (commands + pass criteria)
+  - escalation checkpoints
+- `implement-backend-change` → next skill
+  - changed files
+  - impact summary (contract unchanged/changed)
+  - commands run + outcomes
+  - remaining risks / unverified areas
+- `refactor-backend` → next skill
+  - preserved invariants checklist
+  - files changed by slice
+  - validation summary
+  - remaining risks / `BLOCKED` / `RISKY` items
+- `review-change` → next skill / final handoff
+  - findings with severity
+  - evidence locations
+  - delivery recommendation
+  - known unknowns / missing evidence
+- `backend-test-verification` → final handoff
+  - verified commands
+  - pass/fail/warn/flaky/skipped/missing-evidence classification
+  - merge recommendation from verification perspective
+  - missing evidence and follow-ups
 
 ### During implementation
 
@@ -377,6 +478,17 @@ Stop and ask for confirmation before making any of these changes:
 7. mail, external API, or background job behavior changes
 8. deleting or moving critical configuration files
 9. changing Spring Boot parent version or core framework setup
+
+### Escalation routing rules
+
+- If risk is discovered during requirement shaping, return to `create-prd` and add `REQUIRES CONFIRMATION`.
+- If risk is discovered during planning, `plan-work` must add an explicit checkpoint and pause before implementation.
+- If risk is discovered during implementation/refactor:
+  1. stop further edits that depend on the risky decision,
+  2. document impacted files/contracts,
+  3. mark `REQUIRES CONFIRMATION`,
+  4. continue only after confirmation.
+- If review/verification finds blocking evidence, recommendation must be non-ship/block-merge until resolved or explicitly accepted.
 
 Small internal refactors or bug fixes may proceed without confirmation only when:
 
