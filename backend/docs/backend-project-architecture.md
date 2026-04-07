@@ -5,134 +5,120 @@
 - Scanner: Codex (`scan-project-backend`)
 - Execution mode: `repo-root`
 - Evidence path base: `backend/...`
+- Source commit at scan start: `8294539`
 
 ## 1. Summary
 - Backend style classification: `Layered monolith`
 - Confidence: `High`
 - Notes:
-  - 目前為單一 Spring Boot 服務（單一 `pom.xml` + 單一主程式類別），且以技術層分包（controller/service/repository/dto/mapper/config/aspect）。
-  - 專案同時包含 auth、i18n、統一 response wrapper、exception advice 與外部 API 整合（Google/Mail）能力。
+  - 目前為單一 Spring Boot 服務（單一 `backend/pom.xml`、單一 `ServiceApplication` 入口）。
+  - 主要以技術層分包（`controller/service/repository/dto/mapper/config/aspect`）並搭配 `security/message/exception/util` 等跨領域支援。
+  - 另有 `factory/model/handler/constant` 套件支援外部 API、資料模型與例外流程。
 
 ## 2. Confirmed facts
 - Build/runtime baseline:
-  - Spring Boot parent `4.0.4`、Java `25`，artifact 為 `backend-service`。
-  - 依賴包含 JPA、Validation、Security、Mail、PostgreSQL、springdoc、jjwt。
+  - Spring Boot parent `4.0.4`、Java `25`、artifact `backend-service`。
+  - 依賴包含 Web、Data JPA、Validation、Security、Mail、PostgreSQL、springdoc、jjwt。
   - Evidence files:
     - `backend/pom.xml`
     - `backend/src/main/resources/application.properties`
   - Evidence commands:
-    - `find backend -maxdepth 3 -type f | rg 'pom.xml|mvnw|application.*yml|README|docs'`
-    - `sed -n '1,220p' backend/pom.xml`
-    - `sed -n '1,220p' backend/src/main/resources/application.properties`
+    - `sed -n '1,260p' backend/pom.xml`
+    - `sed -n '1,240p' backend/src/main/resources/application.properties`
 - Package/layer map:
   - 主 package root 為 `com.travelPlanWithAccounting.service`，主程式 `ServiceApplication` 位於 root package。
-  - 技術分層目錄存在：`controller/`, `service/`, `repository/`, `dto/`, `mapper/`, `config/`, `aspect/`, `exception/`, `message/`, `entity/`, `security/`, `util/`。
+  - 技術分層目錄存在：`controller/`, `service/`, `repository/`, `dto/`, `mapper/`, `entity/`。
+  - 橫切與支援目錄存在：`config/`, `aspect/`, `security/`, `exception/`, `message/`, `util/`, `validator/`, `constant/`, `factory/`, `handler/`, `model/`。
   - Evidence files:
     - `backend/src/main/java/com/travelPlanWithAccounting/service/ServiceApplication.java`
   - Evidence commands:
-    - `find backend/src/main/java -maxdepth 4 -type d`
-    - `rg --files backend/src/main/java | head -n 40`
+    - `find backend/src/main/java -maxdepth 5 -type d`
+    - `rg --files backend/src/main/java | head -n 80`
 - API/security/i18n/response conventions:
-  - 全域回應包裝由 `ResponseBodyWrapperAdvice` 統一包成 `RestResponse`。
-  - 例外由 `GlobalExceptionHandler` 統一轉為 `RestResponse`。
-  - 驗證 access token 使用 `@AccessTokenRequired` + `AccessTokenAspect` + `JwtUtil`。
-  - i18n locale 由 `LocaleAspect` 讀取 `Accept-Language`，僅支援 `Locale.TAIWAN` / `Locale.US`。
+  - 支援 `Accept-Language` 的 i18n 行為與 zh-TW/en-US 支援由 backend README 明示。
+  - `application.properties` 設定 `spring.messages.basename=classpath:i18n/messages`，且 DB 設定採 `ddl-auto=validate`。
   - Evidence files:
-    - `backend/src/main/java/com/travelPlanWithAccounting/service/config/advice/ResponseBodyWrapperAdvice.java`
-    - `backend/src/main/java/com/travelPlanWithAccounting/service/config/advice/GlobalExceptionHandler.java`
-    - `backend/src/main/java/com/travelPlanWithAccounting/service/security/AccessTokenRequired.java`
-    - `backend/src/main/java/com/travelPlanWithAccounting/service/aspect/AccessTokenAspect.java`
-    - `backend/src/main/java/com/travelPlanWithAccounting/service/aspect/LocaleAspect.java`
-    - `backend/src/main/java/com/travelPlanWithAccounting/service/util/RestResponseUtils.java`
+    - `backend/README.md`
+    - `backend/src/main/resources/application.properties`
   - Evidence commands:
-    - `sed -n '1,260p' backend/src/main/java/com/travelPlanWithAccounting/service/config/advice/ResponseBodyWrapperAdvice.java`
-    - `sed -n '1,260p' backend/src/main/java/com/travelPlanWithAccounting/service/config/advice/GlobalExceptionHandler.java`
-    - `sed -n '1,220p' backend/src/main/java/com/travelPlanWithAccounting/service/aspect/AccessTokenAspect.java`
-    - `sed -n '1,220p' backend/src/main/java/com/travelPlanWithAccounting/service/aspect/LocaleAspect.java`
+    - `sed -n '1,260p' backend/README.md`
+    - `sed -n '1,240p' backend/src/main/resources/application.properties`
 
 ## 3. Inferred facts
 - Inference:
-  - 目前專案以「技術層分層」為核心，尚未切成 domain-module 或多服務；大多數業務邏輯應集中在 `service/`，controller 偏向 API entry。
+  - 專案目前以技術層分層為主要架構，業務流程預期集中在 `service/` 並由 `controller` 對外提供 API。
 - Why inferred:
-  - 目錄命名與主要類別分布呈現典型 layered package；單一測試入口 `ServiceApplicationTests` 也符合單服務專案。
+  - 目錄命名與單一 deployable 形態符合 layered monolith，且 `src/test` 目前可見測試入口仍以整體應用啟動測試為主。
 - Evidence files:
   - `backend/src/test/java/com/travelPlanWithAccounting/service/ServiceApplicationTests.java`
 - Evidence commands:
-  - `find backend/src/test/java -maxdepth 4 -type d`
-  - `rg --files backend/src/test/java | head -n 40`
+  - `find backend/src/test/java -maxdepth 5 -type d`
+  - `rg --files backend/src/test/java | head -n 80`
 
 ## 4. Unknowns (`REQUIRES CONFIRMATION`)
 - Item:
-  - 生產環境部署拓樸（單機、容器編排、或其他）與 profile 策略細節。
+  - 生產環境部署拓樸（單機、compose、K8s、或其他）與正式 profile 切換策略。
 - Why unknown:
-  - 掃描到 `application.properties` 與 README/docker scripts，但未看到完整部署說明或環境分層文件。
+  - 本次僅掃描到本地/容器啟動腳本與一般設定，未看到 CI/CD 與 infra 部署來源。
 - How to verify:
-  - 檢查 CI/CD pipeline 設定、infra repo、或補充 `backend/docs/` 部署文件。
+  - 補查 CI workflow、infra repository 或部署文件。
 
 - Item:
-  - 資料庫 migration 管理工具（Flyway/Liquibase）是否在其他 repo 或 pipeline 管理。
+  - 資料庫 migration 流程由何者主責（repo 內 migration tool 或外部流程）。
 - Why unknown:
-  - `pom.xml` 未見 migration 依賴，且目前僅看到 `spring.jpa.hibernate.ddl-auto=validate`。
+  - `pom.xml` 未見 Flyway/Liquibase 依賴，且 `application.properties` 僅顯示 `ddl-auto=validate`。
 - How to verify:
-  - 搜尋組織層級 migration 倉庫或確認 DBA/DevOps 流程。
+  - 與 DevOps/DBA 確認 migration 來源與發版流程。
 
 ## 5. Command map (confirmed only)
 - Build:
-  - `./mvnw clean install`（由 backend AGENTS 規範）
+  - `cd backend && ./mvnw clean install`
 - Test:
-  - `./mvnw test`（由 backend AGENTS 規範）
+  - `cd backend && ./mvnw test`
 - Run:
-  - `sh up.sh`（Linux）
-  - `./up.bat`（Windows）
+  - `cd backend && sh up.sh`
+  - `cd backend && sh down.sh`
 - Tooling:
-  - `./mvnw` / `mvnw.cmd`
-  - `sh build.sh` / `./build.bat`
+  - `cd backend && sh build.sh`
+  - `cd backend && ./mvnw`
 - Evidence files:
   - `backend/AGENTS.md`
   - `backend/README.md`
   - `backend/mvnw`
-  - `backend/mvnw.cmd`
 
 ## 5.1 Command execution notes
 - Successful commands:
   - `find backend -name AGENTS.md -print`
-  - `find backend -maxdepth 3 -type f | rg 'pom.xml|mvnw|application.*yml|README|docs'`
-  - `find backend/src/main/java -maxdepth 4 -type d`
-  - `find backend/src/test/java -maxdepth 4 -type d`
-  - `rg --files backend/src/main/java | head -n 40`
-  - `rg --files backend/src/test/java | head -n 40`
-  - `sed -n '1,220p' backend/pom.xml`
-  - `sed -n '1,220p' backend/README.md`
+  - `find backend -maxdepth 3 -type f | rg 'pom.xml|mvnw|application.*yml|application.properties|README|docs'`
+  - `find backend/src/main/java -maxdepth 5 -type d | head -n 200`
+  - `find backend/src/test/java -maxdepth 5 -type d | head -n 200`
+  - `rg --files backend/src/main/java | head -n 80`
+  - `rg --files backend/src/test/java | head -n 80`
+  - `sed -n '1,260p' backend/pom.xml`
+  - `sed -n '1,260p' backend/README.md`
   - `sed -n '1,220p' backend/src/main/java/com/travelPlanWithAccounting/service/ServiceApplication.java`
-  - `sed -n '1,260p' backend/src/main/java/com/travelPlanWithAccounting/service/config/advice/ResponseBodyWrapperAdvice.java`
-  - `sed -n '1,260p' backend/src/main/java/com/travelPlanWithAccounting/service/config/advice/GlobalExceptionHandler.java`
-  - `sed -n '1,220p' backend/src/main/java/com/travelPlanWithAccounting/service/aspect/AccessTokenAspect.java`
-  - `sed -n '1,220p' backend/src/main/java/com/travelPlanWithAccounting/service/aspect/LocaleAspect.java`
-  - `sed -n '1,220p' backend/src/main/java/com/travelPlanWithAccounting/service/security/AccessTokenRequired.java`
-  - `sed -n '1,220p' backend/src/main/java/com/travelPlanWithAccounting/service/util/RestResponseUtils.java`
-  - `sed -n '1,220p' backend/src/main/resources/application.properties`
+  - `sed -n '1,240p' backend/src/main/resources/application.properties`
 - Failed commands and reasons:
   - 無。
 - Unverified areas caused by command limitations:
-  - 未執行 `./mvnw test` / `./mvnw clean install`（本次為架構掃描任務，無程式碼行為變更）。
+  - 本次屬架構掃描，未執行 `./mvnw test` / `./mvnw clean install`（無程式行為修改）。
 
 ## 6. Risks and constraints
 - Contract/DB/security/dependency risks:
-  - `AccessTokenAspect` 在 token 不合法時直接回 `null` 並設 `401`，若 controller 或 advice 對此分支的預期不一致，可能出現可觀測行為差異（建議後續回歸測試確認）。
-  - `spring.jpa.hibernate.ddl-auto=validate` 代表 schema 管理由外部流程決定；若 migration 管線不透明，容易在跨環境部署時出現 schema mismatch。
+  - 目前掃描未觸及 API contract 測試與 DB migration 流程，若後續更動 repository/entity 需先確認 migration owner。
 - Operational risks:
-  - 讀取 `.backendEnv` 的啟動前載入邏輯位於主程式，若不同啟動工作目錄不一致，可能造成環境變數來源差異。
+  - 主程式包含 `.backendEnv` 路徑嘗試邏輯；不同工作目錄可能造成設定來源差異。
 
 ## 7. Backend pattern comparison (GitHub baselines)
 - Closest baseline:
-  - `Layered monolith`（接近 `spring-petclinic-rest` 類型）。
+  - `Layered monolith`（單一 Spring Boot deployable + 技術分層套件）。
 - Similarities:
-  - 單一 Maven module、標準 `src/main/java` + `src/test/java`。
-  - REST controller + service + repository 技術分層清楚。
+  - 標準 Maven 目錄 (`src/main`, `src/test`)。
+  - API/Service/Repository 分層存在。
 - Differences:
-  - 專案包含較多自訂 cross-cutting 機制（response wrapper advice、locale aspect、token aspect）與 travel domain 特化資源檔。
+  - 具備較多客製 cross-cutting 與外部 API/郵件整合 supporting package。
 - Potential implications:
-  - 維持分層單體可降低協作複雜度，但隨 domain 擴大後，可能需要更強的模組邊界紀律以避免 service 層耦合上升。
+  - 維持單體分層有利於快速開發，但需持續維持 service 邊界，避免跨 domain 耦合成長。
 
 ## 8. Convention compliance check
 - Maven standard layout: `Pass`
@@ -142,19 +128,18 @@
     - `backend/src/test/java`
 - Spring package/root scanning convention: `Pass`
   - Evidence:
-    - `ServiceApplication` 位於 root package `com.travelPlanWithAccounting.service`。
-    - 主要元件位於其子套件（`controller`, `service`, `repository`, `config`, `aspect`）。
+    - `ServiceApplication` 位於 root package `com.travelPlanWithAccounting.service`，其他組件位於其子套件。
 - GitHub discoverability (README/docs/commands): `Pass`
   - Evidence:
-    - `backend/README.md` 含環境需求與啟動指令。
-    - `backend/docs/` 有 API/流程文件。
-    - `backend/mvnw` 與 `backend/mvnw.cmd` 可作為一致建置入口。
+    - `backend/README.md` 提供環境與啟動方式。
+    - `backend/docs/` 具 API 與流程文件。
+    - `backend/mvnw` 作為建置入口存在。
 
 ## 9. How to update this snapshot
 1. Re-run backend scan steps from skill.
 2. Refresh changed sections only.
 3. Keep Confirmed/Inferred/Unknown separation strict.
-4. Update scan date.
+4. Update scan date and source commit.
 
 ## 10. Citation format requirement
 - Use repository-relative file path citations when reporting scan results.
