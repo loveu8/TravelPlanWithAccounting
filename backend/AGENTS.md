@@ -207,7 +207,7 @@ When handing off from one skill to another, preserve these minimum outputs.
   - evidence locations
   - delivery recommendation
   - known unknowns / missing evidence
-  - verification focus list for `backend-test-verification` (blocking vs non-blocking)
+  - verification focus list for `backend-test-verification` (blocking vs non-blocking, linked to finding IDs)
 - `backend-test-verification` → final handoff
   - verified commands
   - pass/fail/warn/flaky/skipped/missing-evidence classification

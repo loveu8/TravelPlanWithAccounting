@@ -184,6 +184,7 @@ Always return in this stable structure:
 
 5. **Verification Focus Handoff (for `backend-test-verification`)**
    - Must-run verification focus list tied to highest-risk findings.
+   - Each focus item must reference related finding `ID`(s).
    - Include command/check suggestions for each focus (targeted first, then broader if needed).
    - Mark each focus as `Blocking` or `Non-blocking` from review perspective.
 

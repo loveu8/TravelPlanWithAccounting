@@ -153,6 +153,11 @@ Follow steps in order. Keep output minimal and executable.
 ## Sequence Design Rules
 Design sequence as shortest valid path, not idealized full lifecycle.
 
+Use alias-first wording when describing workflow actors in plan output:
+- Format: `<Role Alias> (<Technical Skill Name>)`
+- Example: `PJM-Discovery (scan-project-backend)`
+- If alias wording and technical skill name conflict, technical skill name is authoritative.
+
 1. Use `scan-project-backend` only when module/flow evidence is insufficient.
 2. Use `create-prd` only when requirement intent/acceptance is incomplete.
 3. Schedule implementation step only after scope/risk/validation are defined.
