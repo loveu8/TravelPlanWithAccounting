@@ -182,6 +182,11 @@ Always return in this stable structure:
    - List missing requirements, missing tests/CI, ambiguous intent, or out-of-scope risks.
    - State exactly what evidence is needed to close each gap.
 
+5. **Verification Focus Handoff (for `backend-test-verification`)**
+   - Must-run verification focus list tied to highest-risk findings.
+   - Include command/check suggestions for each focus (targeted first, then broader if needed).
+   - Mark each focus as `Blocking` or `Non-blocking` from review perspective.
+
 ## Boundaries
 - Every finding must be evidence-based and traceable to changed code.
 - Do not present speculation as confirmed defect.
@@ -203,6 +208,11 @@ Use these exact labels when evidence is incomplete:
 - `REQUIRES CONFIRMATION`: requirement/intent is unclear; cannot assert correctness conclusively.
 - `INSUFFICIENT EVIDENCE`: missing required artifacts (tests/CI/logs/design context).
 - `RISK NOT VERIFIED`: risk suspected but cannot be validated from available diff/context.
+
+If any potential `P0`/`P1` risk lacks sufficient evidence for a final ship recommendation:
+- mark `REQUIRES CONFIRMATION`,
+- emit explicit verification focus items for `backend-test-verification`,
+- recommend `FIX REQUIRED BEFORE SHIP` until verification evidence closes the gap.
 
 When any label appears:
 - State what is unknown.

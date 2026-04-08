@@ -99,27 +99,47 @@ Use backend skills for reusable workflows instead of duplicating multi-step SOP 
 Use this section to decide **which backend skill to call first**.  
 Keep detailed execution steps inside each skill.
 
+### Backend Service Taxonomy (Formal Governance)
+
+Use human-facing role aliases in workflow communication, and keep technical skill names as execution identifiers.
+
+- `PDM` (`create-prd`): requirement definition and acceptance criteria.
+- `PJM-Discovery` (`scan-project-backend`): backend context discovery and architecture snapshot.
+- `PJM-Execution` (`plan-work`): execution sequencing, risk, and validation planning.
+- `DEV` (`implement-backend-change`): approved scoped backend implementation.
+- `DEV-Refactor` (`refactor-backend`): refactor-only execution with behavior preservation.
+- `DEV-Review` (`review-change`): risk-oriented code review and delivery recommendation.
+- `QA` (`backend-test-verification`): verification evidence and merge-readiness recommendation.
+
+Governance rules:
+1. Human-facing workflow docs should prefer alias-first notation such as `PDM (create-prd)`.
+2. Skill routing and technical invocation must preserve technical skill names as source of truth.
+3. `DEV-Review` and `QA` are dual-track quality gates:
+   - `DEV-Review` focuses on risk judgement and severity assessment.
+   - `QA` focuses on executable verification evidence and merge recommendation.
+4. If alias wording and technical skill naming conflict, technical skill naming wins.
+
 ### Skill entry conditions
 
-- `scan-project-backend`
+- `PJM-Discovery` (`scan-project-backend`)
   - Use first when backend module boundaries, command map, or architecture context are unclear.
   - Typical trigger: unfamiliar repo/module, outdated architecture snapshot, or cross-module task.
-- `create-prd`
+- `PDM` (`create-prd`)
   - Use when requirement intent, acceptance criteria, or scope/non-goals are ambiguous.
   - Typical trigger: new feature with unclear behavior, unclear API/data/auth expectation.
-- `plan-work`
+- `PJM-Execution` (`plan-work`)
   - Use after PRD/bug context is known but execution order, risk checkpoints, and validation sequence are not finalized.
   - Typical trigger: “plan before coding”, “define sequence/risk/validation”.
-- `implement-backend-change`
+- `DEV` (`implement-backend-change`)
   - Use only when scope + acceptance criteria are explicit and implementation is approved.
   - Typical trigger: concrete backend coding task with bounded targets.
-- `refactor-backend`
+- `DEV-Refactor` (`refactor-backend`)
   - Use for refactor-only work where external behavior must remain unchanged.
   - Typical trigger: technical debt cleanup, deduplication, structure/readability/testability improvement.
-- `review-change`
+- `DEV-Review` (`review-change`)
   - Use when a patch/diff is ready for correctness/security/maintainability/testing-risk assessment.
   - Typical trigger: pre-merge review, severity-based findings request, delivery gate decision.
-- `backend-test-verification`
+- `QA` (`backend-test-verification`)
   - Use when verification evidence is needed for PR/CI/merge readiness.
   - Typical trigger: run/summarize Maven checks, classify blocking vs non-blocking verification results.
 
@@ -137,17 +157,17 @@ Keep detailed execution steps inside each skill.
 These are default paths, not rigid SOP. Keep detailed sub-steps in skills.
 
 1. **New feature + ambiguous requirement**
-   - `scan-project-backend` (if context unclear) → `create-prd` → `plan-work` → `implement-backend-change` → `review-change` → `backend-test-verification`
+   - `PJM-Discovery (scan-project-backend)` (if context unclear) → `PDM (create-prd)` → `PJM-Execution (plan-work)` → `DEV (implement-backend-change)` → `DEV-Review (review-change)` → `QA (backend-test-verification)`
 2. **New feature + clear PRD**
-   - `scan-project-backend` (only if module context unclear) → `plan-work` → `implement-backend-change` → `review-change` → `backend-test-verification`
+   - `PJM-Discovery (scan-project-backend)` (only if module context unclear) → `PJM-Execution (plan-work)` → `DEV (implement-backend-change)` → `DEV-Review (review-change)` → `QA (backend-test-verification)`
 3. **Bug fix in familiar module**
-   - `plan-work` (lightweight) → `implement-backend-change` → `backend-test-verification`
+   - `PJM-Execution (plan-work)` (lightweight) → `DEV (implement-backend-change)` → `QA (backend-test-verification)`
 4. **Bug fix in unfamiliar module**
-   - `scan-project-backend` → `plan-work` → `implement-backend-change` → `review-change` → `backend-test-verification`
+   - `PJM-Discovery (scan-project-backend)` → `PJM-Execution (plan-work)` → `DEV (implement-backend-change)` → `DEV-Review (review-change)` → `QA (backend-test-verification)`
 5. **Refactor-only work**
-   - `scan-project-backend` (if context unclear) → `plan-work` → `refactor-backend` → `review-change` → `backend-test-verification`
+   - `PJM-Discovery (scan-project-backend)` (if context unclear) → `PJM-Execution (plan-work)` → `DEV-Refactor (refactor-backend)` → `DEV-Review (review-change)` → `QA (backend-test-verification)`
 6. **High-risk change (rollback/escalation likely)**
-   - `scan-project-backend` → `create-prd` (if requirement/impact ambiguity exists) → `plan-work` (must include escalation checkpoints) → `implement-backend-change` or `refactor-backend` → `review-change` → `backend-test-verification`
+   - `PJM-Discovery (scan-project-backend)` → `PDM (create-prd)` (if requirement/impact ambiguity exists) → `PJM-Execution (plan-work)` (must include escalation checkpoints) → `DEV (implement-backend-change)` or `DEV-Refactor (refactor-backend)` → `DEV-Review (review-change)` → `QA (backend-test-verification)`
    - If any checkpoint triggers risk gates in this file, stop and mark `REQUIRES CONFIRMATION` before continuing.
 
 ---
@@ -187,6 +207,7 @@ When handing off from one skill to another, preserve these minimum outputs.
   - evidence locations
   - delivery recommendation
   - known unknowns / missing evidence
+  - verification focus list for `backend-test-verification` (blocking vs non-blocking)
 - `backend-test-verification` → final handoff
   - verified commands
   - pass/fail/warn/flaky/skipped/missing-evidence classification

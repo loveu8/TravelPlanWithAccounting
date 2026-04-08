@@ -32,7 +32,7 @@ Use when all conditions are true:
 ## When Not to Use
 Do not use when any condition is true:
 1. Requirement discovery is still open (use `create-prd` first).
-2. Repository/module context is unknown (use `scan-project` first).
+2. Repository/module context is unknown (use `scan-project-backend` first).
 3. Task is trivial and isolated (single-file tiny fix with obvious validation).
 4. Primary request is implementation, refactor execution, or code review output.
 5. Task is non-backend planning.
@@ -55,7 +55,7 @@ Recommended inputs (must request/flag if missing):
 2. Known risks and open questions.
 3. Test/CI context (available suites, command constraints, runtime limitations).
 4. Architecture assumptions already approved.
-5. Dependencies on other docs/skills (e.g., `scan-project`, `verify-change`).
+5. Dependencies on other docs/skills (e.g., `scan-project-backend`, `verify-change`).
 
 If required input is missing:
 - Stop sequence expansion.
@@ -153,7 +153,7 @@ Follow steps in order. Keep output minimal and executable.
 ## Sequence Design Rules
 Design sequence as shortest valid path, not idealized full lifecycle.
 
-1. Use `scan-project` only when module/flow evidence is insufficient.
+1. Use `scan-project-backend` only when module/flow evidence is insufficient.
 2. Use `create-prd` only when requirement intent/acceptance is incomplete.
 3. Schedule implementation step only after scope/risk/validation are defined.
 4. Add `review`/`verify` steps when risk is `Medium`/`High` or change is cross-layer.
